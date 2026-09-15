@@ -1,0 +1,733 @@
+import React, { useState, useMemo } from "react";
+import {
+  Home, Wrench, CalendarCheck, Banknote, FileText, Plus, ChevronRight,
+  ChevronLeft, X, Check, AlertTriangle, Wind, Droplet, Zap, Shield, Circle
+} from "lucide-react";
+
+const TODAY = new Date("2026-09-14");
+
+const CATEGORY_META = {
+  hvac: { label: "HVAC", icon: Wind },
+  water_heater: { label: "Water heater", icon: Droplet },
+  roof: { label: "Roof", icon: Home },
+  plumbing: { label: "Plumbing", icon: Droplet },
+  electrical: { label: "Electrical", icon: Zap },
+  appliance: { label: "Appliance", icon: Wrench },
+};
+
+const seedSystems = [
+  { id: "sys1", name: "Carrier Infinity", category: "hvac", location: "Attic", purchaseDate: "2021-06-01", purchasePrice: 8400, expectedLifeYears: 15, replacementCost: 10000, warrantyExpiration: "2031-06-01" },
+  { id: "sys2", name: "Rheem Performance", category: "water_heater", location: "Garage", purchaseDate: "2016-03-01", purchasePrice: 1200, expectedLifeYears: 10, replacementCost: 1800, warrantyExpiration: "2022-03-01" },
+  { id: "sys3", name: "GAF Timberline", category: "roof", location: "Whole house", purchaseDate: "2014-08-01", purchasePrice: 12000, expectedLifeYears: 25, replacementCost: 16500, warrantyExpiration: "2044-08-01" },
+  { id: "sys4", name: "Whirlpool WDT750", category: "appliance", location: "Kitchen", purchaseDate: "2024-06-14", purchasePrice: 899, expectedLifeYears: 10, replacementCost: 1050, warrantyExpiration: "2029-06-14" },
+  { id: "sys5", name: "Main panel", category: "electrical", location: "Garage", purchaseDate: "2014-08-01", purchasePrice: 2200, expectedLifeYears: 30, replacementCost: 3500, warrantyExpiration: "" },
+];
+
+const seedTasks = [
+  { id: "t1", systemId: "sys1", title: "Replace air filter", dueDate: "2026-09-26", completed: false },
+  { id: "t2", systemId: "sys2", title: "Annual inspection", dueDate: "2026-10-31", completed: false },
+  { id: "t3", systemId: "sys3", title: "Roof inspection", dueDate: "2026-12-14", completed: false },
+  { id: "t4", systemId: "sys4", title: "Clean filter trap", dueDate: "2026-11-05", completed: false },
+];
+
+const seedExpenses = [
+  { id: "e1", systemId: "sys1", amount: 145, date: "2026-03-12", category: "Maintenance", note: "Spring HVAC tune-up" },
+  { id: "e2", systemId: "sys3", amount: 620, date: "2026-05-02", category: "Repair", note: "Flashing repair" },
+  { id: "e3", systemId: null, amount: 482, date: "2026-07-18", category: "Maintenance", note: "Gutter cleaning" },
+];
+
+const seedDocuments = [
+  { id: "d1", systemId: "sys1", type: "Warranty", label: "Carrier Infinity warranty card" },
+  { id: "d2", systemId: "sys1", type: "Invoice", label: "Installation invoice" },
+  { id: "d3", systemId: "sys4", type: "Receipt", label: "Whirlpool purchase receipt" },
+  { id: "d4", systemId: "sys3", type: "Invoice", label: "Roof repair invoice" },
+];
+
+function daysUntil(dateStr) {
+  const d = new Date(dateStr);
+  return Math.round((d - TODAY) / 86400000);
+}
+
+function money(n) {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+function replacementYear(sys) {
+  return new Date(sys.purchaseDate).getFullYear() + sys.expectedLifeYears;
+}
+
+function systemStatus(sys, tasks) {
+  const relevant = tasks.filter((t) => t.systemId === sys.id && !t.completed);
+  if (relevant.length === 0) return "green";
+  const soonest = Math.min(...relevant.map((t) => daysUntil(t.dueDate)));
+  if (soonest < 0) return "red";
+  if (soonest <= 30) return "yellow";
+  return "green";
+}
+
+const STATUS_COLOR = {
+  green: "#3B6D11",
+  yellow: "#BA7517",
+  red: "#A32D2D",
+};
+const STATUS_BG = {
+  green: "#EAF3DE",
+  yellow: "#FAEEDA",
+  red: "#FCEBEB",
+};
+
+function TabBar({ active, onChange }) {
+  const tabs = [
+    { id: "home", label: "Home", icon: Home },
+    { id: "systems", label: "Systems", icon: Wrench },
+    { id: "tasks", label: "Tasks", icon: CalendarCheck },
+    { id: "costs", label: "Costs", icon: Banknote },
+    { id: "docs", label: "Docs", icon: FileText },
+  ];
+  return (
+    <div className="flex border-t border-stone-200 bg-white">
+      {tabs.map((t) => {
+        const Icon = t.icon;
+        const isActive = active === t.id;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className="flex-1 flex flex-col items-center gap-1 py-2.5"
+          >
+            <Icon size={20} strokeWidth={isActive ? 2.4 : 1.7} color={isActive ? "#1C2A33" : "#9C978C"} />
+            <span
+              className="text-[10px]"
+              style={{ color: isActive ? "#1C2A33" : "#9C978C", fontWeight: isActive ? 600 : 400 }}
+            >
+              {t.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function LedgerRow({ label, sub, value, valueColor, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-baseline justify-between py-2.5 text-left"
+      style={{ borderBottom: "1px solid #EAE7DE" }}
+    >
+      <div className="min-w-0">
+        <div className="text-[13.5px] text-stone-800 truncate">{label}</div>
+        {sub && <div className="text-[11.5px] text-stone-400">{sub}</div>}
+      </div>
+      <div
+        className="text-[13.5px] tabular-nums flex-shrink-0 pl-2"
+        style={{ color: valueColor || "#1C2A33", fontWeight: 600 }}
+      >
+        {value}
+      </div>
+    </button>
+  );
+}
+
+function StatusDot({ status }) {
+  return <Circle size={8} fill={STATUS_COLOR[status]} color={STATUS_COLOR[status]} />;
+}
+
+export default function MyHouseOS() {
+  const [tab, setTab] = useState("home");
+  const [systems, setSystems] = useState(seedSystems);
+  const [tasks, setTasks] = useState(seedTasks);
+  const [expenses, setExpenses] = useState(seedExpenses);
+  const [documents, setDocuments] = useState(seedDocuments);
+  const [selectedSystem, setSelectedSystem] = useState(null);
+  const [addSheet, setAddSheet] = useState(null); // 'task' | 'expense' | 'system' | 'doc'
+
+  const systemById = (id) => systems.find((s) => s.id === id);
+
+  const upcomingTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => !t.completed)
+        .slice()
+        .sort((a, b) => daysUntil(a.dueDate) - daysUntil(b.dueDate)),
+    [tasks]
+  );
+
+  const spentThisYear = expenses
+    .filter((e) => new Date(e.date).getFullYear() === TODAY.getFullYear())
+    .reduce((s, e) => s + e.amount, 0);
+
+  const forecast = useMemo(() => {
+    const years = [2026, 2027, 2028, 2029, 2030];
+    return years.map((y) => {
+      const replacing = systems.filter((s) => replacementYear(s) === y);
+      const base = y === TODAY.getFullYear() ? spentThisYear : 550;
+      const big = replacing.reduce((s, sys) => s + sys.replacementCost, 0);
+      return { year: y, amount: base + big, systems: replacing };
+    });
+  }, [systems, spentThisYear]);
+
+  const next12mo = forecast[0].amount * 0.4 + (forecast[1] ? forecast[1].amount * 0.6 : 0);
+  const monthlyReserve = Math.round(
+    forecast.reduce((s, f) => s + f.amount, 0) / (forecast.length * 12)
+  );
+
+  function toggleTask(id) {
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
+  }
+
+  function addTask(title, dueDate, systemId) {
+    setTasks((ts) => [...ts, { id: "t" + Date.now(), systemId, title, dueDate, completed: false }]);
+    setAddSheet(null);
+  }
+
+  function addExpense(amount, category, note, systemId) {
+    setExpenses((es) => [
+      ...es,
+      { id: "e" + Date.now(), systemId, amount, category, note, date: TODAY.toISOString().slice(0, 10) },
+    ]);
+    setAddSheet(null);
+  }
+
+  function addDocument(label, type, systemId) {
+    setDocuments((ds) => [...ds, { id: "d" + Date.now(), label, type, systemId }]);
+    setAddSheet(null);
+  }
+
+  return (
+    <div
+      className="mx-auto"
+      style={{
+        maxWidth: 400,
+        background: "#F4F2EC",
+        borderRadius: 28,
+        overflow: "hidden",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
+        border: "1px solid #E4E1D6",
+        fontFamily: "ui-sans-serif, system-ui, sans-serif",
+      }}
+    >
+      <div style={{ height: 560, overflowY: "auto" }} className="px-4 pt-5 pb-4">
+        {tab === "home" && (
+          <HomeScreen
+            upcomingTasks={upcomingTasks}
+            systemById={systemById}
+            systems={systems}
+            tasks={tasks}
+            spentThisYear={spentThisYear}
+            next12mo={next12mo}
+            monthlyReserve={monthlyReserve}
+            onOpenSystem={(s) => {
+              setSelectedSystem(s);
+              setTab("systems");
+            }}
+          />
+        )}
+        {tab === "systems" && !selectedSystem && (
+          <SystemsScreen
+            systems={systems}
+            tasks={tasks}
+            onSelect={setSelectedSystem}
+            onAdd={() => setAddSheet("system")}
+          />
+        )}
+        {tab === "systems" && selectedSystem && (
+          <SystemDetail
+            sys={selectedSystem}
+            tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
+            documents={documents.filter((d) => d.systemId === selectedSystem.id)}
+            onBack={() => setSelectedSystem(null)}
+          />
+        )}
+        {tab === "tasks" && (
+          <TasksScreen
+            tasks={upcomingTasks}
+            completed={tasks.filter((t) => t.completed)}
+            systemById={systemById}
+            onToggle={toggleTask}
+            onAdd={() => setAddSheet("task")}
+          />
+        )}
+        {tab === "costs" && (
+          <CostsScreen
+            expenses={expenses}
+            forecast={forecast}
+            systemById={systemById}
+            onAdd={() => setAddSheet("expense")}
+          />
+        )}
+        {tab === "docs" && (
+          <DocsScreen documents={documents} systemById={systemById} onAdd={() => setAddSheet("doc")} />
+        )}
+      </div>
+
+      <TabBar
+        active={tab}
+        onChange={(t) => {
+          setTab(t);
+          setSelectedSystem(null);
+        }}
+      />
+
+      {addSheet && (
+        <AddSheet
+          kind={addSheet}
+          systems={systems}
+          onClose={() => setAddSheet(null)}
+          onAddTask={addTask}
+          onAddExpense={addExpense}
+          onAddDocument={addDocument}
+        />
+      )}
+    </div>
+  );
+}
+
+function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, onOpenSystem }) {
+  return (
+    <div>
+      <div className="mb-4">
+        <div className="text-[11px] uppercase tracking-wide text-stone-400">Your home</div>
+        <div className="text-[19px] font-semibold text-stone-900">123 Main St</div>
+        <div className="text-[12.5px] text-stone-500">Atlanta, GA</div>
+      </div>
+
+      <div className="mb-5">
+        <div className="text-[12px] font-semibold text-stone-500 mb-1">Needs attention</div>
+        <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+          {upcomingTasks.slice(0, 3).map((t) => {
+            const sys = systemById(t.systemId);
+            const days = daysUntil(t.dueDate);
+            return (
+              <LedgerRow
+                key={t.id}
+                label={t.title}
+                sub={sys ? sys.name : undefined}
+                value={days < 0 ? `${Math.abs(days)}d overdue` : `in ${days}d`}
+                valueColor={days < 0 ? STATUS_COLOR.red : days <= 14 ? STATUS_COLOR.yellow : "#1C2A33"}
+              />
+            );
+          })}
+          {upcomingTasks.length === 0 && (
+            <div className="py-3 text-[13px] text-stone-400">Nothing needs attention right now.</div>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-5">
+        <div className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-white p-3" style={{ border: "1px solid #E4E1D6" }}>
+            <div className="text-[11px] text-stone-400">Spent this year</div>
+            <div className="text-[18px] font-semibold tabular-nums text-stone-900">{money(spentThisYear)}</div>
+          </div>
+          <div className="rounded-xl bg-white p-3" style={{ border: "1px solid #E4E1D6" }}>
+            <div className="text-[11px] text-stone-400">Next 12 months</div>
+            <div className="text-[18px] font-semibold tabular-nums text-stone-900">{money(Math.round(next12mo))}</div>
+          </div>
+        </div>
+        <div className="rounded-xl bg-white p-3 mt-2" style={{ border: "1px solid #E4E1D6" }}>
+          <div className="text-[11px] text-stone-400">Recommended monthly reserve</div>
+          <div className="text-[18px] font-semibold tabular-nums text-stone-900">{money(monthlyReserve)}/mo</div>
+        </div>
+      </div>
+
+      <div>
+        <div className="text-[12px] font-semibold text-stone-500 mb-1">Home health</div>
+        <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+          {systems.map((s) => {
+            const status = systemStatus(s, tasks);
+            const meta = CATEGORY_META[s.category];
+            const Icon = meta.icon;
+            return (
+              <button
+                key={s.id}
+                onClick={() => onOpenSystem(s)}
+                className="w-full flex items-center justify-between py-2.5"
+                style={{ borderBottom: "1px solid #EAE7DE" }}
+              >
+                <div className="flex items-center gap-2">
+                  <Icon size={16} color="#5F5B50" />
+                  <span className="text-[13.5px] text-stone-800">{meta.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusDot status={status} />
+                  <ChevronRight size={15} color="#B8B4A8" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[17px] font-semibold text-stone-900">Systems</div>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+          <Plus size={16} color="white" />
+        </button>
+      </div>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+        {systems.map((s) => {
+          const meta = CATEGORY_META[s.category];
+          const Icon = meta.icon;
+          const status = systemStatus(s, tasks);
+          return (
+            <button
+              key={s.id}
+              onClick={() => onSelect(s)}
+              className="w-full flex items-center justify-between py-3"
+              style={{ borderBottom: "1px solid #EAE7DE" }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg p-2" style={{ background: "#F4F2EC" }}>
+                  <Icon size={17} color="#5F5B50" />
+                </div>
+                <div className="text-left">
+                  <div className="text-[13.5px] text-stone-800">{s.name}</div>
+                  <div className="text-[11.5px] text-stone-400">{meta.label} · {s.location}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusDot status={status} />
+                <ChevronRight size={15} color="#B8B4A8" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SystemDetail({ sys, tasks, documents, onBack }) {
+  const meta = CATEGORY_META[sys.category];
+  const Icon = meta.icon;
+  const repYear = replacementYear(sys);
+  const monthsOut = Math.max(1, (repYear - TODAY.getFullYear()) * 12 - TODAY.getMonth());
+  const reserve = Math.round(sys.replacementCost / monthsOut);
+
+  return (
+    <div>
+      <button onClick={onBack} className="flex items-center gap-1 mb-3 text-[13px] text-stone-500">
+        <ChevronLeft size={16} /> Systems
+      </button>
+
+      <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-lg p-2.5" style={{ background: "#F4F2EC" }}>
+          <Icon size={20} color="#5F5B50" />
+        </div>
+        <div>
+          <div className="text-[17px] font-semibold text-stone-900">{sys.name}</div>
+          <div className="text-[12px] text-stone-400">{meta.label} · {sys.location}</div>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+        <LedgerRow label="Installed" value={new Date(sys.purchaseDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })} />
+        <LedgerRow label="Purchase price" value={money(sys.purchasePrice)} />
+        <LedgerRow label="Expected life" value={`${sys.expectedLifeYears} years`} />
+        <LedgerRow label="Est. replacement" value={`${money(sys.replacementCost)}, ${repYear}`} />
+        <LedgerRow
+          label="Warranty"
+          value={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? "Active" : "Expired"}
+          valueColor={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? STATUS_COLOR.green : STATUS_COLOR.red}
+        />
+      </div>
+
+      <div className="rounded-xl p-3 mb-4" style={{ background: STATUS_BG.yellow, border: "1px solid #F0DDB3" }}>
+        <div className="text-[11px]" style={{ color: STATUS_COLOR.yellow, fontWeight: 600 }}>Recommended savings</div>
+        <div className="text-[15px] tabular-nums" style={{ color: STATUS_COLOR.yellow, fontWeight: 600 }}>{money(reserve)}/mo toward replacement</div>
+      </div>
+
+      <div className="text-[12px] font-semibold text-stone-500 mb-1">Upcoming tasks</div>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+        {tasks.length === 0 && <div className="py-3 text-[13px] text-stone-400">No tasks scheduled.</div>}
+        {tasks.map((t) => (
+          <LedgerRow key={t.id} label={t.title} value={new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
+        ))}
+      </div>
+
+      <div className="text-[12px] font-semibold text-stone-500 mb-1">Documents</div>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+        {documents.length === 0 && <div className="py-3 text-[13px] text-stone-400">No documents attached.</div>}
+        {documents.map((d) => (
+          <LedgerRow key={d.id} label={d.label} sub={d.type} value="" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[17px] font-semibold text-stone-900">Tasks</div>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+          <Plus size={16} color="white" />
+        </button>
+      </div>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+        {tasks.map((t) => {
+          const sys = systemById(t.systemId);
+          const days = daysUntil(t.dueDate);
+          return (
+            <div key={t.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: "1px solid #EAE7DE" }}>
+              <button onClick={() => onToggle(t.id)} className="flex items-center gap-2.5 text-left min-w-0">
+                <div
+                  className="flex-shrink-0 rounded-full"
+                  style={{ width: 18, height: 18, border: "1.5px solid #C9C5B8" }}
+                />
+                <div className="min-w-0">
+                  <div className="text-[13.5px] text-stone-800 truncate">{t.title}</div>
+                  <div className="text-[11.5px] text-stone-400">{sys ? sys.name : "General"}</div>
+                </div>
+              </button>
+              <div
+                className="text-[12px] tabular-nums flex-shrink-0 pl-2"
+                style={{ color: days < 0 ? STATUS_COLOR.red : days <= 14 ? STATUS_COLOR.yellow : "#9C978C" }}
+              >
+                {days < 0 ? `${Math.abs(days)}d overdue` : `in ${days}d`}
+              </div>
+            </div>
+          );
+        })}
+        {tasks.length === 0 && <div className="py-3 text-[13px] text-stone-400">No open tasks.</div>}
+      </div>
+
+      {completed.length > 0 && (
+        <>
+          <div className="text-[12px] font-semibold text-stone-500 mb-1">Completed</div>
+          <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+            {completed.map((t) => (
+              <div key={t.id} className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: "1px solid #EAE7DE" }}>
+                <Check size={15} color={STATUS_COLOR.green} />
+                <span className="text-[13px] text-stone-400 line-through">{t.title}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CostsScreen({ expenses, forecast, systemById, onAdd }) {
+  const maxAmt = Math.max(...forecast.map((f) => f.amount), 1);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[17px] font-semibold text-stone-900">Costs</div>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+          <Plus size={16} color="white" />
+        </button>
+      </div>
+
+      <div className="text-[12px] font-semibold text-stone-500 mb-1">5-year forecast</div>
+      <div className="rounded-xl bg-white p-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+        {forecast.map((f) => (
+          <div key={f.year} className="flex items-center gap-2 mb-2">
+            <div className="text-[12px] w-9 text-stone-500">{f.year}</div>
+            <div className="flex-1 rounded" style={{ background: "#EFEDE6", height: 16 }}>
+              <div
+                className="h-full rounded"
+                style={{ width: `${Math.max(6, (f.amount / maxAmt) * 100)}%`, background: "#2B4C55" }}
+              />
+            </div>
+            <div className="text-[12px] tabular-nums w-16 text-right text-stone-800">{money(f.amount)}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="text-[12px] font-semibold text-stone-500 mb-1">Expense log</div>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+        {expenses
+          .slice()
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map((e) => {
+            const sys = systemById(e.systemId);
+            return (
+              <LedgerRow
+                key={e.id}
+                label={e.note}
+                sub={`${e.category}${sys ? " · " + sys.name : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                value={money(e.amount)}
+              />
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+function DocsScreen({ documents, systemById, onAdd }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[17px] font-semibold text-stone-900">Documents</div>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+          <Plus size={16} color="white" />
+        </button>
+      </div>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+        {documents.map((d) => {
+          const sys = systemById(d.systemId);
+          return (
+            <div key={d.id} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid #EAE7DE" }}>
+              <FileText size={17} color="#5F5B50" />
+              <div>
+                <div className="text-[13.5px] text-stone-800">{d.label}</div>
+                <div className="text-[11.5px] text-stone-400">{d.type}{sys ? " · " + sys.name : ""}</div>
+              </div>
+            </div>
+          );
+        })}
+        {documents.length === 0 && <div className="py-3 text-[13px] text-stone-400">No documents yet.</div>}
+      </div>
+    </div>
+  );
+}
+
+function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocument }) {
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("2026-10-01");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("Maintenance");
+  const [systemId, setSystemId] = useState(systems[0]?.id || "");
+  const [docType, setDocType] = useState("Receipt");
+  const [error, setError] = useState("");
+
+  const titles = { task: "Add task", expense: "Add expense", system: "Add system", doc: "Add document" };
+
+  function handleSubmit() {
+    if (kind === "task") {
+      if (!title.trim()) return setError("Enter a task name.");
+      onAddTask(title.trim(), dueDate, systemId);
+    } else if (kind === "expense") {
+      const num = parseFloat(amount);
+      if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
+      onAddExpense(num, category, title.trim() || category, systemId);
+    } else if (kind === "doc") {
+      if (!title.trim()) return setError("Enter a document label.");
+      onAddDocument(title.trim(), docType, systemId);
+    } else if (kind === "system") {
+      setError("Adding new system types is coming in the next build.");
+    }
+  }
+
+  return (
+    <div
+      className="flex items-end"
+      style={{ position: "absolute", inset: 0, background: "rgba(28,42,51,0.35)", borderRadius: 28 }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full bg-white p-4"
+        style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, border: "1px solid #E4E1D6" }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[15px] font-semibold text-stone-900">{titles[kind]}</div>
+          <button onClick={onClose}>
+            <X size={18} color="#9C978C" />
+          </button>
+        </div>
+
+        {(kind === "task" || kind === "doc") && (
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={kind === "task" ? "e.g. Replace air filter" : "e.g. Water heater receipt"}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E4E1D6" }}
+          />
+        )}
+
+        {kind === "task" && (
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E4E1D6" }}
+          />
+        )}
+
+        {kind === "expense" && (
+          <>
+            <input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Amount"
+              inputMode="decimal"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E4E1D6" }}
+            />
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Note (e.g. Gutter cleaning)"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E4E1D6" }}
+            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E4E1D6" }}
+            >
+              <option>Maintenance</option>
+              <option>Repair</option>
+              <option>Replacement</option>
+              <option>Inspection</option>
+            </select>
+          </>
+        )}
+
+        {kind === "doc" && (
+          <select
+            value={docType}
+            onChange={(e) => setDocType(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E4E1D6" }}
+          >
+            <option>Receipt</option>
+            <option>Warranty</option>
+            <option>Invoice</option>
+            <option>Manual</option>
+          </select>
+        )}
+
+        {(kind === "task" || kind === "expense" || kind === "doc") && (
+          <select
+            value={systemId}
+            onChange={(e) => setSystemId(e.target.value)}
+            className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E4E1D6" }}
+          >
+            {systems.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+
+        {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}
+
+        <button
+          onClick={handleSubmit}
+          className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
+          style={{ background: "#1C2A33", color: "white" }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
