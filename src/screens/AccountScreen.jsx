@@ -1,10 +1,18 @@
-import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
+import { Pencil, ChevronRight } from "lucide-react";
+import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
 import LedgerRow from "../components/LedgerRow.jsx";
 
-export default function AccountScreen({ profile, onEdit }) {
+export default function AccountScreen({ profile, onEdit, onManagePlan }) {
+  const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
+
   return (
     <div>
-      <div className="text-[17px] font-semibold text-stone-900 mb-4">Account</div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-[17px] font-semibold text-stone-900">Account</div>
+        <button onClick={onEdit} className="flex items-center gap-1 text-[13px] font-semibold" style={{ color: PRIMARY }}>
+          <Pencil size={14} /> Edit
+        </button>
+      </div>
 
       <div className="flex flex-col items-center mb-5">
         <div
@@ -20,16 +28,19 @@ export default function AccountScreen({ profile, onEdit }) {
       <div className="text-[12px] font-semibold text-stone-500 mb-1">Home</div>
       <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
         <LedgerRow label="Address" value={profile.address} />
-        <LedgerRow label="Plan" value="Free" />
+        <button
+          onClick={onManagePlan}
+          className="w-full flex items-center justify-between py-2.5 text-left"
+          style={{ borderBottom: "1px solid #E7EEDB" }}
+        >
+          <div className="text-[13.5px] text-stone-800">Plan</div>
+          <div className="flex items-center gap-1">
+            <span className="text-[13.5px] tabular-nums font-semibold" style={{ color: PRIMARY }}>{planName}</span>
+            <ChevronRight size={15} color="#B8B4A8" />
+          </div>
+        </button>
       </div>
 
-      <button
-        onClick={onEdit}
-        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold mb-2"
-        style={{ background: PRIMARY, color: "white" }}
-      >
-        Edit profile
-      </button>
       <button
         className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
         style={{ border: "1px solid #E0E8D3", color: STATUS_COLOR.red }}

@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import TabBar from "../components/TabBar.jsx";
-import EditProfileSheet from "../components/EditProfileSheet.jsx";
 import HomeScreen from "../screens/HomeScreen.jsx";
 import SystemsScreen from "../screens/SystemsScreen.jsx";
 import SystemDetail from "../screens/SystemDetail.jsx";
@@ -12,6 +11,8 @@ import DocsScreen from "../screens/DocsScreen.jsx";
 import AccountScreen from "../screens/AccountScreen.jsx";
 import FurnitureScreen from "../screens/FurnitureScreen.jsx";
 import ItemFormScreen from "../screens/ItemFormScreen.jsx";
+import EditProfileScreen from "../screens/EditProfileScreen.jsx";
+import PlanScreen from "../screens/PlanScreen.jsx";
 
 const seedSystems = [
   { id: "sys1", brand: "Carrier", model: "Infinity", category: "hvac", location: "Attic", purchaseDate: "2021-06-01", purchasePrice: 8400, expectedLifeYears: 15, replacementCost: 10000, warrantyExpiration: "2031-06-01" },
@@ -73,8 +74,13 @@ export default function MyHouseOS() {
   const [furniture, setFurniture] = useState(saved?.furniture || seedFurniture);
   const [selectedSystem, setSelectedSystem] = useState(null);
   const [formItem, setFormItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc' | 'furniture', item: object | null }
-  const [profile, setProfile] = useState(saved?.profile || { name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
-  const [editingProfile, setEditingProfile] = useState(false);
+  const [profile, setProfile] = useState({
+    name: "Alex Carter",
+    email: "alex@example.com",
+    address: "123 Main St, Atlanta, GA",
+    plan: "free",
+    ...saved?.profile,
+  });
 
   useEffect(() => {
     try {
@@ -134,6 +140,11 @@ export default function MyHouseOS() {
   function openEdit(kind, item) {
     setSlideDirection("right");
     setFormItem({ kind, item });
+  }
+
+  function openPlan() {
+    setSlideDirection("right");
+    setFormItem({ kind: "plan", item: null });
   }
 
   function closeForm() {
@@ -235,8 +246,13 @@ export default function MyHouseOS() {
   }
 
   function saveProfile(next) {
-    setProfile(next);
-    setEditingProfile(false);
+    setProfile((p) => ({ ...p, ...next }));
+    closeForm();
+  }
+
+  function selectPlan(planId) {
+    setProfile((p) => ({ ...p, plan: planId }));
+    closeForm();
   }
 
   return (
@@ -257,7 +273,11 @@ export default function MyHouseOS() {
           key={formItem ? `${tab}:form:${formItem.kind}:${formItem.item?.id ?? "new"}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
           className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}
         >
-          {formItem ? (
+          {formItem?.kind === "profile" ? (
+            <EditProfileScreen profile={profile} onBack={closeForm} onSave={saveProfile} />
+          ) : formItem?.kind === "plan" ? (
+            <PlanScreen currentPlan={profile.plan} onBack={closeForm} onSelectPlan={selectPlan} />
+          ) : formItem ? (
             <ItemFormScreen
               kind={formItem.kind}
               item={formItem.item}
@@ -351,7 +371,11 @@ export default function MyHouseOS() {
                 />
               )}
               {tab === "account" && (
-                <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
+                <AccountScreen
+                  profile={profile}
+                  onEdit={() => openEdit("profile", null)}
+                  onManagePlan={openPlan}
+                />
               )}
             </>
           )}
@@ -366,14 +390,6 @@ export default function MyHouseOS() {
           setFormItem(null);
         }}
       />
-
-      {editingProfile && (
-        <EditProfileSheet
-          profile={profile}
-          onClose={() => setEditingProfile(false)}
-          onSave={saveProfile}
-        />
-      )}
     </div>
   );
 }

@@ -29,3 +29,35 @@ export const STATUS_BG = {
   yellow: "#FAEEDA",
   red: "#FCEBEB",
 };
+
+export const PLANS = [
+  {
+    id: "free",
+    name: "Free",
+    price: "$0",
+    period: "",
+    features: ["1 property", "10 appliances/systems", "Basic maintenance"],
+  },
+  {
+    id: "plus",
+    name: "Plus",
+    price: "$4.99",
+    period: "/month",
+    features: ["Unlimited systems", "Unlimited documents", "Cost forecasting", "Advanced reminders", "Cloud backup"],
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: "$49.99",
+    period: "/year",
+    features: ["Everything in Plus", "Billed annually — about 2 months free vs. monthly"],
+    highlight: true,
+  },
+  {
+    id: "lifetime",
+    name: "Lifetime",
+    price: "$79.99",
+    period: " once",
+    features: ["Everything in Premium", "One-time payment, no recurring billing"],
+  },
+];
