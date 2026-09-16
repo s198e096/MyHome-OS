@@ -157,7 +157,8 @@ export default function MyHouseOS() {
   const [expenses, setExpenses] = useState(seedExpenses);
   const [documents, setDocuments] = useState(seedDocuments);
   const [selectedSystem, setSelectedSystem] = useState(null);
-  const [addSheet, setAddSheet] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object | null }
+  const [addSheet, setAddSheet] = useState(null); // 'task' | 'expense' | 'system' | 'doc'
+  const [editItem, setEditItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object }
   const [profile, setProfile] = useState({ name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
   const [editingProfile, setEditingProfile] = useState(false);
 
@@ -220,12 +221,12 @@ export default function MyHouseOS() {
 
   function updateTask(id, patch) {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function deleteTask(id) {
     setTasks((ts) => ts.filter((t) => t.id !== id));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function addExpense(amount, category, note, systemId) {
@@ -238,12 +239,12 @@ export default function MyHouseOS() {
 
   function updateExpense(id, patch) {
     setExpenses((es) => es.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function deleteExpense(id) {
     setExpenses((es) => es.filter((e) => e.id !== id));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function addDocument(label, type, systemId) {
@@ -253,12 +254,12 @@ export default function MyHouseOS() {
 
   function updateDocument(id, patch) {
     setDocuments((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function deleteDocument(id) {
     setDocuments((ds) => ds.filter((d) => d.id !== id));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function addSystem(sys) {
@@ -269,13 +270,13 @@ export default function MyHouseOS() {
   function updateSystem(id, patch) {
     setSystems((ss) => ss.map((s) => (s.id === id ? { ...s, ...patch } : s)));
     setSelectedSystem((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
-    setAddSheet(null);
+    setEditItem(null);
   }
 
   function deleteSystem(id) {
     setSystems((ss) => ss.filter((s) => s.id !== id));
-    setSelectedSystem((cur) => (cur && cur.id === id ? null : cur));
-    setAddSheet(null);
+    setSelectedSystem(null);
+    setEditItem(null);
   }
 
   function saveProfile(next) {
@@ -298,71 +299,89 @@ export default function MyHouseOS() {
     >
       <div style={{ height: 560, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
         <div key={tab} className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}>
-          {tab === "home" && (
-            <HomeScreen
-              upcomingTasks={upcomingTasks}
-              systemById={systemById}
+          {editItem ? (
+            <EditScreen
+              kind={editItem.kind}
+              item={editItem.item}
               systems={systems}
-              tasks={tasks}
-              spentThisYear={spentThisYear}
-              next12mo={next12mo}
-              monthlyReserve={monthlyReserve}
-              profile={profile}
-              onOpenSystem={(s) => {
-                setSelectedSystem(s);
-                goToTab("systems");
-              }}
-              onOpenAccount={() => goToTab("account")}
-              onNavigate={goToTab}
+              onBack={() => setEditItem(null)}
+              onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
+              onUpdateExpense={updateExpense}
+              onDeleteExpense={deleteExpense}
+              onUpdateDocument={updateDocument}
+              onDeleteDocument={deleteDocument}
+              onUpdateSystem={updateSystem}
+              onDeleteSystem={deleteSystem}
             />
-          )}
-          {tab === "systems" && !selectedSystem && (
-            <SystemsScreen
-              systems={systems}
-              tasks={tasks}
-              onSelect={setSelectedSystem}
-              onAdd={() => setAddSheet({ kind: "system", item: null })}
-            />
-          )}
-          {tab === "systems" && selectedSystem && (
-            <SystemDetail
-              sys={selectedSystem}
-              tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
-              documents={documents.filter((d) => d.systemId === selectedSystem.id)}
-              onBack={() => setSelectedSystem(null)}
-              onEdit={() => setAddSheet({ kind: "system", item: selectedSystem })}
-              onDelete={() => deleteSystem(selectedSystem.id)}
-            />
-          )}
-          {tab === "tasks" && (
-            <TasksScreen
-              tasks={upcomingTasks}
-              completed={tasks.filter((t) => t.completed)}
-              systemById={systemById}
-              onToggle={toggleTask}
-              onEdit={(t) => setAddSheet({ kind: "task", item: t })}
-              onAdd={() => setAddSheet({ kind: "task", item: null })}
-            />
-          )}
-          {tab === "costs" && (
-            <CostsScreen
-              expenses={expenses}
-              forecast={forecast}
-              systemById={systemById}
-              onEdit={(e) => setAddSheet({ kind: "expense", item: e })}
-              onAdd={() => setAddSheet({ kind: "expense", item: null })}
-            />
-          )}
-          {tab === "docs" && (
-            <DocsScreen
-              documents={documents}
-              systemById={systemById}
-              onEdit={(d) => setAddSheet({ kind: "doc", item: d })}
-              onAdd={() => setAddSheet({ kind: "doc", item: null })}
-            />
-          )}
-          {tab === "account" && (
-            <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
+          ) : (
+            <>
+              {tab === "home" && (
+                <HomeScreen
+                  upcomingTasks={upcomingTasks}
+                  systemById={systemById}
+                  systems={systems}
+                  tasks={tasks}
+                  spentThisYear={spentThisYear}
+                  next12mo={next12mo}
+                  monthlyReserve={monthlyReserve}
+                  profile={profile}
+                  onOpenSystem={(s) => {
+                    setSelectedSystem(s);
+                    goToTab("systems");
+                  }}
+                  onOpenAccount={() => goToTab("account")}
+                  onNavigate={goToTab}
+                />
+              )}
+              {tab === "systems" && !selectedSystem && (
+                <SystemsScreen
+                  systems={systems}
+                  tasks={tasks}
+                  onSelect={setSelectedSystem}
+                  onAdd={() => setAddSheet("system")}
+                />
+              )}
+              {tab === "systems" && selectedSystem && (
+                <SystemDetail
+                  sys={selectedSystem}
+                  tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
+                  documents={documents.filter((d) => d.systemId === selectedSystem.id)}
+                  onBack={() => setSelectedSystem(null)}
+                  onEdit={() => setEditItem({ kind: "system", item: selectedSystem })}
+                />
+              )}
+              {tab === "tasks" && (
+                <TasksScreen
+                  tasks={upcomingTasks}
+                  completed={tasks.filter((t) => t.completed)}
+                  systemById={systemById}
+                  onToggle={toggleTask}
+                  onEdit={(t) => setEditItem({ kind: "task", item: t })}
+                  onAdd={() => setAddSheet("task")}
+                />
+              )}
+              {tab === "costs" && (
+                <CostsScreen
+                  expenses={expenses}
+                  forecast={forecast}
+                  systemById={systemById}
+                  onEdit={(e) => setEditItem({ kind: "expense", item: e })}
+                  onAdd={() => setAddSheet("expense")}
+                />
+              )}
+              {tab === "docs" && (
+                <DocsScreen
+                  documents={documents}
+                  systemById={systemById}
+                  onEdit={(d) => setEditItem({ kind: "doc", item: d })}
+                  onAdd={() => setAddSheet("doc")}
+                />
+              )}
+              {tab === "account" && (
+                <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -377,22 +396,13 @@ export default function MyHouseOS() {
 
       {addSheet && (
         <AddSheet
-          kind={addSheet.kind}
-          item={addSheet.item}
+          kind={addSheet}
           systems={systems}
           onClose={() => setAddSheet(null)}
           onAddTask={addTask}
-          onUpdateTask={updateTask}
-          onDeleteTask={deleteTask}
           onAddExpense={addExpense}
-          onUpdateExpense={updateExpense}
-          onDeleteExpense={deleteExpense}
           onAddDocument={addDocument}
-          onUpdateDocument={updateDocument}
-          onDeleteDocument={deleteDocument}
           onAddSystem={addSystem}
-          onUpdateSystem={updateSystem}
-          onDeleteSystem={deleteSystem}
         />
       )}
 
@@ -666,8 +676,7 @@ function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
   );
 }
 
-function SystemDetail({ sys, tasks, documents, onBack, onEdit, onDelete }) {
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+function SystemDetail({ sys, tasks, documents, onBack, onEdit }) {
   const meta = CATEGORY_META[sys.category];
   const Icon = meta.icon;
   const repYear = replacementYear(sys);
@@ -727,18 +736,6 @@ function SystemDetail({ sys, tasks, documents, onBack, onEdit, onDelete }) {
           <LedgerRow key={d.id} label={d.label} sub={d.type} value="" />
         ))}
       </div>
-
-      <button
-        onClick={() => (confirmingDelete ? onDelete() : setConfirmingDelete(true))}
-        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
-        style={{
-          border: "1px solid #F0C9C9",
-          color: STATUS_COLOR.red,
-          background: confirmingDelete ? STATUS_BG.red : "white",
-        }}
-      >
-        {confirmingDelete ? "Tap again to delete this system" : "Delete system"}
-      </button>
     </div>
   );
 }
@@ -991,60 +988,214 @@ function EditProfileSheet({ profile, onClose, onSave }) {
   );
 }
 
-function AddSheet({
-  kind,
-  item,
-  systems,
-  onClose,
-  onAddTask, onUpdateTask, onDeleteTask,
-  onAddExpense, onUpdateExpense, onDeleteExpense,
-  onAddDocument, onUpdateDocument, onDeleteDocument,
-  onAddSystem, onUpdateSystem, onDeleteSystem,
+const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document" };
+
+function ItemFields({
+  kind, systems,
+  title, setTitle,
+  dueDate, setDueDate,
+  amount, setAmount,
+  category, setCategory,
+  systemId, setSystemId,
+  docType, setDocType,
+  sysName, setSysName,
+  sysCategory, setSysCategory,
+  sysLocation, setSysLocation,
+  sysPurchaseDate, setSysPurchaseDate,
+  sysPurchasePrice, setSysPurchasePrice,
+  sysLifeYears, setSysLifeYears,
+  sysReplacementCost, setSysReplacementCost,
+  sysWarranty, setSysWarranty,
 }) {
-  const isEdit = !!item;
+  return (
+    <>
+      {(kind === "task" || kind === "doc") && (
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={kind === "task" ? "e.g. Replace air filter" : "e.g. Water heater receipt"}
+          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        />
+      )}
 
-  const [title, setTitle] = useState(kind === "expense" ? item?.note || "" : item?.title || item?.label || "");
-  const [dueDate, setDueDate] = useState(item?.dueDate || "2026-10-01");
-  const [amount, setAmount] = useState(item?.amount != null ? String(item.amount) : "");
-  const [category, setCategory] = useState(item?.category || "Maintenance");
-  const [systemId, setSystemId] = useState(isEdit ? item.systemId || "" : systems[0]?.id || "");
-  const [docType, setDocType] = useState(item?.type || "Receipt");
+      {kind === "task" && (
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        />
+      )}
 
-  const [sysName, setSysName] = useState(item?.name || "");
-  const [sysCategory, setSysCategory] = useState(item?.category || Object.keys(CATEGORY_META)[0]);
-  const [sysLocation, setSysLocation] = useState(item?.location || "");
-  const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "2026-01-01");
-  const [sysPurchasePrice, setSysPurchasePrice] = useState(item?.purchasePrice != null ? String(item.purchasePrice) : "");
-  const [sysLifeYears, setSysLifeYears] = useState(item?.expectedLifeYears != null ? String(item.expectedLifeYears) : "10");
-  const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
-  const [sysWarranty, setSysWarranty] = useState(item?.warrantyExpiration || "");
+      {kind === "expense" && (
+        <>
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+            inputMode="decimal"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Note (e.g. Gutter cleaning)"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          >
+            <option>Maintenance</option>
+            <option>Repair</option>
+            <option>Replacement</option>
+            <option>Inspection</option>
+          </select>
+        </>
+      )}
+
+      {kind === "doc" && (
+        <select
+          value={docType}
+          onChange={(e) => setDocType(e.target.value)}
+          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        >
+          <option>Receipt</option>
+          <option>Warranty</option>
+          <option>Invoice</option>
+          <option>Manual</option>
+        </select>
+      )}
+
+      {(kind === "task" || kind === "expense" || kind === "doc") && (
+        <select
+          value={systemId}
+          onChange={(e) => setSystemId(e.target.value)}
+          className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        >
+          <option value="">General (no system)</option>
+          {systems.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      )}
+
+      {kind === "system" && (
+        <>
+          <input
+            value={sysName}
+            onChange={(e) => setSysName(e.target.value)}
+            placeholder="Name (e.g. Carrier Infinity)"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+          <select
+            value={sysCategory}
+            onChange={(e) => setSysCategory(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          >
+            {Object.entries(CATEGORY_META).map(([key, meta]) => (
+              <option key={key} value={key}>{meta.label}</option>
+            ))}
+          </select>
+          <input
+            value={sysLocation}
+            onChange={(e) => setSysLocation(e.target.value)}
+            placeholder="Location (e.g. Attic, Garage, Kitchen)"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+
+          <div className="text-[11px] text-stone-500 mb-1">Purchase date</div>
+          <input
+            type="date"
+            value={sysPurchaseDate}
+            onChange={(e) => setSysPurchaseDate(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+
+          <input
+            value={sysPurchasePrice}
+            onChange={(e) => setSysPurchasePrice(e.target.value)}
+            placeholder="Purchase price ($)"
+            inputMode="decimal"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+          <input
+            value={sysLifeYears}
+            onChange={(e) => setSysLifeYears(e.target.value)}
+            placeholder="Expected life (years)"
+            inputMode="numeric"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+          <input
+            value={sysReplacementCost}
+            onChange={(e) => setSysReplacementCost(e.target.value)}
+            placeholder="Estimated replacement cost ($)"
+            inputMode="decimal"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+
+          <div className="text-[11px] text-stone-500 mb-1">Warranty expiration (optional)</div>
+          <input
+            type="date"
+            value={sysWarranty}
+            onChange={(e) => setSysWarranty(e.target.value)}
+            className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocument, onAddSystem }) {
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("2026-10-01");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("Maintenance");
+  const [systemId, setSystemId] = useState(systems[0]?.id || "");
+  const [docType, setDocType] = useState("Receipt");
+
+  const [sysName, setSysName] = useState("");
+  const [sysCategory, setSysCategory] = useState(Object.keys(CATEGORY_META)[0]);
+  const [sysLocation, setSysLocation] = useState("");
+  const [sysPurchaseDate, setSysPurchaseDate] = useState("2026-01-01");
+  const [sysPurchasePrice, setSysPurchasePrice] = useState("");
+  const [sysLifeYears, setSysLifeYears] = useState("10");
+  const [sysReplacementCost, setSysReplacementCost] = useState("");
+  const [sysWarranty, setSysWarranty] = useState("");
 
   const [error, setError] = useState("");
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const nouns = { task: "task", expense: "expense", system: "system", doc: "document" };
-  const titles = {
-    task: isEdit ? "Edit task" : "Add task",
-    expense: isEdit ? "Edit expense" : "Add expense",
-    system: isEdit ? "Edit system" : "Add system",
-    doc: isEdit ? "Edit document" : "Add document",
-  };
+  const titles = { task: "Add task", expense: "Add expense", system: "Add system", doc: "Add document" };
 
   function handleSubmit() {
     const finalSystemId = systemId || null;
     if (kind === "task") {
       if (!title.trim()) return setError("Enter a task name.");
-      if (isEdit) onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId });
-      else onAddTask(title.trim(), dueDate, finalSystemId);
+      onAddTask(title.trim(), dueDate, finalSystemId);
     } else if (kind === "expense") {
       const num = parseFloat(amount);
       if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
-      if (isEdit) onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
-      else onAddExpense(num, category, title.trim() || category, finalSystemId);
+      onAddExpense(num, category, title.trim() || category, finalSystemId);
     } else if (kind === "doc") {
       if (!title.trim()) return setError("Enter a document label.");
-      if (isEdit) onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId });
-      else onAddDocument(title.trim(), docType, finalSystemId);
+      onAddDocument(title.trim(), docType, finalSystemId);
     } else if (kind === "system") {
       if (!sysName.trim()) return setError("Enter a system name.");
       if (!sysLocation.trim()) return setError("Enter a location.");
@@ -1055,7 +1206,7 @@ function AddSheet({
       const replCost = parseFloat(sysReplacementCost);
       if (!sysReplacementCost || isNaN(replCost) || replCost < 0) return setError("Enter a valid replacement cost.");
 
-      const payload = {
+      onAddSystem({
         name: sysName.trim(),
         category: sysCategory,
         location: sysLocation.trim(),
@@ -1064,21 +1215,8 @@ function AddSheet({
         expectedLifeYears: life,
         replacementCost: replCost,
         warrantyExpiration: sysWarranty,
-      };
-      if (isEdit) onUpdateSystem(item.id, payload);
-      else onAddSystem(payload);
+      });
     }
-  }
-
-  function handleDelete() {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
-    if (kind === "task") onDeleteTask(item.id);
-    else if (kind === "expense") onDeleteExpense(item.id);
-    else if (kind === "doc") onDeleteDocument(item.id);
-    else if (kind === "system") onDeleteSystem(item.id);
   }
 
   return (
@@ -1099,156 +1237,23 @@ function AddSheet({
           </button>
         </div>
 
-        {(kind === "task" || kind === "doc") && (
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === "task" ? "e.g. Replace air filter" : "e.g. Water heater receipt"}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E0E8D3" }}
-          />
-        )}
-
-        {kind === "task" && (
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E0E8D3" }}
-          />
-        )}
-
-        {kind === "expense" && (
-          <>
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Amount"
-              inputMode="decimal"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Note (e.g. Gutter cleaning)"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            >
-              <option>Maintenance</option>
-              <option>Repair</option>
-              <option>Replacement</option>
-              <option>Inspection</option>
-            </select>
-          </>
-        )}
-
-        {kind === "doc" && (
-          <select
-            value={docType}
-            onChange={(e) => setDocType(e.target.value)}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E0E8D3" }}
-          >
-            <option>Receipt</option>
-            <option>Warranty</option>
-            <option>Invoice</option>
-            <option>Manual</option>
-          </select>
-        )}
-
-        {(kind === "task" || kind === "expense" || kind === "doc") && (
-          <select
-            value={systemId}
-            onChange={(e) => setSystemId(e.target.value)}
-            className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E0E8D3" }}
-          >
-            <option value="">General (no system)</option>
-            {systems.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        )}
-
-        {kind === "system" && (
-          <>
-            <input
-              value={sysName}
-              onChange={(e) => setSysName(e.target.value)}
-              placeholder="Name (e.g. Carrier Infinity)"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-            <select
-              value={sysCategory}
-              onChange={(e) => setSysCategory(e.target.value)}
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            >
-              {Object.entries(CATEGORY_META).map(([key, meta]) => (
-                <option key={key} value={key}>{meta.label}</option>
-              ))}
-            </select>
-            <input
-              value={sysLocation}
-              onChange={(e) => setSysLocation(e.target.value)}
-              placeholder="Location (e.g. Attic, Garage, Kitchen)"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-
-            <div className="text-[11px] text-stone-500 mb-1">Purchase date</div>
-            <input
-              type="date"
-              value={sysPurchaseDate}
-              onChange={(e) => setSysPurchaseDate(e.target.value)}
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-
-            <input
-              value={sysPurchasePrice}
-              onChange={(e) => setSysPurchasePrice(e.target.value)}
-              placeholder="Purchase price ($)"
-              inputMode="decimal"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-            <input
-              value={sysLifeYears}
-              onChange={(e) => setSysLifeYears(e.target.value)}
-              placeholder="Expected life (years)"
-              inputMode="numeric"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-            <input
-              value={sysReplacementCost}
-              onChange={(e) => setSysReplacementCost(e.target.value)}
-              placeholder="Estimated replacement cost ($)"
-              inputMode="decimal"
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-
-            <div className="text-[11px] text-stone-500 mb-1">Warranty expiration (optional)</div>
-            <input
-              type="date"
-              value={sysWarranty}
-              onChange={(e) => setSysWarranty(e.target.value)}
-              className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E0E8D3" }}
-            />
-          </>
-        )}
+        <ItemFields
+          kind={kind} systems={systems}
+          title={title} setTitle={setTitle}
+          dueDate={dueDate} setDueDate={setDueDate}
+          amount={amount} setAmount={setAmount}
+          category={category} setCategory={setCategory}
+          systemId={systemId} setSystemId={setSystemId}
+          docType={docType} setDocType={setDocType}
+          sysName={sysName} setSysName={setSysName}
+          sysCategory={sysCategory} setSysCategory={setSysCategory}
+          sysLocation={sysLocation} setSysLocation={setSysLocation}
+          sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}
+          sysPurchasePrice={sysPurchasePrice} setSysPurchasePrice={setSysPurchasePrice}
+          sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
+          sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
+          sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
+        />
 
         {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}
 
@@ -1257,23 +1262,135 @@ function AddSheet({
           className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
           style={{ background: PRIMARY, color: "white" }}
         >
-          {isEdit ? "Save changes" : "Save"}
+          Save
         </button>
-
-        {isEdit && (
-          <button
-            onClick={handleDelete}
-            className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold mt-2"
-            style={{
-              border: "1px solid #F0C9C9",
-              color: STATUS_COLOR.red,
-              background: confirmingDelete ? STATUS_BG.red : "white",
-            }}
-          >
-            {confirmingDelete ? "Tap again to delete" : `Delete ${nouns[kind]}`}
-          </button>
-        )}
       </div>
+    </div>
+  );
+}
+
+function EditScreen({
+  kind, item, systems, onBack,
+  onUpdateTask, onDeleteTask,
+  onUpdateExpense, onDeleteExpense,
+  onUpdateDocument, onDeleteDocument,
+  onUpdateSystem, onDeleteSystem,
+}) {
+  const [title, setTitle] = useState(kind === "expense" ? item.note || "" : item.title || item.label || "");
+  const [dueDate, setDueDate] = useState(item.dueDate || "2026-10-01");
+  const [amount, setAmount] = useState(item.amount != null ? String(item.amount) : "");
+  const [category, setCategory] = useState(item.category || "Maintenance");
+  const [systemId, setSystemId] = useState(item.systemId || "");
+  const [docType, setDocType] = useState(item.type || "Receipt");
+
+  const [sysName, setSysName] = useState(item.name || "");
+  const [sysCategory, setSysCategory] = useState(item.category || Object.keys(CATEGORY_META)[0]);
+  const [sysLocation, setSysLocation] = useState(item.location || "");
+  const [sysPurchaseDate, setSysPurchaseDate] = useState(item.purchaseDate || "2026-01-01");
+  const [sysPurchasePrice, setSysPurchasePrice] = useState(item.purchasePrice != null ? String(item.purchasePrice) : "");
+  const [sysLifeYears, setSysLifeYears] = useState(item.expectedLifeYears != null ? String(item.expectedLifeYears) : "10");
+  const [sysReplacementCost, setSysReplacementCost] = useState(item.replacementCost != null ? String(item.replacementCost) : "");
+  const [sysWarranty, setSysWarranty] = useState(item.warrantyExpiration || "");
+
+  const [error, setError] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const titles = { task: "Edit task", expense: "Edit expense", system: "Edit system", doc: "Edit document" };
+  const backLabels = { task: "Tasks", expense: "Costs", doc: "Docs", system: item.name };
+
+  function handleSubmit() {
+    const finalSystemId = systemId || null;
+    if (kind === "task") {
+      if (!title.trim()) return setError("Enter a task name.");
+      onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId });
+    } else if (kind === "expense") {
+      const num = parseFloat(amount);
+      if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
+      onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
+    } else if (kind === "doc") {
+      if (!title.trim()) return setError("Enter a document label.");
+      onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId });
+    } else if (kind === "system") {
+      if (!sysName.trim()) return setError("Enter a system name.");
+      if (!sysLocation.trim()) return setError("Enter a location.");
+      const price = parseFloat(sysPurchasePrice);
+      if (!sysPurchasePrice || isNaN(price) || price < 0) return setError("Enter a valid purchase price.");
+      const life = parseInt(sysLifeYears, 10);
+      if (!sysLifeYears || isNaN(life) || life <= 0) return setError("Enter a valid expected life, in years.");
+      const replCost = parseFloat(sysReplacementCost);
+      if (!sysReplacementCost || isNaN(replCost) || replCost < 0) return setError("Enter a valid replacement cost.");
+
+      onUpdateSystem(item.id, {
+        name: sysName.trim(),
+        category: sysCategory,
+        location: sysLocation.trim(),
+        purchaseDate: sysPurchaseDate,
+        purchasePrice: price,
+        expectedLifeYears: life,
+        replacementCost: replCost,
+        warrantyExpiration: sysWarranty,
+      });
+    }
+  }
+
+  function handleDelete() {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    if (kind === "task") onDeleteTask(item.id);
+    else if (kind === "expense") onDeleteExpense(item.id);
+    else if (kind === "doc") onDeleteDocument(item.id);
+    else if (kind === "system") onDeleteSystem(item.id);
+  }
+
+  return (
+    <div>
+      <button onClick={onBack} className="flex items-center gap-1 mb-3 text-[13px] text-stone-500">
+        <ChevronLeft size={16} /> {backLabels[kind]}
+      </button>
+
+      <div className="text-[17px] font-semibold text-stone-900 mb-4">{titles[kind]}</div>
+
+      <ItemFields
+        kind={kind} systems={systems}
+        title={title} setTitle={setTitle}
+        dueDate={dueDate} setDueDate={setDueDate}
+        amount={amount} setAmount={setAmount}
+        category={category} setCategory={setCategory}
+        systemId={systemId} setSystemId={setSystemId}
+        docType={docType} setDocType={setDocType}
+        sysName={sysName} setSysName={setSysName}
+        sysCategory={sysCategory} setSysCategory={setSysCategory}
+        sysLocation={sysLocation} setSysLocation={setSysLocation}
+        sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}
+        sysPurchasePrice={sysPurchasePrice} setSysPurchasePrice={setSysPurchasePrice}
+        sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
+        sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
+        sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
+      />
+
+      {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}
+
+      <button
+        onClick={handleSubmit}
+        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
+        style={{ background: PRIMARY, color: "white" }}
+      >
+        Save changes
+      </button>
+
+      <button
+        onClick={handleDelete}
+        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold mt-2"
+        style={{
+          border: "1px solid #F0C9C9",
+          color: STATUS_COLOR.red,
+          background: confirmingDelete ? STATUS_BG.red : "white",
+        }}
+      >
+        {confirmingDelete ? "Tap again to delete" : `Delete ${KIND_NOUNS[kind]}`}
+      </button>
     </div>
   );
 }
