@@ -1,4 +1,5 @@
 import { CATEGORY_META, ROOMS } from "../lib/constants.js";
+import PhotoPicker from "./PhotoPicker.jsx";
 
 export default function ItemFields({
   kind, systems,
@@ -90,27 +91,7 @@ export default function ItemFields({
             <option>Manual</option>
           </select>
 
-          {photoUrl && (
-            <img
-              src={photoUrl}
-              alt=""
-              className="w-full mb-2 rounded-lg object-cover"
-              style={{ height: 120, border: "1px solid #E0E8D3" }}
-            />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => setPhotoUrl(reader.result);
-              reader.readAsDataURL(file);
-            }}
-            className="w-full mb-2 text-[12.5px]"
-          />
+          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
       )}
 
@@ -204,6 +185,8 @@ export default function ItemFields({
             className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
             style={{ border: "1px solid #E0E8D3" }}
           />
+
+          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
       )}
 
@@ -228,27 +211,7 @@ export default function ItemFields({
             style={{ border: "1px solid #E0E8D3" }}
           />
 
-          {photoUrl && (
-            <img
-              src={photoUrl}
-              alt=""
-              className="w-full mb-2 rounded-lg object-cover"
-              style={{ height: 120, border: "1px solid #E0E8D3" }}
-            />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => setPhotoUrl(reader.result);
-              reader.readAsDataURL(file);
-            }}
-            className="w-full mb-2 text-[12.5px]"
-          />
+          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
       )}
     </>

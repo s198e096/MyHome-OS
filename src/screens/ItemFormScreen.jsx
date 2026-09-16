@@ -103,6 +103,7 @@ export default function ItemFormScreen({
         expectedLifeYears: life,
         replacementCost: replCost,
         warrantyExpiration: sysWarranty,
+        photoUrl: photoUrl || null,
       };
       if (isEdit) onUpdateSystem(item.id, payload);
       else onAddSystem(payload);
@@ -126,6 +127,17 @@ export default function ItemFormScreen({
       <button onClick={onBack} className="flex items-center gap-1 mb-3 text-[13px] text-stone-500">
         <ChevronLeft size={16} /> {backLabels[kind]}
       </button>
+
+      {photoUrl && (kind === "system" || kind === "furniture" || kind === "doc") && (
+        <div className="rounded-xl bg-white p-2 mb-4" style={{ border: "1px solid #E0E8D3" }}>
+          <img
+            src={photoUrl}
+            alt=""
+            className="w-full rounded-lg object-cover"
+            style={{ height: 180 }}
+          />
+        </div>
+      )}
 
       <div className="text-[17px] font-semibold text-stone-900 mb-4">{titles[kind]}</div>
 

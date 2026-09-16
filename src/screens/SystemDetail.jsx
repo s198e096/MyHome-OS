@@ -21,6 +21,17 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) 
         </button>
       </div>
 
+      {sys.photoUrl && (
+        <div className="rounded-xl bg-white p-2 mb-4" style={{ border: "1px solid #E0E8D3" }}>
+          <img
+            src={sys.photoUrl}
+            alt=""
+            className="w-full rounded-lg object-cover"
+            style={{ height: 180 }}
+          />
+        </div>
+      )}
+
       <div className="flex items-center gap-3 mb-4">
         <div className="rounded-lg p-2.5" style={{ background: "#F5F8F0" }}>
           <Icon size={20} color="#5F5B50" />

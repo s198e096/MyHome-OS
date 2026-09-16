@@ -25,9 +25,18 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
               style={{ borderBottom: "1px solid #E7EEDB" }}
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-lg p-2" style={{ background: "#F5F8F0" }}>
-                  <Icon size={17} color="#5F5B50" />
-                </div>
+                {s.photoUrl ? (
+                  <img
+                    src={s.photoUrl}
+                    alt=""
+                    className="rounded-lg object-cover flex-shrink-0"
+                    style={{ width: 34, height: 34, border: "1px solid #E0E8D3" }}
+                  />
+                ) : (
+                  <div className="rounded-lg p-2" style={{ background: "#F5F8F0" }}>
+                    <Icon size={17} color="#5F5B50" />
+                  </div>
+                )}
                 <div className="text-left">
                   <div className="text-[13.5px] text-stone-800">{s.brand} {s.model}</div>
                   <div className="text-[11.5px] text-stone-400">{meta.label} · {s.location}</div>
