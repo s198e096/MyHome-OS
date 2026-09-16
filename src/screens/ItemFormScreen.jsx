@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { PRIMARY, STATUS_COLOR, STATUS_BG, CATEGORY_META } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, STATUS_BG, CATEGORY_META, ROOMS } from "../lib/constants.js";
 import ItemFields from "../components/ItemFields.jsx";
 
-const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document" };
+const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
 
 export default function ItemFormScreen({
   kind, item, systems, onBack,
@@ -11,16 +11,25 @@ export default function ItemFormScreen({
   onAddExpense, onUpdateExpense, onDeleteExpense,
   onAddDocument, onUpdateDocument, onDeleteDocument,
   onAddSystem, onUpdateSystem, onDeleteSystem,
+  onAddFurniture, onUpdateFurniture, onDeleteFurniture,
 }) {
   const isEdit = !!item;
 
-  const [title, setTitle] = useState(kind === "expense" ? item?.note || "" : item?.title || item?.label || "");
+  const [title, setTitle] = useState(
+    kind === "expense" ? item?.note || "" : kind === "furniture" ? item?.name || "" : item?.title || item?.label || ""
+  );
   const [dueDate, setDueDate] = useState(item?.dueDate || "2026-10-01");
-  const [amount, setAmount] = useState(item?.amount != null ? String(item.amount) : "");
-  const [category, setCategory] = useState(item?.category || "Maintenance");
+  const [amount, setAmount] = useState(
+    kind === "furniture"
+      ? item?.value != null ? String(item.value) : ""
+      : item?.amount != null ? String(item.amount) : ""
+  );
+  const [category, setCategory] = useState(
+    kind === "furniture" ? item?.room || ROOMS[0] : item?.category || "Maintenance"
+  );
   const [systemId, setSystemId] = useState(item ? item.systemId || "" : systems[0]?.id || "");
   const [docType, setDocType] = useState(item?.type || "Receipt");
-  const [docPhotoUrl, setDocPhotoUrl] = useState(item?.photoUrl || "");
+  const [photoUrl, setPhotoUrl] = useState(item?.photoUrl || "");
 
   const [sysBrand, setSysBrand] = useState(item?.brand || "");
   const [sysModel, setSysModel] = useState(item?.model || "");
@@ -40,12 +49,14 @@ export default function ItemFormScreen({
     expense: isEdit ? "Edit expense" : "Add expense",
     system: isEdit ? "Edit system" : "Add system",
     doc: isEdit ? "Edit document" : "Add document",
+    furniture: isEdit ? "Edit furniture" : "Add furniture",
   };
   const backLabels = {
     task: "Tasks",
     expense: "Costs",
     doc: "Docs",
     system: isEdit ? `${item.brand} ${item.model}` : "Systems",
+    furniture: "Furniture",
   };
 
   function handleSubmit() {
@@ -61,8 +72,16 @@ export default function ItemFormScreen({
       else onAddExpense(num, category, title.trim() || category, finalSystemId);
     } else if (kind === "doc") {
       if (!title.trim()) return setError("Enter a document label.");
-      if (isEdit) onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: docPhotoUrl || null });
-      else onAddDocument(title.trim(), docType, finalSystemId, docPhotoUrl);
+      if (isEdit) onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: photoUrl || null });
+      else onAddDocument(title.trim(), docType, finalSystemId, photoUrl);
+    } else if (kind === "furniture") {
+      if (!title.trim()) return setError("Enter a furniture item name.");
+      const val = parseFloat(amount);
+      if (!amount || isNaN(val) || val < 0) return setError("Enter a valid estimated value.");
+
+      const payload = { name: title.trim(), room: category, value: val, photoUrl: photoUrl || null };
+      if (isEdit) onUpdateFurniture(item.id, payload);
+      else onAddFurniture(payload);
     } else if (kind === "system") {
       if (!sysBrand.trim()) return setError("Enter a brand.");
       if (!sysModel.trim()) return setError("Enter a model.");
@@ -98,6 +117,7 @@ export default function ItemFormScreen({
     if (kind === "task") onDeleteTask(item.id);
     else if (kind === "expense") onDeleteExpense(item.id);
     else if (kind === "doc") onDeleteDocument(item.id);
+    else if (kind === "furniture") onDeleteFurniture(item.id);
     else if (kind === "system") onDeleteSystem(item.id);
   }
 
@@ -117,7 +137,7 @@ export default function ItemFormScreen({
         category={category} setCategory={setCategory}
         systemId={systemId} setSystemId={setSystemId}
         docType={docType} setDocType={setDocType}
-        docPhotoUrl={docPhotoUrl} setDocPhotoUrl={setDocPhotoUrl}
+        photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
         sysBrand={sysBrand} setSysBrand={setSysBrand}
         sysModel={sysModel} setSysModel={setSysModel}
         sysCategory={sysCategory} setSysCategory={setSysCategory}

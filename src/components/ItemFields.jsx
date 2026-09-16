@@ -1,4 +1,4 @@
-import { CATEGORY_META } from "../lib/constants.js";
+import { CATEGORY_META, ROOMS } from "../lib/constants.js";
 
 export default function ItemFields({
   kind, systems,
@@ -8,7 +8,7 @@ export default function ItemFields({
   category, setCategory,
   systemId, setSystemId,
   docType, setDocType,
-  docPhotoUrl, setDocPhotoUrl,
+  photoUrl, setPhotoUrl,
   sysBrand, setSysBrand,
   sysModel, setSysModel,
   sysCategory, setSysCategory,
@@ -21,11 +21,15 @@ export default function ItemFields({
 }) {
   return (
     <>
-      {(kind === "task" || kind === "doc") && (
+      {(kind === "task" || kind === "doc" || kind === "furniture") && (
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={kind === "task" ? "e.g. Replace air filter" : "e.g. Water heater receipt"}
+          placeholder={
+            kind === "task" ? "e.g. Replace air filter" :
+            kind === "furniture" ? "e.g. Sofa, Dining table" :
+            "e.g. Water heater receipt"
+          }
           className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
           style={{ border: "1px solid #E0E8D3" }}
         />
@@ -86,9 +90,9 @@ export default function ItemFields({
             <option>Manual</option>
           </select>
 
-          {docPhotoUrl && (
+          {photoUrl && (
             <img
-              src={docPhotoUrl}
+              src={photoUrl}
               alt=""
               className="w-full mb-2 rounded-lg object-cover"
               style={{ height: 120, border: "1px solid #E0E8D3" }}
@@ -97,11 +101,12 @@ export default function ItemFields({
           <input
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
               const reader = new FileReader();
-              reader.onload = () => setDocPhotoUrl(reader.result);
+              reader.onload = () => setPhotoUrl(reader.result);
               reader.readAsDataURL(file);
             }}
             className="w-full mb-2 text-[12.5px]"
@@ -198,6 +203,51 @@ export default function ItemFields({
             onChange={(e) => setSysWarranty(e.target.value)}
             className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
             style={{ border: "1px solid #E0E8D3" }}
+          />
+        </>
+      )}
+
+      {kind === "furniture" && (
+        <>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          >
+            {ROOMS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Estimated value ($)"
+            inputMode="decimal"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          />
+
+          {photoUrl && (
+            <img
+              src={photoUrl}
+              alt=""
+              className="w-full mb-2 rounded-lg object-cover"
+              style={{ height: 120, border: "1px solid #E0E8D3" }}
+            />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => setPhotoUrl(reader.result);
+              reader.readAsDataURL(file);
+            }}
+            className="w-full mb-2 text-[12.5px]"
           />
         </>
       )}

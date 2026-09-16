@@ -10,6 +10,7 @@ import TasksScreen from "../screens/TasksScreen.jsx";
 import CostsScreen from "../screens/CostsScreen.jsx";
 import DocsScreen from "../screens/DocsScreen.jsx";
 import AccountScreen from "../screens/AccountScreen.jsx";
+import FurnitureScreen from "../screens/FurnitureScreen.jsx";
 import ItemFormScreen from "../screens/ItemFormScreen.jsx";
 
 const seedSystems = [
@@ -40,6 +41,15 @@ const seedDocuments = [
   { id: "d4", systemId: "sys3", type: "Invoice", label: "Roof repair invoice" },
 ];
 
+const seedFurniture = [
+  { id: "f1", name: "Sectional Sofa", room: "Living Room", value: 1400, note: "Gray fabric, 3-piece", photoUrl: null },
+  { id: "f2", name: "Coffee Table", room: "Living Room", value: 280, note: "Reclaimed wood", photoUrl: null },
+  { id: "f3", name: "Dining Table & Chairs", room: "Dining Room", value: 850, note: "Seats 6, oak, set of 6 chairs", photoUrl: null },
+  { id: "f4", name: "Queen Bed Frame", room: "Bedroom", value: 600, note: "Upholstered headboard", photoUrl: null },
+  { id: "f5", name: "Dresser", room: "Bedroom", value: 420, note: "6-drawer, walnut finish", photoUrl: null },
+  { id: "f6", name: "Vanity Cabinet", room: "Bathroom", value: 350, note: "Double sink, marble top", photoUrl: null },
+];
+
 const STORAGE_KEY = "myhouse-os-state";
 
 function loadSavedState() {
@@ -60,18 +70,19 @@ export default function MyHouseOS() {
   const [tasks, setTasks] = useState(saved?.tasks || seedTasks);
   const [expenses, setExpenses] = useState(saved?.expenses || seedExpenses);
   const [documents, setDocuments] = useState(saved?.documents || seedDocuments);
+  const [furniture, setFurniture] = useState(saved?.furniture || seedFurniture);
   const [selectedSystem, setSelectedSystem] = useState(null);
-  const [formItem, setFormItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object | null }
+  const [formItem, setFormItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc' | 'furniture', item: object | null }
   const [profile, setProfile] = useState(saved?.profile || { name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
   const [editingProfile, setEditingProfile] = useState(false);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ systems, tasks, expenses, documents, profile }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ systems, tasks, expenses, documents, furniture, profile }));
     } catch {
       // storage unavailable or full — persistence is best-effort
     }
-  }, [systems, tasks, expenses, documents, profile]);
+  }, [systems, tasks, expenses, documents, furniture, profile]);
 
   const systemById = (id) => systems.find((s) => s.id === id);
 
@@ -190,6 +201,21 @@ export default function MyHouseOS() {
     closeForm();
   }
 
+  function addFurniture(item) {
+    setFurniture((fs) => [...fs, { id: "f" + Date.now(), ...item }]);
+    closeForm();
+  }
+
+  function updateFurniture(id, patch) {
+    setFurniture((fs) => fs.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    closeForm();
+  }
+
+  function deleteFurniture(id) {
+    setFurniture((fs) => fs.filter((f) => f.id !== id));
+    closeForm();
+  }
+
   function addSystem(sys) {
     setSystems((ss) => [...ss, { id: "sys" + Date.now(), ...sys }]);
     closeForm();
@@ -249,6 +275,9 @@ export default function MyHouseOS() {
               onAddSystem={addSystem}
               onUpdateSystem={updateSystem}
               onDeleteSystem={deleteSystem}
+              onAddFurniture={addFurniture}
+              onUpdateFurniture={updateFurniture}
+              onDeleteFurniture={deleteFurniture}
             />
           ) : (
             <>
@@ -268,6 +297,13 @@ export default function MyHouseOS() {
                   }}
                   onOpenAccount={() => goToTab("account")}
                   onNavigate={goToTab}
+                />
+              )}
+              {tab === "furniture" && (
+                <FurnitureScreen
+                  furniture={furniture}
+                  onEdit={(f) => openEdit("furniture", f)}
+                  onAdd={() => openAdd("furniture")}
                 />
               )}
               {tab === "systems" && !selectedSystem && (

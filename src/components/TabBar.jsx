@@ -1,9 +1,10 @@
-import { Home, Wrench, CalendarCheck, Banknote, FileText, User } from "lucide-react";
+import { Home, Sofa, Wrench, CalendarCheck, Banknote, FileText, User } from "lucide-react";
 import { PRIMARY } from "../lib/constants.js";
 
 export default function TabBar({ active, onChange }) {
   const tabs = [
     { id: "home", label: "Home", icon: Home },
+    { id: "furniture", label: "Furniture", icon: Sofa },
     { id: "systems", label: "Systems", icon: Wrench },
     { id: "tasks", label: "Tasks", icon: CalendarCheck },
     { id: "costs", label: "Costs", icon: Banknote },

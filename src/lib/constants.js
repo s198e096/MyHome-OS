@@ -5,7 +5,9 @@ export const HERO_BG_TOP = "#D3ECBC";
 export const HERO_BG_BOTTOM = "#BEE1A5";
 export const ACCENT_YELLOW = "#F3EA6B";
 
-export const TAB_ORDER = ["home", "systems", "tasks", "costs", "docs", "account"];
+export const TAB_ORDER = ["home", "furniture", "systems", "tasks", "costs", "docs", "account"];
+
+export const ROOMS = ["Living Room", "Dining Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Other"];
 
 export const CATEGORY_META = {
   hvac: { label: "HVAC", icon: Wind },
