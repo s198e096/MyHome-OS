@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
 @keyframes slide-in-right {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from { transform: translateX(100%); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slide-in-left {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from { transform: translateX(-100%); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .tab-slide-right {
-  animation: slide-in-right 0.25s ease-out;
+  animation: slide-in-right 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform, opacity;
 }
 
 .tab-slide-left {
-  animation: slide-in-left 0.25s ease-out;
+  animation: slide-in-left 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform, opacity;
 }

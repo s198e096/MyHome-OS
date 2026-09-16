@@ -202,6 +202,26 @@ export default function MyHouseOS() {
     setTab(next);
   }
 
+  function openSystem(s) {
+    setSlideDirection("right");
+    setSelectedSystem(s);
+  }
+
+  function closeSystem() {
+    setSlideDirection("left");
+    setSelectedSystem(null);
+  }
+
+  function openEdit(kind, item) {
+    setSlideDirection("right");
+    setEditItem({ kind, item });
+  }
+
+  function closeEdit() {
+    setSlideDirection("left");
+    setEditItem(null);
+  }
+
   function toggleTask(id) {
     setTasks((ts) =>
       ts.map((t) =>
@@ -221,12 +241,12 @@ export default function MyHouseOS() {
 
   function updateTask(id, patch) {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
-    setEditItem(null);
+    closeEdit();
   }
 
   function deleteTask(id) {
     setTasks((ts) => ts.filter((t) => t.id !== id));
-    setEditItem(null);
+    closeEdit();
   }
 
   function addExpense(amount, category, note, systemId) {
@@ -239,12 +259,12 @@ export default function MyHouseOS() {
 
   function updateExpense(id, patch) {
     setExpenses((es) => es.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-    setEditItem(null);
+    closeEdit();
   }
 
   function deleteExpense(id) {
     setExpenses((es) => es.filter((e) => e.id !== id));
-    setEditItem(null);
+    closeEdit();
   }
 
   function addDocument(label, type, systemId) {
@@ -254,12 +274,12 @@ export default function MyHouseOS() {
 
   function updateDocument(id, patch) {
     setDocuments((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-    setEditItem(null);
+    closeEdit();
   }
 
   function deleteDocument(id) {
     setDocuments((ds) => ds.filter((d) => d.id !== id));
-    setEditItem(null);
+    closeEdit();
   }
 
   function addSystem(sys) {
@@ -270,11 +290,12 @@ export default function MyHouseOS() {
   function updateSystem(id, patch) {
     setSystems((ss) => ss.map((s) => (s.id === id ? { ...s, ...patch } : s)));
     setSelectedSystem((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
-    setEditItem(null);
+    closeEdit();
   }
 
   function deleteSystem(id) {
     setSystems((ss) => ss.filter((s) => s.id !== id));
+    setSlideDirection("left");
     setSelectedSystem(null);
     setEditItem(null);
   }
@@ -298,13 +319,16 @@ export default function MyHouseOS() {
       }}
     >
       <div style={{ height: 560, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
-        <div key={tab} className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}>
+        <div
+          key={editItem ? `${tab}:edit:${editItem.kind}:${editItem.item.id}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
+          className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}
+        >
           {editItem ? (
             <EditScreen
               kind={editItem.kind}
               item={editItem.item}
               systems={systems}
-              onBack={() => setEditItem(null)}
+              onBack={closeEdit}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
               onUpdateExpense={updateExpense}
@@ -338,7 +362,7 @@ export default function MyHouseOS() {
                 <SystemsScreen
                   systems={systems}
                   tasks={tasks}
-                  onSelect={setSelectedSystem}
+                  onSelect={openSystem}
                   onAdd={() => setAddSheet("system")}
                 />
               )}
@@ -347,8 +371,8 @@ export default function MyHouseOS() {
                   sys={selectedSystem}
                   tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
                   documents={documents.filter((d) => d.systemId === selectedSystem.id)}
-                  onBack={() => setSelectedSystem(null)}
-                  onEdit={() => setEditItem({ kind: "system", item: selectedSystem })}
+                  onBack={closeSystem}
+                  onEdit={() => openEdit("system", selectedSystem)}
                 />
               )}
               {tab === "tasks" && (
@@ -357,7 +381,7 @@ export default function MyHouseOS() {
                   completed={tasks.filter((t) => t.completed)}
                   systemById={systemById}
                   onToggle={toggleTask}
-                  onEdit={(t) => setEditItem({ kind: "task", item: t })}
+                  onEdit={(t) => openEdit("task", t)}
                   onAdd={() => setAddSheet("task")}
                 />
               )}
@@ -366,7 +390,7 @@ export default function MyHouseOS() {
                   expenses={expenses}
                   forecast={forecast}
                   systemById={systemById}
-                  onEdit={(e) => setEditItem({ kind: "expense", item: e })}
+                  onEdit={(e) => openEdit("expense", e)}
                   onAdd={() => setAddSheet("expense")}
                 />
               )}
@@ -374,7 +398,7 @@ export default function MyHouseOS() {
                 <DocsScreen
                   documents={documents}
                   systemById={systemById}
-                  onEdit={(d) => setEditItem({ kind: "doc", item: d })}
+                  onEdit={(d) => openEdit("doc", d)}
                   onAdd={() => setAddSheet("doc")}
                 />
               )}
@@ -391,6 +415,7 @@ export default function MyHouseOS() {
         onChange={(t) => {
           goToTab(t);
           setSelectedSystem(null);
+          setEditItem(null);
         }}
       />
 
