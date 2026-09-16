@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.tab-slide-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+
+.tab-slide-left {
+  animation: slide-in-left 0.25s ease-out;
+}

@@ -12,6 +12,8 @@ const ACCENT_YELLOW = "#F3EA6B";
 
 const TODAY = new Date("2026-09-14");
 
+const TAB_ORDER = ["home", "systems", "tasks", "costs", "docs", "account"];
+
 const CATEGORY_META = {
   hvac: { label: "HVAC", icon: Wind },
   water_heater: { label: "Water heater", icon: Droplet },
@@ -149,6 +151,7 @@ function StatusDot({ status }) {
 
 export default function MyHouseOS() {
   const [tab, setTab] = useState("home");
+  const [slideDirection, setSlideDirection] = useState("right");
   const [systems, setSystems] = useState(seedSystems);
   const [tasks, setTasks] = useState(seedTasks);
   const [expenses, setExpenses] = useState(seedExpenses);
@@ -192,6 +195,11 @@ export default function MyHouseOS() {
   const monthlyReserve = Math.round(
     forecast.reduce((s, f) => s + f.amount, 0) / (forecast.length * 12)
   );
+
+  function goToTab(next) {
+    setSlideDirection(TAB_ORDER.indexOf(next) >= TAB_ORDER.indexOf(tab) ? "right" : "left");
+    setTab(next);
+  }
 
   function toggleTask(id) {
     setTasks((ts) =>
@@ -241,69 +249,72 @@ export default function MyHouseOS() {
         fontFamily: "ui-sans-serif, system-ui, sans-serif",
       }}
     >
-      <div style={{ height: 560, overflowY: "auto" }} className="px-4 pt-5 pb-4">
-        {tab === "home" && (
-          <HomeScreen
-            upcomingTasks={upcomingTasks}
-            systemById={systemById}
-            systems={systems}
-            tasks={tasks}
-            spentThisYear={spentThisYear}
-            next12mo={next12mo}
-            monthlyReserve={monthlyReserve}
-            profile={profile}
-            onOpenSystem={(s) => {
-              setSelectedSystem(s);
-              setTab("systems");
-            }}
-            onOpenAccount={() => setTab("account")}
-          />
-        )}
-        {tab === "systems" && !selectedSystem && (
-          <SystemsScreen
-            systems={systems}
-            tasks={tasks}
-            onSelect={setSelectedSystem}
-            onAdd={() => setAddSheet("system")}
-          />
-        )}
-        {tab === "systems" && selectedSystem && (
-          <SystemDetail
-            sys={selectedSystem}
-            tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
-            documents={documents.filter((d) => d.systemId === selectedSystem.id)}
-            onBack={() => setSelectedSystem(null)}
-          />
-        )}
-        {tab === "tasks" && (
-          <TasksScreen
-            tasks={upcomingTasks}
-            completed={tasks.filter((t) => t.completed)}
-            systemById={systemById}
-            onToggle={toggleTask}
-            onAdd={() => setAddSheet("task")}
-          />
-        )}
-        {tab === "costs" && (
-          <CostsScreen
-            expenses={expenses}
-            forecast={forecast}
-            systemById={systemById}
-            onAdd={() => setAddSheet("expense")}
-          />
-        )}
-        {tab === "docs" && (
-          <DocsScreen documents={documents} systemById={systemById} onAdd={() => setAddSheet("doc")} />
-        )}
-        {tab === "account" && (
-          <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
-        )}
+      <div style={{ height: 560, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
+        <div key={tab} className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}>
+          {tab === "home" && (
+            <HomeScreen
+              upcomingTasks={upcomingTasks}
+              systemById={systemById}
+              systems={systems}
+              tasks={tasks}
+              spentThisYear={spentThisYear}
+              next12mo={next12mo}
+              monthlyReserve={monthlyReserve}
+              profile={profile}
+              onOpenSystem={(s) => {
+                setSelectedSystem(s);
+                goToTab("systems");
+              }}
+              onOpenAccount={() => goToTab("account")}
+              onNavigate={goToTab}
+            />
+          )}
+          {tab === "systems" && !selectedSystem && (
+            <SystemsScreen
+              systems={systems}
+              tasks={tasks}
+              onSelect={setSelectedSystem}
+              onAdd={() => setAddSheet("system")}
+            />
+          )}
+          {tab === "systems" && selectedSystem && (
+            <SystemDetail
+              sys={selectedSystem}
+              tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
+              documents={documents.filter((d) => d.systemId === selectedSystem.id)}
+              onBack={() => setSelectedSystem(null)}
+            />
+          )}
+          {tab === "tasks" && (
+            <TasksScreen
+              tasks={upcomingTasks}
+              completed={tasks.filter((t) => t.completed)}
+              systemById={systemById}
+              onToggle={toggleTask}
+              onAdd={() => setAddSheet("task")}
+            />
+          )}
+          {tab === "costs" && (
+            <CostsScreen
+              expenses={expenses}
+              forecast={forecast}
+              systemById={systemById}
+              onAdd={() => setAddSheet("expense")}
+            />
+          )}
+          {tab === "docs" && (
+            <DocsScreen documents={documents} systemById={systemById} onAdd={() => setAddSheet("doc")} />
+          )}
+          {tab === "account" && (
+            <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
+          )}
+        </div>
       </div>
 
       <TabBar
         active={tab}
         onChange={(t) => {
-          setTab(t);
+          goToTab(t);
           setSelectedSystem(null);
         }}
       />
@@ -330,7 +341,7 @@ export default function MyHouseOS() {
   );
 }
 
-function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount }) {
+function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   return (
     <div
@@ -373,18 +384,19 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccoun
 
       <div className="rounded-2xl bg-white flex" style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.06)" }}>
         {[
-          { label: "To-do", value: todoCount },
-          { label: "Overdue", value: overdueCount },
-          { label: "Systems", value: systemsCount },
+          { label: "To-do", value: todoCount, tab: "tasks" },
+          { label: "Overdue", value: overdueCount, tab: "tasks" },
+          { label: "Systems", value: systemsCount, tab: "systems" },
         ].map((s, i) => (
-          <div
+          <button
             key={s.label}
+            onClick={() => onNavigate(s.tab)}
             className="flex-1 text-center py-3"
             style={{ borderRight: i < 2 ? "1px solid #F0F0EA" : "none" }}
           >
             <div className="text-[18px] font-bold" style={{ color: PRIMARY }}>{s.value}</div>
             <div className="text-[11px] text-stone-500">{s.label}</div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -480,7 +492,7 @@ function RecommendedList({ items }) {
   );
 }
 
-function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount }) {
+function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   return (
     <div>
@@ -490,6 +502,7 @@ function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, 
         systemsCount={systems.length}
         profile={profile}
         onOpenAccount={onOpenAccount}
+        onNavigate={onNavigate}
       />
 
       <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} onStart={() => {}} />
