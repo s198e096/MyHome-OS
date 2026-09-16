@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import TabBar from "../components/TabBar.jsx";
-import AddSheet from "../components/AddSheet.jsx";
 import EditProfileSheet from "../components/EditProfileSheet.jsx";
 import HomeScreen from "../screens/HomeScreen.jsx";
 import SystemsScreen from "../screens/SystemsScreen.jsx";
@@ -11,7 +10,7 @@ import TasksScreen from "../screens/TasksScreen.jsx";
 import CostsScreen from "../screens/CostsScreen.jsx";
 import DocsScreen from "../screens/DocsScreen.jsx";
 import AccountScreen from "../screens/AccountScreen.jsx";
-import EditScreen from "../screens/EditScreen.jsx";
+import ItemFormScreen from "../screens/ItemFormScreen.jsx";
 
 const seedSystems = [
   { id: "sys1", brand: "Carrier", model: "Infinity", category: "hvac", location: "Attic", purchaseDate: "2021-06-01", purchasePrice: 8400, expectedLifeYears: 15, replacementCost: 10000, warrantyExpiration: "2031-06-01" },
@@ -62,8 +61,7 @@ export default function MyHouseOS() {
   const [expenses, setExpenses] = useState(saved?.expenses || seedExpenses);
   const [documents, setDocuments] = useState(saved?.documents || seedDocuments);
   const [selectedSystem, setSelectedSystem] = useState(null);
-  const [addSheet, setAddSheet] = useState(null); // 'task' | 'expense' | 'system' | 'doc'
-  const [editItem, setEditItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object }
+  const [formItem, setFormItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object | null }
   const [profile, setProfile] = useState(saved?.profile || { name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
   const [editingProfile, setEditingProfile] = useState(false);
 
@@ -117,14 +115,19 @@ export default function MyHouseOS() {
     setSelectedSystem(null);
   }
 
-  function openEdit(kind, item) {
+  function openAdd(kind) {
     setSlideDirection("right");
-    setEditItem({ kind, item });
+    setFormItem({ kind, item: null });
   }
 
-  function closeEdit() {
+  function openEdit(kind, item) {
+    setSlideDirection("right");
+    setFormItem({ kind, item });
+  }
+
+  function closeForm() {
     setSlideDirection("left");
-    setEditItem(null);
+    setFormItem(null);
   }
 
   function toggleTask(id) {
@@ -141,17 +144,17 @@ export default function MyHouseOS() {
 
   function addTask(title, dueDate, systemId) {
     setTasks((ts) => [...ts, { id: "t" + Date.now(), systemId, title, dueDate, completed: false }]);
-    setAddSheet(null);
+    closeForm();
   }
 
   function updateTask(id, patch) {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
-    closeEdit();
+    closeForm();
   }
 
   function deleteTask(id) {
     setTasks((ts) => ts.filter((t) => t.id !== id));
-    closeEdit();
+    closeForm();
   }
 
   function addExpense(amount, category, note, systemId) {
@@ -159,50 +162,50 @@ export default function MyHouseOS() {
       ...es,
       { id: "e" + Date.now(), systemId, amount, category, note, date: TODAY.toISOString().slice(0, 10) },
     ]);
-    setAddSheet(null);
+    closeForm();
   }
 
   function updateExpense(id, patch) {
     setExpenses((es) => es.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-    closeEdit();
+    closeForm();
   }
 
   function deleteExpense(id) {
     setExpenses((es) => es.filter((e) => e.id !== id));
-    closeEdit();
+    closeForm();
   }
 
   function addDocument(label, type, systemId, photoUrl) {
     setDocuments((ds) => [...ds, { id: "d" + Date.now(), label, type, systemId, photoUrl: photoUrl || null }]);
-    setAddSheet(null);
+    closeForm();
   }
 
   function updateDocument(id, patch) {
     setDocuments((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-    closeEdit();
+    closeForm();
   }
 
   function deleteDocument(id) {
     setDocuments((ds) => ds.filter((d) => d.id !== id));
-    closeEdit();
+    closeForm();
   }
 
   function addSystem(sys) {
     setSystems((ss) => [...ss, { id: "sys" + Date.now(), ...sys }]);
-    setAddSheet(null);
+    closeForm();
   }
 
   function updateSystem(id, patch) {
     setSystems((ss) => ss.map((s) => (s.id === id ? { ...s, ...patch } : s)));
     setSelectedSystem((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
-    closeEdit();
+    closeForm();
   }
 
   function deleteSystem(id) {
     setSystems((ss) => ss.filter((s) => s.id !== id));
     setSlideDirection("left");
     setSelectedSystem(null);
-    setEditItem(null);
+    setFormItem(null);
   }
 
   function saveProfile(next) {
@@ -225,21 +228,25 @@ export default function MyHouseOS() {
     >
       <div style={{ height: 560, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
         <div
-          key={editItem ? `${tab}:edit:${editItem.kind}:${editItem.item.id}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
+          key={formItem ? `${tab}:form:${formItem.kind}:${formItem.item?.id ?? "new"}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
           className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}
         >
-          {editItem ? (
-            <EditScreen
-              kind={editItem.kind}
-              item={editItem.item}
+          {formItem ? (
+            <ItemFormScreen
+              kind={formItem.kind}
+              item={formItem.item}
               systems={systems}
-              onBack={closeEdit}
+              onBack={closeForm}
+              onAddTask={addTask}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
+              onAddExpense={addExpense}
               onUpdateExpense={updateExpense}
               onDeleteExpense={deleteExpense}
+              onAddDocument={addDocument}
               onUpdateDocument={updateDocument}
               onDeleteDocument={deleteDocument}
+              onAddSystem={addSystem}
               onUpdateSystem={updateSystem}
               onDeleteSystem={deleteSystem}
             />
@@ -268,7 +275,7 @@ export default function MyHouseOS() {
                   systems={systems}
                   tasks={tasks}
                   onSelect={openSystem}
-                  onAdd={() => setAddSheet("system")}
+                  onAdd={() => openAdd("system")}
                 />
               )}
               {tab === "systems" && selectedSystem && (
@@ -287,7 +294,7 @@ export default function MyHouseOS() {
                   systemById={systemById}
                   onToggle={toggleTask}
                   onEdit={(t) => openEdit("task", t)}
-                  onAdd={() => setAddSheet("task")}
+                  onAdd={() => openAdd("task")}
                 />
               )}
               {tab === "costs" && (
@@ -296,7 +303,7 @@ export default function MyHouseOS() {
                   forecast={forecast}
                   systemById={systemById}
                   onEdit={(e) => openEdit("expense", e)}
-                  onAdd={() => setAddSheet("expense")}
+                  onAdd={() => openAdd("expense")}
                 />
               )}
               {tab === "docs" && (
@@ -304,7 +311,7 @@ export default function MyHouseOS() {
                   documents={documents}
                   systemById={systemById}
                   onEdit={(d) => openEdit("doc", d)}
-                  onAdd={() => setAddSheet("doc")}
+                  onAdd={() => openAdd("doc")}
                 />
               )}
               {tab === "account" && (
@@ -320,21 +327,9 @@ export default function MyHouseOS() {
         onChange={(t) => {
           goToTab(t);
           setSelectedSystem(null);
-          setEditItem(null);
+          setFormItem(null);
         }}
       />
-
-      {addSheet && (
-        <AddSheet
-          kind={addSheet}
-          systems={systems}
-          onClose={() => setAddSheet(null)}
-          onAddTask={addTask}
-          onAddExpense={addExpense}
-          onAddDocument={addDocument}
-          onAddSystem={addSystem}
-        />
-      )}
 
       {editingProfile && (
         <EditProfileSheet
