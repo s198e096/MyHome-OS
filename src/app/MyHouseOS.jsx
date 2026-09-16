@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import {
   Home, Wrench, CalendarCheck, Banknote, FileText, Plus, ChevronRight,
   ChevronLeft, X, Check, AlertTriangle, Wind, Droplet, Zap, Shield, Circle,
-  User, Clock, LayoutGrid
+  User, Clock, LayoutGrid, Pencil
 } from "lucide-react";
 
 const PRIMARY = "#16240F";
@@ -157,7 +157,7 @@ export default function MyHouseOS() {
   const [expenses, setExpenses] = useState(seedExpenses);
   const [documents, setDocuments] = useState(seedDocuments);
   const [selectedSystem, setSelectedSystem] = useState(null);
-  const [addSheet, setAddSheet] = useState(null); // 'task' | 'expense' | 'system' | 'doc'
+  const [addSheet, setAddSheet] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object | null }
   const [profile, setProfile] = useState({ name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
   const [editingProfile, setEditingProfile] = useState(false);
 
@@ -218,6 +218,16 @@ export default function MyHouseOS() {
     setAddSheet(null);
   }
 
+  function updateTask(id, patch) {
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    setAddSheet(null);
+  }
+
+  function deleteTask(id) {
+    setTasks((ts) => ts.filter((t) => t.id !== id));
+    setAddSheet(null);
+  }
+
   function addExpense(amount, category, note, systemId) {
     setExpenses((es) => [
       ...es,
@@ -226,8 +236,45 @@ export default function MyHouseOS() {
     setAddSheet(null);
   }
 
+  function updateExpense(id, patch) {
+    setExpenses((es) => es.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    setAddSheet(null);
+  }
+
+  function deleteExpense(id) {
+    setExpenses((es) => es.filter((e) => e.id !== id));
+    setAddSheet(null);
+  }
+
   function addDocument(label, type, systemId) {
     setDocuments((ds) => [...ds, { id: "d" + Date.now(), label, type, systemId }]);
+    setAddSheet(null);
+  }
+
+  function updateDocument(id, patch) {
+    setDocuments((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    setAddSheet(null);
+  }
+
+  function deleteDocument(id) {
+    setDocuments((ds) => ds.filter((d) => d.id !== id));
+    setAddSheet(null);
+  }
+
+  function addSystem(sys) {
+    setSystems((ss) => [...ss, { id: "sys" + Date.now(), ...sys }]);
+    setAddSheet(null);
+  }
+
+  function updateSystem(id, patch) {
+    setSystems((ss) => ss.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    setSelectedSystem((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
+    setAddSheet(null);
+  }
+
+  function deleteSystem(id) {
+    setSystems((ss) => ss.filter((s) => s.id !== id));
+    setSelectedSystem((cur) => (cur && cur.id === id ? null : cur));
     setAddSheet(null);
   }
 
@@ -274,7 +321,7 @@ export default function MyHouseOS() {
               systems={systems}
               tasks={tasks}
               onSelect={setSelectedSystem}
-              onAdd={() => setAddSheet("system")}
+              onAdd={() => setAddSheet({ kind: "system", item: null })}
             />
           )}
           {tab === "systems" && selectedSystem && (
@@ -283,6 +330,8 @@ export default function MyHouseOS() {
               tasks={tasks.filter((t) => t.systemId === selectedSystem.id)}
               documents={documents.filter((d) => d.systemId === selectedSystem.id)}
               onBack={() => setSelectedSystem(null)}
+              onEdit={() => setAddSheet({ kind: "system", item: selectedSystem })}
+              onDelete={() => deleteSystem(selectedSystem.id)}
             />
           )}
           {tab === "tasks" && (
@@ -291,7 +340,8 @@ export default function MyHouseOS() {
               completed={tasks.filter((t) => t.completed)}
               systemById={systemById}
               onToggle={toggleTask}
-              onAdd={() => setAddSheet("task")}
+              onEdit={(t) => setAddSheet({ kind: "task", item: t })}
+              onAdd={() => setAddSheet({ kind: "task", item: null })}
             />
           )}
           {tab === "costs" && (
@@ -299,11 +349,17 @@ export default function MyHouseOS() {
               expenses={expenses}
               forecast={forecast}
               systemById={systemById}
-              onAdd={() => setAddSheet("expense")}
+              onEdit={(e) => setAddSheet({ kind: "expense", item: e })}
+              onAdd={() => setAddSheet({ kind: "expense", item: null })}
             />
           )}
           {tab === "docs" && (
-            <DocsScreen documents={documents} systemById={systemById} onAdd={() => setAddSheet("doc")} />
+            <DocsScreen
+              documents={documents}
+              systemById={systemById}
+              onEdit={(d) => setAddSheet({ kind: "doc", item: d })}
+              onAdd={() => setAddSheet({ kind: "doc", item: null })}
+            />
           )}
           {tab === "account" && (
             <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
@@ -321,12 +377,22 @@ export default function MyHouseOS() {
 
       {addSheet && (
         <AddSheet
-          kind={addSheet}
+          kind={addSheet.kind}
+          item={addSheet.item}
           systems={systems}
           onClose={() => setAddSheet(null)}
           onAddTask={addTask}
+          onUpdateTask={updateTask}
+          onDeleteTask={deleteTask}
           onAddExpense={addExpense}
+          onUpdateExpense={updateExpense}
+          onDeleteExpense={deleteExpense}
           onAddDocument={addDocument}
+          onUpdateDocument={updateDocument}
+          onDeleteDocument={deleteDocument}
+          onAddSystem={addSystem}
+          onUpdateSystem={updateSystem}
+          onDeleteSystem={deleteSystem}
         />
       )}
 
@@ -600,7 +666,8 @@ function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
   );
 }
 
-function SystemDetail({ sys, tasks, documents, onBack }) {
+function SystemDetail({ sys, tasks, documents, onBack, onEdit, onDelete }) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const meta = CATEGORY_META[sys.category];
   const Icon = meta.icon;
   const repYear = replacementYear(sys);
@@ -609,9 +676,14 @@ function SystemDetail({ sys, tasks, documents, onBack }) {
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1 mb-3 text-[13px] text-stone-500">
-        <ChevronLeft size={16} /> Systems
-      </button>
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={onBack} className="flex items-center gap-1 text-[13px] text-stone-500">
+          <ChevronLeft size={16} /> Systems
+        </button>
+        <button onClick={onEdit} className="flex items-center gap-1 text-[13px] font-semibold" style={{ color: PRIMARY }}>
+          <Pencil size={14} /> Edit
+        </button>
+      </div>
 
       <div className="flex items-center gap-3 mb-4">
         <div className="rounded-lg p-2.5" style={{ background: "#F5F8F0" }}>
@@ -649,17 +721,29 @@ function SystemDetail({ sys, tasks, documents, onBack }) {
       </div>
 
       <div className="text-[12px] font-semibold text-stone-500 mb-1">Documents</div>
-      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
         {documents.length === 0 && <div className="py-3 text-[13px] text-stone-400">No documents attached.</div>}
         {documents.map((d) => (
           <LedgerRow key={d.id} label={d.label} sub={d.type} value="" />
         ))}
       </div>
+
+      <button
+        onClick={() => (confirmingDelete ? onDelete() : setConfirmingDelete(true))}
+        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
+        style={{
+          border: "1px solid #F0C9C9",
+          color: STATUS_COLOR.red,
+          background: confirmingDelete ? STATUS_BG.red : "white",
+        }}
+      >
+        {confirmingDelete ? "Tap again to delete this system" : "Delete system"}
+      </button>
     </div>
   );
 }
 
-function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
+function TasksScreen({ tasks, completed, systemById, onToggle, onEdit, onAdd }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -674,16 +758,18 @@ function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
           const days = daysUntil(t.dueDate);
           return (
             <div key={t.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
-              <button onClick={() => onToggle(t.id)} className="flex items-center gap-2.5 text-left min-w-0">
-                <div
-                  className="flex-shrink-0 rounded-full"
-                  style={{ width: 18, height: 18, border: "1.5px solid #C9C5B8" }}
-                />
-                <div className="min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <button onClick={() => onToggle(t.id)} aria-label="Toggle complete" className="flex-shrink-0">
+                  <div
+                    className="rounded-full"
+                    style={{ width: 18, height: 18, border: "1.5px solid #C9C5B8" }}
+                  />
+                </button>
+                <button onClick={() => onEdit(t)} className="text-left min-w-0">
                   <div className="text-[13.5px] text-stone-800 truncate">{t.title}</div>
                   <div className="text-[11.5px] text-stone-400">{sys ? sys.name : "General"}</div>
-                </div>
-              </button>
+                </button>
+              </div>
               <div
                 className="text-[12px] tabular-nums flex-shrink-0 pl-2"
                 style={{ color: days < 0 ? STATUS_COLOR.red : days <= 14 ? STATUS_COLOR.yellow : "#9C978C" }}
@@ -718,7 +804,7 @@ function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
   );
 }
 
-function CostsScreen({ expenses, forecast, systemById, onAdd }) {
+function CostsScreen({ expenses, forecast, systemById, onEdit, onAdd }) {
   const maxAmt = Math.max(...forecast.map((f) => f.amount), 1);
   return (
     <div>
@@ -758,6 +844,7 @@ function CostsScreen({ expenses, forecast, systemById, onAdd }) {
                 label={e.note}
                 sub={`${e.category}${sys ? " · " + sys.name : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
                 value={money(e.amount)}
+                onClick={() => onEdit(e)}
               />
             );
           })}
@@ -766,7 +853,7 @@ function CostsScreen({ expenses, forecast, systemById, onAdd }) {
   );
 }
 
-function DocsScreen({ documents, systemById, onAdd }) {
+function DocsScreen({ documents, systemById, onEdit, onAdd }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -779,13 +866,18 @@ function DocsScreen({ documents, systemById, onAdd }) {
         {documents.map((d) => {
           const sys = systemById(d.systemId);
           return (
-            <div key={d.id} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
+            <button
+              key={d.id}
+              onClick={() => onEdit(d)}
+              className="w-full flex items-center gap-3 py-2.5 text-left"
+              style={{ borderBottom: "1px solid #E7EEDB" }}
+            >
               <FileText size={17} color="#5F5B50" />
               <div>
                 <div className="text-[13.5px] text-stone-800">{d.label}</div>
                 <div className="text-[11.5px] text-stone-400">{d.type}{sys ? " · " + sys.name : ""}</div>
               </div>
-            </div>
+            </button>
           );
         })}
         {documents.length === 0 && <div className="py-3 text-[13px] text-stone-400">No documents yet.</div>}
@@ -899,31 +991,94 @@ function EditProfileSheet({ profile, onClose, onSave }) {
   );
 }
 
-function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocument }) {
-  const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState("2026-10-01");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Maintenance");
-  const [systemId, setSystemId] = useState(systems[0]?.id || "");
-  const [docType, setDocType] = useState("Receipt");
-  const [error, setError] = useState("");
+function AddSheet({
+  kind,
+  item,
+  systems,
+  onClose,
+  onAddTask, onUpdateTask, onDeleteTask,
+  onAddExpense, onUpdateExpense, onDeleteExpense,
+  onAddDocument, onUpdateDocument, onDeleteDocument,
+  onAddSystem, onUpdateSystem, onDeleteSystem,
+}) {
+  const isEdit = !!item;
 
-  const titles = { task: "Add task", expense: "Add expense", system: "Add system", doc: "Add document" };
+  const [title, setTitle] = useState(kind === "expense" ? item?.note || "" : item?.title || item?.label || "");
+  const [dueDate, setDueDate] = useState(item?.dueDate || "2026-10-01");
+  const [amount, setAmount] = useState(item?.amount != null ? String(item.amount) : "");
+  const [category, setCategory] = useState(item?.category || "Maintenance");
+  const [systemId, setSystemId] = useState(isEdit ? item.systemId || "" : systems[0]?.id || "");
+  const [docType, setDocType] = useState(item?.type || "Receipt");
+
+  const [sysName, setSysName] = useState(item?.name || "");
+  const [sysCategory, setSysCategory] = useState(item?.category || Object.keys(CATEGORY_META)[0]);
+  const [sysLocation, setSysLocation] = useState(item?.location || "");
+  const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "2026-01-01");
+  const [sysPurchasePrice, setSysPurchasePrice] = useState(item?.purchasePrice != null ? String(item.purchasePrice) : "");
+  const [sysLifeYears, setSysLifeYears] = useState(item?.expectedLifeYears != null ? String(item.expectedLifeYears) : "10");
+  const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
+  const [sysWarranty, setSysWarranty] = useState(item?.warrantyExpiration || "");
+
+  const [error, setError] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const nouns = { task: "task", expense: "expense", system: "system", doc: "document" };
+  const titles = {
+    task: isEdit ? "Edit task" : "Add task",
+    expense: isEdit ? "Edit expense" : "Add expense",
+    system: isEdit ? "Edit system" : "Add system",
+    doc: isEdit ? "Edit document" : "Add document",
+  };
 
   function handleSubmit() {
+    const finalSystemId = systemId || null;
     if (kind === "task") {
       if (!title.trim()) return setError("Enter a task name.");
-      onAddTask(title.trim(), dueDate, systemId);
+      if (isEdit) onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId });
+      else onAddTask(title.trim(), dueDate, finalSystemId);
     } else if (kind === "expense") {
       const num = parseFloat(amount);
       if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
-      onAddExpense(num, category, title.trim() || category, systemId);
+      if (isEdit) onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
+      else onAddExpense(num, category, title.trim() || category, finalSystemId);
     } else if (kind === "doc") {
       if (!title.trim()) return setError("Enter a document label.");
-      onAddDocument(title.trim(), docType, systemId);
+      if (isEdit) onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId });
+      else onAddDocument(title.trim(), docType, finalSystemId);
     } else if (kind === "system") {
-      setError("Adding new system types is coming in the next build.");
+      if (!sysName.trim()) return setError("Enter a system name.");
+      if (!sysLocation.trim()) return setError("Enter a location.");
+      const price = parseFloat(sysPurchasePrice);
+      if (!sysPurchasePrice || isNaN(price) || price < 0) return setError("Enter a valid purchase price.");
+      const life = parseInt(sysLifeYears, 10);
+      if (!sysLifeYears || isNaN(life) || life <= 0) return setError("Enter a valid expected life, in years.");
+      const replCost = parseFloat(sysReplacementCost);
+      if (!sysReplacementCost || isNaN(replCost) || replCost < 0) return setError("Enter a valid replacement cost.");
+
+      const payload = {
+        name: sysName.trim(),
+        category: sysCategory,
+        location: sysLocation.trim(),
+        purchaseDate: sysPurchaseDate,
+        purchasePrice: price,
+        expectedLifeYears: life,
+        replacementCost: replCost,
+        warrantyExpiration: sysWarranty,
+      };
+      if (isEdit) onUpdateSystem(item.id, payload);
+      else onAddSystem(payload);
     }
+  }
+
+  function handleDelete() {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    if (kind === "task") onDeleteTask(item.id);
+    else if (kind === "expense") onDeleteExpense(item.id);
+    else if (kind === "doc") onDeleteDocument(item.id);
+    else if (kind === "system") onDeleteSystem(item.id);
   }
 
   return (
@@ -935,7 +1090,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full bg-white p-4"
-        style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, border: "1px solid #E0E8D3" }}
+        style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, border: "1px solid #E0E8D3", maxHeight: 520, overflowY: "auto" }}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="text-[15px] font-semibold text-stone-900">{titles[kind]}</div>
@@ -1016,10 +1171,83 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
             className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
             style={{ border: "1px solid #E0E8D3" }}
           >
+            <option value="">General (no system)</option>
             {systems.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+        )}
+
+        {kind === "system" && (
+          <>
+            <input
+              value={sysName}
+              onChange={(e) => setSysName(e.target.value)}
+              placeholder="Name (e.g. Carrier Infinity)"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+            <select
+              value={sysCategory}
+              onChange={(e) => setSysCategory(e.target.value)}
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            >
+              {Object.entries(CATEGORY_META).map(([key, meta]) => (
+                <option key={key} value={key}>{meta.label}</option>
+              ))}
+            </select>
+            <input
+              value={sysLocation}
+              onChange={(e) => setSysLocation(e.target.value)}
+              placeholder="Location (e.g. Attic, Garage, Kitchen)"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+
+            <div className="text-[11px] text-stone-500 mb-1">Purchase date</div>
+            <input
+              type="date"
+              value={sysPurchaseDate}
+              onChange={(e) => setSysPurchaseDate(e.target.value)}
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+
+            <input
+              value={sysPurchasePrice}
+              onChange={(e) => setSysPurchasePrice(e.target.value)}
+              placeholder="Purchase price ($)"
+              inputMode="decimal"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+            <input
+              value={sysLifeYears}
+              onChange={(e) => setSysLifeYears(e.target.value)}
+              placeholder="Expected life (years)"
+              inputMode="numeric"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+            <input
+              value={sysReplacementCost}
+              onChange={(e) => setSysReplacementCost(e.target.value)}
+              placeholder="Estimated replacement cost ($)"
+              inputMode="decimal"
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+
+            <div className="text-[11px] text-stone-500 mb-1">Warranty expiration (optional)</div>
+            <input
+              type="date"
+              value={sysWarranty}
+              onChange={(e) => setSysWarranty(e.target.value)}
+              className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
+              style={{ border: "1px solid #E0E8D3" }}
+            />
+          </>
         )}
 
         {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}
@@ -1029,8 +1257,22 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
           className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
           style={{ background: PRIMARY, color: "white" }}
         >
-          Save
+          {isEdit ? "Save changes" : "Save"}
         </button>
+
+        {isEdit && (
+          <button
+            onClick={handleDelete}
+            className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold mt-2"
+            style={{
+              border: "1px solid #F0C9C9",
+              color: STATUS_COLOR.red,
+              background: confirmingDelete ? STATUS_BG.red : "white",
+            }}
+          >
+            {confirmingDelete ? "Tap again to delete" : `Delete ${nouns[kind]}`}
+          </button>
+        )}
       </div>
     </div>
   );
