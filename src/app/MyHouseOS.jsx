@@ -1,8 +1,14 @@
 import React, { useState, useMemo } from "react";
 import {
   Home, Wrench, CalendarCheck, Banknote, FileText, Plus, ChevronRight,
-  ChevronLeft, X, Check, AlertTriangle, Wind, Droplet, Zap, Shield, Circle
+  ChevronLeft, X, Check, AlertTriangle, Wind, Droplet, Zap, Shield, Circle,
+  User, Clock, LayoutGrid
 } from "lucide-react";
+
+const PRIMARY = "#16240F";
+const HERO_BG_TOP = "#D3ECBC";
+const HERO_BG_BOTTOM = "#BEE1A5";
+const ACCENT_YELLOW = "#F3EA6B";
 
 const TODAY = new Date("2026-09-14");
 
@@ -24,10 +30,16 @@ const seedSystems = [
 ];
 
 const seedTasks = [
-  { id: "t1", systemId: "sys1", title: "Replace air filter", dueDate: "2026-09-26", completed: false },
-  { id: "t2", systemId: "sys2", title: "Annual inspection", dueDate: "2026-10-31", completed: false },
-  { id: "t3", systemId: "sys3", title: "Roof inspection", dueDate: "2026-12-14", completed: false },
-  { id: "t4", systemId: "sys4", title: "Clean filter trap", dueDate: "2026-11-05", completed: false },
+  { id: "t1", systemId: "sys1", title: "Replace air filter", dueDate: "2026-09-26", completed: false, duration: "25 mins", difficulty: "Hard" },
+  { id: "t2", systemId: "sys2", title: "Annual inspection", dueDate: "2026-10-31", completed: false, duration: "10 mins", difficulty: "Easy" },
+  { id: "t3", systemId: "sys3", title: "Roof inspection", dueDate: "2026-12-14", completed: false, duration: "5 mins", difficulty: "Easy" },
+  { id: "t4", systemId: "sys4", title: "Clean filter trap", dueDate: "2026-11-05", completed: false, duration: "15 mins", difficulty: "Medium" },
+];
+
+const seedRecommendations = [
+  { id: "r1", title: "Energy Audit", subtitle: "Cut your power bill by 30% this month", cta: "Save Now", highlight: true },
+  { id: "r2", title: "Water Bill", subtitle: "Save $100 every month with a simple fix", cta: null, highlight: false },
+  { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
 
 const seedExpenses = [
@@ -83,6 +95,7 @@ function TabBar({ active, onChange }) {
     { id: "tasks", label: "Tasks", icon: CalendarCheck },
     { id: "costs", label: "Costs", icon: Banknote },
     { id: "docs", label: "Docs", icon: FileText },
+    { id: "account", label: "Account", icon: User },
   ];
   return (
     <div className="flex border-t border-stone-200 bg-white">
@@ -95,10 +108,10 @@ function TabBar({ active, onChange }) {
             onClick={() => onChange(t.id)}
             className="flex-1 flex flex-col items-center gap-1 py-2.5"
           >
-            <Icon size={20} strokeWidth={isActive ? 2.4 : 1.7} color={isActive ? "#1C2A33" : "#9C978C"} />
+            <Icon size={20} strokeWidth={isActive ? 2.4 : 1.7} color={isActive ? PRIMARY : "#9C978C"} />
             <span
               className="text-[10px]"
-              style={{ color: isActive ? "#1C2A33" : "#9C978C", fontWeight: isActive ? 600 : 400 }}
+              style={{ color: isActive ? PRIMARY : "#9C978C", fontWeight: isActive ? 600 : 400 }}
             >
               {t.label}
             </span>
@@ -114,7 +127,7 @@ function LedgerRow({ label, sub, value, valueColor, onClick }) {
     <button
       onClick={onClick}
       className="w-full flex items-baseline justify-between py-2.5 text-left"
-      style={{ borderBottom: "1px solid #EAE7DE" }}
+      style={{ borderBottom: "1px solid #E7EEDB" }}
     >
       <div className="min-w-0">
         <div className="text-[13.5px] text-stone-800 truncate">{label}</div>
@@ -122,7 +135,7 @@ function LedgerRow({ label, sub, value, valueColor, onClick }) {
       </div>
       <div
         className="text-[13.5px] tabular-nums flex-shrink-0 pl-2"
-        style={{ color: valueColor || "#1C2A33", fontWeight: 600 }}
+        style={{ color: valueColor || PRIMARY, fontWeight: 600 }}
       >
         {value}
       </div>
@@ -142,6 +155,8 @@ export default function MyHouseOS() {
   const [documents, setDocuments] = useState(seedDocuments);
   const [selectedSystem, setSelectedSystem] = useState(null);
   const [addSheet, setAddSheet] = useState(null); // 'task' | 'expense' | 'system' | 'doc'
+  const [profile, setProfile] = useState({ name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
+  const [editingProfile, setEditingProfile] = useState(false);
 
   const systemById = (id) => systems.find((s) => s.id === id);
 
@@ -195,16 +210,21 @@ export default function MyHouseOS() {
     setAddSheet(null);
   }
 
+  function saveProfile(next) {
+    setProfile(next);
+    setEditingProfile(false);
+  }
+
   return (
     <div
       className="mx-auto"
       style={{
         maxWidth: 400,
-        background: "#F4F2EC",
+        background: "#F5F8F0",
         borderRadius: 28,
         overflow: "hidden",
         boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
-        border: "1px solid #E4E1D6",
+        border: "1px solid #E0E8D3",
         fontFamily: "ui-sans-serif, system-ui, sans-serif",
       }}
     >
@@ -218,10 +238,12 @@ export default function MyHouseOS() {
             spentThisYear={spentThisYear}
             next12mo={next12mo}
             monthlyReserve={monthlyReserve}
+            profile={profile}
             onOpenSystem={(s) => {
               setSelectedSystem(s);
               setTab("systems");
             }}
+            onOpenAccount={() => setTab("account")}
           />
         )}
         {tab === "systems" && !selectedSystem && (
@@ -260,6 +282,9 @@ export default function MyHouseOS() {
         {tab === "docs" && (
           <DocsScreen documents={documents} systemById={systemById} onAdd={() => setAddSheet("doc")} />
         )}
+        {tab === "account" && (
+          <AccountScreen profile={profile} onEdit={() => setEditingProfile(true)} />
+        )}
       </div>
 
       <TabBar
@@ -280,54 +305,197 @@ export default function MyHouseOS() {
           onAddDocument={addDocument}
         />
       )}
+
+      {editingProfile && (
+        <EditProfileSheet
+          profile={profile}
+          onClose={() => setEditingProfile(false)}
+          onSave={saveProfile}
+        />
+      )}
     </div>
   );
 }
 
-function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, onOpenSystem }) {
+function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount }) {
+  const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   return (
-    <div>
-      <div className="mb-4">
-        <div className="text-[11px] uppercase tracking-wide text-stone-400">Your home</div>
-        <div className="text-[19px] font-semibold text-stone-900">123 Main St</div>
-        <div className="text-[12.5px] text-stone-500">Atlanta, GA</div>
+    <div
+      className="-mx-4 -mt-5 mb-5 px-5 pt-5 pb-4"
+      style={{ background: `linear-gradient(180deg, ${HERO_BG_TOP} 0%, ${HERO_BG_BOTTOM} 100%)`, borderRadius: "0 0 28px 28px" }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="rounded-lg p-1.5" style={{ background: "rgba(255,255,255,0.55)" }}>
+          <LayoutGrid size={18} color={PRIMARY} />
+        </div>
+        <button
+          onClick={onOpenAccount}
+          className="rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ width: 32, height: 32, background: PRIMARY, color: "white", fontSize: 13, fontWeight: 700 }}
+        >
+          {profile.name.charAt(0).toUpperCase()}
+        </button>
       </div>
 
-      <div className="mb-5">
-        <div className="text-[12px] font-semibold text-stone-500 mb-1">Needs attention</div>
-        <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
-          {upcomingTasks.slice(0, 3).map((t) => {
-            const sys = systemById(t.systemId);
-            const days = daysUntil(t.dueDate);
-            return (
-              <LedgerRow
-                key={t.id}
-                label={t.title}
-                sub={sys ? sys.name : undefined}
-                value={days < 0 ? `${Math.abs(days)}d overdue` : `in ${days}d`}
-                valueColor={days < 0 ? STATUS_COLOR.red : days <= 14 ? STATUS_COLOR.yellow : "#1C2A33"}
-              />
-            );
-          })}
-          {upcomingTasks.length === 0 && (
-            <div className="py-3 text-[13px] text-stone-400">Nothing needs attention right now.</div>
-          )}
-        </div>
+      <div className="text-center mb-4">
+        {greeting.split("\n").map((line) => (
+          <div key={line} className="text-[22px] font-bold leading-snug" style={{ color: PRIMARY }}>
+            {line}
+          </div>
+        ))}
       </div>
+
+      <div className="flex justify-center mb-4">
+        <button
+          className="flex items-center gap-2 bg-white rounded-full px-4 py-2 text-[13.5px] font-semibold"
+          style={{ color: PRIMARY, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
+        >
+          Ask Anything
+          <span
+            className="flex-shrink-0"
+            style={{ width: 16, height: 16, borderRadius: "50%", background: "radial-gradient(circle at 30% 30%, #FDE68A, #F472B6 60%, #818CF8)" }}
+          />
+        </button>
+      </div>
+
+      <div className="rounded-2xl bg-white flex" style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.06)" }}>
+        {[
+          { label: "To-do", value: todoCount },
+          { label: "Overdue", value: overdueCount },
+          { label: "Systems", value: systemsCount },
+        ].map((s, i) => (
+          <div
+            key={s.label}
+            className="flex-1 text-center py-3"
+            style={{ borderRight: i < 2 ? "1px solid #F0F0EA" : "none" }}
+          >
+            <div className="text-[18px] font-bold" style={{ color: PRIMARY }}>{s.value}</div>
+            <div className="text-[11px] text-stone-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TodayList({ tasks, systemById, onStart }) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[15px] font-bold text-stone-900">Today</div>
+        <div className="text-[13px] text-stone-400">{tasks.length}</div>
+      </div>
+      {tasks.length === 0 && (
+        <div className="rounded-xl bg-white px-3 py-3 text-[13px] text-stone-400" style={{ border: "1px solid #E0E8D3" }}>
+          Nothing needs attention right now.
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        {tasks.map((t, i) => {
+          const sys = systemById(t.systemId);
+          const days = daysUntil(t.dueDate);
+          const barColor = days < 0 ? STATUS_COLOR.red : i === 1 ? "#7FB7B0" : "#D8D5CB";
+          return (
+            <div key={t.id} className="rounded-xl bg-white flex items-stretch overflow-hidden" style={{ border: "1px solid #E0E8D3" }}>
+              <div style={{ width: 4, background: barColor }} />
+              <div className="flex-1 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[14px] font-semibold text-stone-900 truncate">{t.title}</div>
+                    {sys && <div className="text-[12px] text-stone-400">{sys.name}</div>}
+                  </div>
+                  {i === 0 && (
+                    <button
+                      onClick={() => onStart(t)}
+                      className="rounded-full px-4 py-1.5 text-[12.5px] font-semibold text-white flex-shrink-0"
+                      style={{ background: PRIMARY }}
+                    >
+                      Start
+                    </button>
+                  )}
+                </div>
+                {(t.duration || t.difficulty) && (
+                  <div
+                    className="flex items-center gap-2 mt-2 pt-2 text-[12px] text-stone-500"
+                    style={{ borderTop: "1px dashed #E7EEDB" }}
+                  >
+                    {t.duration && (
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} /> {t.duration}
+                      </span>
+                    )}
+                    {t.duration && t.difficulty && <span className="text-stone-300">|</span>}
+                    {t.difficulty && <span>{t.difficulty}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RecommendedList({ items }) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[15px] font-bold text-stone-900">Recommended for you</div>
+        <div className="text-[13px] text-stone-400">{items.length}</div>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {items.map((r) => (
+          <div
+            key={r.id}
+            className="rounded-xl p-3 flex-shrink-0"
+            style={{ width: 190, background: r.highlight ? ACCENT_YELLOW : "white", border: r.highlight ? "none" : "1px solid #E0E8D3" }}
+          >
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="text-[13.5px] font-bold text-stone-900">{r.title}</div>
+            </div>
+            <div className="text-[12px] text-stone-600 mb-2">{r.subtitle}</div>
+            {r.cta && (
+              <button className="rounded-full px-3 py-1 text-[11.5px] font-semibold" style={{ background: "white", color: PRIMARY }}>
+                {r.cta}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount }) {
+  const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
+  return (
+    <div>
+      <HomeHero
+        todoCount={upcomingTasks.length}
+        overdueCount={overdueCount}
+        systemsCount={systems.length}
+        profile={profile}
+        onOpenAccount={onOpenAccount}
+      />
+
+      <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} onStart={() => {}} />
+
+      <RecommendedList items={seedRecommendations} />
 
       <div className="mb-5">
         <div className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-white p-3" style={{ border: "1px solid #E4E1D6" }}>
+          <div className="rounded-xl bg-white p-3" style={{ border: "1px solid #E0E8D3" }}>
             <div className="text-[11px] text-stone-400">Spent this year</div>
             <div className="text-[18px] font-semibold tabular-nums text-stone-900">{money(spentThisYear)}</div>
           </div>
-          <div className="rounded-xl bg-white p-3" style={{ border: "1px solid #E4E1D6" }}>
+          <div className="rounded-xl bg-white p-3" style={{ border: "1px solid #E0E8D3" }}>
             <div className="text-[11px] text-stone-400">Next 12 months</div>
             <div className="text-[18px] font-semibold tabular-nums text-stone-900">{money(Math.round(next12mo))}</div>
           </div>
         </div>
-        <div className="rounded-xl bg-white p-3 mt-2" style={{ border: "1px solid #E4E1D6" }}>
+        <div className="rounded-xl bg-white p-3 mt-2" style={{ border: "1px solid #E0E8D3" }}>
           <div className="text-[11px] text-stone-400">Recommended monthly reserve</div>
           <div className="text-[18px] font-semibold tabular-nums text-stone-900">{money(monthlyReserve)}/mo</div>
         </div>
@@ -335,7 +503,7 @@ function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, 
 
       <div>
         <div className="text-[12px] font-semibold text-stone-500 mb-1">Home health</div>
-        <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+        <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
           {systems.map((s) => {
             const status = systemStatus(s, tasks);
             const meta = CATEGORY_META[s.category];
@@ -345,7 +513,7 @@ function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, 
                 key={s.id}
                 onClick={() => onOpenSystem(s)}
                 className="w-full flex items-center justify-between py-2.5"
-                style={{ borderBottom: "1px solid #EAE7DE" }}
+                style={{ borderBottom: "1px solid #E7EEDB" }}
               >
                 <div className="flex items-center gap-2">
                   <Icon size={16} color="#5F5B50" />
@@ -369,11 +537,11 @@ function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-[17px] font-semibold text-stone-900">Systems</div>
-        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: PRIMARY }}>
           <Plus size={16} color="white" />
         </button>
       </div>
-      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
         {systems.map((s) => {
           const meta = CATEGORY_META[s.category];
           const Icon = meta.icon;
@@ -383,10 +551,10 @@ function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
               key={s.id}
               onClick={() => onSelect(s)}
               className="w-full flex items-center justify-between py-3"
-              style={{ borderBottom: "1px solid #EAE7DE" }}
+              style={{ borderBottom: "1px solid #E7EEDB" }}
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-lg p-2" style={{ background: "#F4F2EC" }}>
+                <div className="rounded-lg p-2" style={{ background: "#F5F8F0" }}>
                   <Icon size={17} color="#5F5B50" />
                 </div>
                 <div className="text-left">
@@ -420,7 +588,7 @@ function SystemDetail({ sys, tasks, documents, onBack }) {
       </button>
 
       <div className="flex items-center gap-3 mb-4">
-        <div className="rounded-lg p-2.5" style={{ background: "#F4F2EC" }}>
+        <div className="rounded-lg p-2.5" style={{ background: "#F5F8F0" }}>
           <Icon size={20} color="#5F5B50" />
         </div>
         <div>
@@ -429,7 +597,7 @@ function SystemDetail({ sys, tasks, documents, onBack }) {
         </div>
       </div>
 
-      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
         <LedgerRow label="Installed" value={new Date(sys.purchaseDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })} />
         <LedgerRow label="Purchase price" value={money(sys.purchasePrice)} />
         <LedgerRow label="Expected life" value={`${sys.expectedLifeYears} years`} />
@@ -447,7 +615,7 @@ function SystemDetail({ sys, tasks, documents, onBack }) {
       </div>
 
       <div className="text-[12px] font-semibold text-stone-500 mb-1">Upcoming tasks</div>
-      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
         {tasks.length === 0 && <div className="py-3 text-[13px] text-stone-400">No tasks scheduled.</div>}
         {tasks.map((t) => (
           <LedgerRow key={t.id} label={t.title} value={new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
@@ -455,7 +623,7 @@ function SystemDetail({ sys, tasks, documents, onBack }) {
       </div>
 
       <div className="text-[12px] font-semibold text-stone-500 mb-1">Documents</div>
-      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
         {documents.length === 0 && <div className="py-3 text-[13px] text-stone-400">No documents attached.</div>}
         {documents.map((d) => (
           <LedgerRow key={d.id} label={d.label} sub={d.type} value="" />
@@ -470,16 +638,16 @@ function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-[17px] font-semibold text-stone-900">Tasks</div>
-        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: PRIMARY }}>
           <Plus size={16} color="white" />
         </button>
       </div>
-      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
         {tasks.map((t) => {
           const sys = systemById(t.systemId);
           const days = daysUntil(t.dueDate);
           return (
-            <div key={t.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: "1px solid #EAE7DE" }}>
+            <div key={t.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
               <button onClick={() => onToggle(t.id)} className="flex items-center gap-2.5 text-left min-w-0">
                 <div
                   className="flex-shrink-0 rounded-full"
@@ -505,9 +673,9 @@ function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
       {completed.length > 0 && (
         <>
           <div className="text-[12px] font-semibold text-stone-500 mb-1">Completed</div>
-          <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+          <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
             {completed.map((t) => (
-              <div key={t.id} className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: "1px solid #EAE7DE" }}>
+              <div key={t.id} className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
                 <Check size={15} color={STATUS_COLOR.green} />
                 <span className="text-[13px] text-stone-400 line-through">{t.title}</span>
               </div>
@@ -525,20 +693,20 @@ function CostsScreen({ expenses, forecast, systemById, onAdd }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-[17px] font-semibold text-stone-900">Costs</div>
-        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: PRIMARY }}>
           <Plus size={16} color="white" />
         </button>
       </div>
 
       <div className="text-[12px] font-semibold text-stone-500 mb-1">5-year forecast</div>
-      <div className="rounded-xl bg-white p-3 mb-4" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white p-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
         {forecast.map((f) => (
           <div key={f.year} className="flex items-center gap-2 mb-2">
             <div className="text-[12px] w-9 text-stone-500">{f.year}</div>
             <div className="flex-1 rounded" style={{ background: "#EFEDE6", height: 16 }}>
               <div
                 className="h-full rounded"
-                style={{ width: `${Math.max(6, (f.amount / maxAmt) * 100)}%`, background: "#2B4C55" }}
+                style={{ width: `${Math.max(6, (f.amount / maxAmt) * 100)}%`, background: PRIMARY }}
               />
             </div>
             <div className="text-[12px] tabular-nums w-16 text-right text-stone-800">{money(f.amount)}</div>
@@ -547,7 +715,7 @@ function CostsScreen({ expenses, forecast, systemById, onAdd }) {
       </div>
 
       <div className="text-[12px] font-semibold text-stone-500 mb-1">Expense log</div>
-      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
         {expenses
           .slice()
           .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -572,15 +740,15 @@ function DocsScreen({ documents, systemById, onAdd }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-[17px] font-semibold text-stone-900">Documents</div>
-        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: "#1C2A33" }}>
+        <button onClick={onAdd} className="rounded-full p-1.5" style={{ background: PRIMARY }}>
           <Plus size={16} color="white" />
         </button>
       </div>
-      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E4E1D6" }}>
+      <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
         {documents.map((d) => {
           const sys = systemById(d.systemId);
           return (
-            <div key={d.id} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid #EAE7DE" }}>
+            <div key={d.id} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
               <FileText size={17} color="#5F5B50" />
               <div>
                 <div className="text-[13.5px] text-stone-800">{d.label}</div>
@@ -590,6 +758,111 @@ function DocsScreen({ documents, systemById, onAdd }) {
           );
         })}
         {documents.length === 0 && <div className="py-3 text-[13px] text-stone-400">No documents yet.</div>}
+      </div>
+    </div>
+  );
+}
+
+function AccountScreen({ profile, onEdit }) {
+  return (
+    <div>
+      <div className="text-[17px] font-semibold text-stone-900 mb-4">Account</div>
+
+      <div className="flex flex-col items-center mb-5">
+        <div
+          className="rounded-full flex items-center justify-center mb-2"
+          style={{ width: 64, height: 64, background: PRIMARY, color: "white", fontSize: 24, fontWeight: 700 }}
+        >
+          {profile.name.charAt(0).toUpperCase()}
+        </div>
+        <div className="text-[15px] font-semibold text-stone-900">{profile.name}</div>
+        <div className="text-[12.5px] text-stone-400">{profile.email}</div>
+      </div>
+
+      <div className="text-[12px] font-semibold text-stone-500 mb-1">Home</div>
+      <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
+        <LedgerRow label="Address" value={profile.address} />
+        <LedgerRow label="Plan" value="Free" />
+      </div>
+
+      <button
+        onClick={onEdit}
+        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold mb-2"
+        style={{ background: PRIMARY, color: "white" }}
+      >
+        Edit profile
+      </button>
+      <button
+        className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
+        style={{ border: "1px solid #E0E8D3", color: STATUS_COLOR.red }}
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+function EditProfileSheet({ profile, onClose, onSave }) {
+  const [name, setName] = useState(profile.name);
+  const [email, setEmail] = useState(profile.email);
+  const [address, setAddress] = useState(profile.address);
+  const [error, setError] = useState("");
+
+  function handleSubmit() {
+    if (!name.trim()) return setError("Enter your name.");
+    if (!email.trim()) return setError("Enter your email.");
+    onSave({ name: name.trim(), email: email.trim(), address: address.trim() });
+  }
+
+  return (
+    <div
+      className="flex items-end"
+      style={{ position: "absolute", inset: 0, background: "rgba(22,36,15,0.35)", borderRadius: 28 }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full bg-white p-4"
+        style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, border: "1px solid #E0E8D3" }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[15px] font-semibold text-stone-900">Edit profile</div>
+          <button onClick={onClose}>
+            <X size={18} color="#9C978C" />
+          </button>
+        </div>
+
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        />
+        <input
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Home address"
+          className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
+          style={{ border: "1px solid #E0E8D3" }}
+        />
+
+        {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}
+
+        <button
+          onClick={handleSubmit}
+          className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
+          style={{ background: PRIMARY, color: "white" }}
+        >
+          Save
+        </button>
       </div>
     </div>
   );
@@ -625,13 +898,13 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
   return (
     <div
       className="flex items-end"
-      style={{ position: "absolute", inset: 0, background: "rgba(28,42,51,0.35)", borderRadius: 28 }}
+      style={{ position: "absolute", inset: 0, background: "rgba(22,36,15,0.35)", borderRadius: 28 }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full bg-white p-4"
-        style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, border: "1px solid #E4E1D6" }}
+        style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, border: "1px solid #E0E8D3" }}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="text-[15px] font-semibold text-stone-900">{titles[kind]}</div>
@@ -646,7 +919,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
             onChange={(e) => setTitle(e.target.value)}
             placeholder={kind === "task" ? "e.g. Replace air filter" : "e.g. Water heater receipt"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E4E1D6" }}
+            style={{ border: "1px solid #E0E8D3" }}
           />
         )}
 
@@ -656,7 +929,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E4E1D6" }}
+            style={{ border: "1px solid #E0E8D3" }}
           />
         )}
 
@@ -668,20 +941,20 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
               placeholder="Amount"
               inputMode="decimal"
               className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E4E1D6" }}
+              style={{ border: "1px solid #E0E8D3" }}
             />
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Note (e.g. Gutter cleaning)"
               className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E4E1D6" }}
+              style={{ border: "1px solid #E0E8D3" }}
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-              style={{ border: "1px solid #E4E1D6" }}
+              style={{ border: "1px solid #E0E8D3" }}
             >
               <option>Maintenance</option>
               <option>Repair</option>
@@ -696,7 +969,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
             value={docType}
             onChange={(e) => setDocType(e.target.value)}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E4E1D6" }}
+            style={{ border: "1px solid #E0E8D3" }}
           >
             <option>Receipt</option>
             <option>Warranty</option>
@@ -710,7 +983,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
             value={systemId}
             onChange={(e) => setSystemId(e.target.value)}
             className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
-            style={{ border: "1px solid #E4E1D6" }}
+            style={{ border: "1px solid #E0E8D3" }}
           >
             {systems.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -723,7 +996,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
         <button
           onClick={handleSubmit}
           className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
-          style={{ background: "#1C2A33", color: "white" }}
+          style={{ background: PRIMARY, color: "white" }}
         >
           Save
         </button>
