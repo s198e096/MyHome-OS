@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Home, Wrench, CalendarCheck, Banknote, FileText, Plus, ChevronRight,
   ChevronLeft, X, Check, AlertTriangle, Wind, Droplet, Zap, Shield, Circle,
@@ -56,6 +56,17 @@ const seedDocuments = [
   { id: "d3", systemId: "sys4", type: "Receipt", label: "Whirlpool purchase receipt" },
   { id: "d4", systemId: "sys3", type: "Invoice", label: "Roof repair invoice" },
 ];
+
+const STORAGE_KEY = "myhouse-os-state";
+
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 function daysUntil(dateStr) {
   const d = new Date(dateStr);
@@ -150,17 +161,27 @@ function StatusDot({ status }) {
 }
 
 export default function MyHouseOS() {
+  const [saved] = useState(loadSavedState);
+
   const [tab, setTab] = useState("home");
   const [slideDirection, setSlideDirection] = useState("right");
-  const [systems, setSystems] = useState(seedSystems);
-  const [tasks, setTasks] = useState(seedTasks);
-  const [expenses, setExpenses] = useState(seedExpenses);
-  const [documents, setDocuments] = useState(seedDocuments);
+  const [systems, setSystems] = useState(saved?.systems || seedSystems);
+  const [tasks, setTasks] = useState(saved?.tasks || seedTasks);
+  const [expenses, setExpenses] = useState(saved?.expenses || seedExpenses);
+  const [documents, setDocuments] = useState(saved?.documents || seedDocuments);
   const [selectedSystem, setSelectedSystem] = useState(null);
   const [addSheet, setAddSheet] = useState(null); // 'task' | 'expense' | 'system' | 'doc'
   const [editItem, setEditItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc', item: object }
-  const [profile, setProfile] = useState({ name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
+  const [profile, setProfile] = useState(saved?.profile || { name: "Alex Carter", email: "alex@example.com", address: "123 Main St, Atlanta, GA" });
   const [editingProfile, setEditingProfile] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ systems, tasks, expenses, documents, profile }));
+    } catch {
+      // storage unavailable or full — persistence is best-effort
+    }
+  }, [systems, tasks, expenses, documents, profile]);
 
   const systemById = (id) => systems.find((s) => s.id === id);
 
@@ -267,8 +288,8 @@ export default function MyHouseOS() {
     closeEdit();
   }
 
-  function addDocument(label, type, systemId) {
-    setDocuments((ds) => [...ds, { id: "d" + Date.now(), label, type, systemId }]);
+  function addDocument(label, type, systemId, photoUrl) {
+    setDocuments((ds) => [...ds, { id: "d" + Date.now(), label, type, systemId, photoUrl: photoUrl || null }]);
     setAddSheet(null);
   }
 
@@ -894,7 +915,16 @@ function DocsScreen({ documents, systemById, onEdit, onAdd }) {
               className="w-full flex items-center gap-3 py-2.5 text-left"
               style={{ borderBottom: "1px solid #E7EEDB" }}
             >
-              <FileText size={17} color="#5F5B50" />
+              {d.photoUrl ? (
+                <img
+                  src={d.photoUrl}
+                  alt=""
+                  className="rounded-lg object-cover flex-shrink-0"
+                  style={{ width: 34, height: 34, border: "1px solid #E0E8D3" }}
+                />
+              ) : (
+                <FileText size={17} color="#5F5B50" />
+              )}
               <div>
                 <div className="text-[13.5px] text-stone-800">{d.label}</div>
                 <div className="text-[11.5px] text-stone-400">{d.type}{sys ? " · " + sys.name : ""}</div>
@@ -1023,6 +1053,7 @@ function ItemFields({
   category, setCategory,
   systemId, setSystemId,
   docType, setDocType,
+  docPhotoUrl, setDocPhotoUrl,
   sysName, setSysName,
   sysCategory, setSysCategory,
   sysLocation, setSysLocation,
@@ -1086,17 +1117,40 @@ function ItemFields({
       )}
 
       {kind === "doc" && (
-        <select
-          value={docType}
-          onChange={(e) => setDocType(e.target.value)}
-          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-          style={{ border: "1px solid #E0E8D3" }}
-        >
-          <option>Receipt</option>
-          <option>Warranty</option>
-          <option>Invoice</option>
-          <option>Manual</option>
-        </select>
+        <>
+          <select
+            value={docType}
+            onChange={(e) => setDocType(e.target.value)}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={{ border: "1px solid #E0E8D3" }}
+          >
+            <option>Receipt</option>
+            <option>Warranty</option>
+            <option>Invoice</option>
+            <option>Manual</option>
+          </select>
+
+          {docPhotoUrl && (
+            <img
+              src={docPhotoUrl}
+              alt=""
+              className="w-full mb-2 rounded-lg object-cover"
+              style={{ height: 120, border: "1px solid #E0E8D3" }}
+            />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => setDocPhotoUrl(reader.result);
+              reader.readAsDataURL(file);
+            }}
+            className="w-full mb-2 text-[12.5px]"
+          />
+        </>
       )}
 
       {(kind === "task" || kind === "expense" || kind === "doc") && (
@@ -1195,6 +1249,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
   const [category, setCategory] = useState("Maintenance");
   const [systemId, setSystemId] = useState(systems[0]?.id || "");
   const [docType, setDocType] = useState("Receipt");
+  const [docPhotoUrl, setDocPhotoUrl] = useState("");
 
   const [sysName, setSysName] = useState("");
   const [sysCategory, setSysCategory] = useState(Object.keys(CATEGORY_META)[0]);
@@ -1220,7 +1275,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
       onAddExpense(num, category, title.trim() || category, finalSystemId);
     } else if (kind === "doc") {
       if (!title.trim()) return setError("Enter a document label.");
-      onAddDocument(title.trim(), docType, finalSystemId);
+      onAddDocument(title.trim(), docType, finalSystemId, docPhotoUrl);
     } else if (kind === "system") {
       if (!sysName.trim()) return setError("Enter a system name.");
       if (!sysLocation.trim()) return setError("Enter a location.");
@@ -1270,6 +1325,7 @@ function AddSheet({ kind, systems, onClose, onAddTask, onAddExpense, onAddDocume
           category={category} setCategory={setCategory}
           systemId={systemId} setSystemId={setSystemId}
           docType={docType} setDocType={setDocType}
+          docPhotoUrl={docPhotoUrl} setDocPhotoUrl={setDocPhotoUrl}
           sysName={sysName} setSysName={setSysName}
           sysCategory={sysCategory} setSysCategory={setSysCategory}
           sysLocation={sysLocation} setSysLocation={setSysLocation}
@@ -1307,6 +1363,7 @@ function EditScreen({
   const [category, setCategory] = useState(item.category || "Maintenance");
   const [systemId, setSystemId] = useState(item.systemId || "");
   const [docType, setDocType] = useState(item.type || "Receipt");
+  const [docPhotoUrl, setDocPhotoUrl] = useState(item.photoUrl || "");
 
   const [sysName, setSysName] = useState(item.name || "");
   const [sysCategory, setSysCategory] = useState(item.category || Object.keys(CATEGORY_META)[0]);
@@ -1334,7 +1391,7 @@ function EditScreen({
       onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
     } else if (kind === "doc") {
       if (!title.trim()) return setError("Enter a document label.");
-      onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId });
+      onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: docPhotoUrl || null });
     } else if (kind === "system") {
       if (!sysName.trim()) return setError("Enter a system name.");
       if (!sysLocation.trim()) return setError("Enter a location.");
@@ -1385,6 +1442,7 @@ function EditScreen({
         category={category} setCategory={setCategory}
         systemId={systemId} setSystemId={setSystemId}
         docType={docType} setDocType={setDocType}
+        docPhotoUrl={docPhotoUrl} setDocPhotoUrl={setDocPhotoUrl}
         sysName={sysName} setSysName={setSysName}
         sysCategory={sysCategory} setSysCategory={setSysCategory}
         sysLocation={sysLocation} setSysLocation={setSysLocation}
