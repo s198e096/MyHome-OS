@@ -37,7 +37,7 @@ const seedTasks = [
 ];
 
 const seedRecommendations = [
-  { id: "r1", title: "Energy Audit", subtitle: "Cut your power bill by 30% this month", cta: "Save Now", highlight: true },
+  { id: "r1", title: "Energy Audit", subtitle: "3 of 6 efficiency checks need attention", cta: "Save Now", highlight: true },
   { id: "r2", title: "Water Bill", subtitle: "Save $100 every month with a simple fix", cta: null, highlight: false },
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
@@ -165,7 +165,12 @@ export default function MyHouseOS() {
       tasks
         .filter((t) => !t.completed)
         .slice()
-        .sort((a, b) => daysUntil(a.dueDate) - daysUntil(b.dueDate)),
+        .sort((a, b) => {
+          if (a.reopenedAt || b.reopenedAt) {
+            return (b.reopenedAt || 0) - (a.reopenedAt || 0);
+          }
+          return daysUntil(a.dueDate) - daysUntil(b.dueDate);
+        }),
     [tasks]
   );
 
@@ -189,7 +194,15 @@ export default function MyHouseOS() {
   );
 
   function toggleTask(id) {
-    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
+    setTasks((ts) =>
+      ts.map((t) =>
+        t.id === id
+          ? t.completed
+            ? { ...t, completed: false, reopenedAt: Date.now() }
+            : { ...t, completed: true, reopenedAt: null }
+          : t
+      )
+    );
   }
 
   function addTask(title, dueDate, systemId) {
@@ -675,10 +688,15 @@ function TasksScreen({ tasks, completed, systemById, onToggle, onAdd }) {
           <div className="text-[12px] font-semibold text-stone-500 mb-1">Completed</div>
           <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
             {completed.map((t) => (
-              <div key={t.id} className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
+              <button
+                key={t.id}
+                onClick={() => onToggle(t.id)}
+                className="flex items-center gap-2.5 py-2.5 text-left w-full"
+                style={{ borderBottom: "1px solid #E7EEDB" }}
+              >
                 <Check size={15} color={STATUS_COLOR.green} />
                 <span className="text-[13px] text-stone-400 line-through">{t.title}</span>
-              </div>
+              </button>
             ))}
           </div>
         </>
