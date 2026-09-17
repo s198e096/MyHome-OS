@@ -33,7 +33,11 @@ export default function AccountScreen({ profile, onEdit, onManagePlan }) {
           <div className="text-[12px] text-stone-500 mt-0.5">{profile.address}</div>
         </div>
         {profile.propertyValue != null && (
-          <LedgerRow label="Home value" value={money(profile.propertyValue)} />
+          <LedgerRow
+            label="Home value"
+            sub={profile.propertyValueSource ? `Source: ${profile.propertyValueSource}` : undefined}
+            value={money(profile.propertyValue)}
+          />
         )}
         <button
           onClick={onManagePlan}

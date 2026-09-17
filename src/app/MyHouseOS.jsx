@@ -78,7 +78,8 @@ export default function MyHouseOS() {
     name: "Alex Carter",
     email: "alex@example.com",
     address: "1814 Ashborough Road SE, Unit E, Marietta, GA 30067",
-    propertyValue: 187886,
+    propertyValue: 178441,
+    propertyValueSource: "Redfin Estimate",
     plan: "free",
     ...saved?.profile,
   });

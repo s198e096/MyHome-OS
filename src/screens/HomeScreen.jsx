@@ -174,15 +174,22 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
       />
 
       {profile.propertyValue != null && (
-        <div className="rounded-xl bg-white p-3 mb-5 flex items-center justify-between" style={{ border: "1px solid #E0E8D3" }}>
-          <div>
-            <div className="text-[11px] text-stone-400">Estimated property value</div>
-            <div className="text-[20px] font-bold tabular-nums" style={{ color: PRIMARY }}>{money(profile.propertyValue)}</div>
-            <div className="text-[11px] text-stone-400 truncate">{profile.address}</div>
+        <div className="rounded-xl bg-white p-3 mb-5" style={{ border: "1px solid #E0E8D3" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-stone-400">Estimated property value</div>
+              <div className="text-[20px] font-bold tabular-nums" style={{ color: PRIMARY }}>{money(profile.propertyValue)}</div>
+              <div className="text-[11px] text-stone-400 truncate">{profile.address}</div>
+            </div>
+            <div className="rounded-lg p-2 flex-shrink-0" style={{ background: "#F5F8F0" }}>
+              <Home size={20} color={PRIMARY} />
+            </div>
           </div>
-          <div className="rounded-lg p-2 flex-shrink-0" style={{ background: "#F5F8F0" }}>
-            <Home size={20} color={PRIMARY} />
-          </div>
+          {profile.propertyValueSource && (
+            <div className="text-[10px] text-stone-400 mt-2 pt-2" style={{ borderTop: "1px dashed #E7EEDB" }}>
+              Source: {profile.propertyValueSource}
+            </div>
+          )}
         </div>
       )}
 
