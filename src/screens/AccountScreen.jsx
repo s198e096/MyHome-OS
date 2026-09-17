@@ -2,7 +2,7 @@ import { Pencil, ChevronRight } from "lucide-react";
 import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
 import LedgerRow from "../components/LedgerRow.jsx";
 
-export default function AccountScreen({ profile, onEdit, onManagePlan }) {
+export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut }) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
 
   return (
@@ -42,6 +42,7 @@ export default function AccountScreen({ profile, onEdit, onManagePlan }) {
       </div>
 
       <button
+        onClick={onSignOut}
         className="w-full py-2.5 rounded-lg text-[13.5px] font-semibold"
         style={{ border: "1px solid #E0E8D3", color: STATUS_COLOR.red }}
       >

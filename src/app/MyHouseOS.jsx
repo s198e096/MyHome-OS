@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
+import { supabase } from "../lib/supabase.js";
+import AuthScreen from "../screens/AuthScreen.jsx";
 import TabBar from "../components/TabBar.jsx";
 import HomeScreen from "../screens/HomeScreen.jsx";
 import SystemsScreen from "../screens/SystemsScreen.jsx";
@@ -65,6 +67,14 @@ function loadSavedState() {
 export default function MyHouseOS() {
   const [saved] = useState(loadSavedState);
 
+  const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
   const [tab, setTab] = useState("home");
   const [slideDirection, setSlideDirection] = useState("right");
   const [systems, setSystems] = useState(saved?.systems || seedSystems);
@@ -81,6 +91,12 @@ export default function MyHouseOS() {
     plan: "free",
     ...saved?.profile,
   });
+
+  useEffect(() => {
+    if (session?.user?.email && !saved?.profile?.email) {
+      setProfile((p) => ({ ...p, email: session.user.email }));
+    }
+  }, [session]);
 
   useEffect(() => {
     try {
@@ -255,6 +271,33 @@ export default function MyHouseOS() {
     closeForm();
   }
 
+  function signOut() {
+    supabase.auth.signOut();
+  }
+
+  if (session === undefined) return null;
+
+  if (!session) {
+    return (
+      <div
+        className="mx-auto"
+        style={{
+          maxWidth: 400,
+          background: "#F5F8F0",
+          borderRadius: 28,
+          overflow: "hidden",
+          boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
+          border: "1px solid #E0E8D3",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+        }}
+      >
+        <div className="px-4 pt-5 pb-4">
+          <AuthScreen />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="mx-auto"
@@ -375,6 +418,7 @@ export default function MyHouseOS() {
                   profile={profile}
                   onEdit={() => openEdit("profile", null)}
                   onManagePlan={openPlan}
+                  onSignOut={signOut}
                 />
               )}
             </>
