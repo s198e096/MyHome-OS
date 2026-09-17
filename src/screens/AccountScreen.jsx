@@ -1,5 +1,6 @@
 import { Pencil, ChevronRight } from "lucide-react";
 import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
+import { money } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.jsx";
 
 export default function AccountScreen({ profile, onEdit, onManagePlan }) {
@@ -27,7 +28,13 @@ export default function AccountScreen({ profile, onEdit, onManagePlan }) {
 
       <div className="text-[12px] font-semibold text-stone-500 mb-1">Home</div>
       <div className="rounded-xl bg-white px-3 mb-4" style={{ border: "1px solid #E0E8D3" }}>
-        <LedgerRow label="Address" value={profile.address} />
+        <div className="py-2.5" style={{ borderBottom: "1px solid #E7EEDB" }}>
+          <div className="text-[13.5px] text-stone-800">Address</div>
+          <div className="text-[12px] text-stone-500 mt-0.5">{profile.address}</div>
+        </div>
+        {profile.propertyValue != null && (
+          <LedgerRow label="Home value" value={money(profile.propertyValue)} />
+        )}
         <button
           onClick={onManagePlan}
           className="w-full flex items-center justify-between py-2.5 text-left"

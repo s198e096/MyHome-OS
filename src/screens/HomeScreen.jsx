@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, LayoutGrid } from "lucide-react";
+import { ChevronRight, Clock, LayoutGrid, Home } from "lucide-react";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.jsx";
@@ -172,6 +172,19 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
         onOpenAccount={onOpenAccount}
         onNavigate={onNavigate}
       />
+
+      {profile.propertyValue != null && (
+        <div className="rounded-xl bg-white p-3 mb-5 flex items-center justify-between" style={{ border: "1px solid #E0E8D3" }}>
+          <div>
+            <div className="text-[11px] text-stone-400">Estimated property value</div>
+            <div className="text-[20px] font-bold tabular-nums" style={{ color: PRIMARY }}>{money(profile.propertyValue)}</div>
+            <div className="text-[11px] text-stone-400 truncate">{profile.address}</div>
+          </div>
+          <div className="rounded-lg p-2 flex-shrink-0" style={{ background: "#F5F8F0" }}>
+            <Home size={20} color={PRIMARY} />
+          </div>
+        </div>
+      )}
 
       <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} onStart={() => {}} />
 
