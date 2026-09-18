@@ -87,7 +87,9 @@ export default function MyHouseOS() {
   const [profile, setProfile] = useState({
     name: "Alex Carter",
     email: "alex@example.com",
-    address: "123 Main St, Atlanta, GA",
+    address: "1814 Ashborough Road SE, Unit E, Marietta, GA 30067",
+    propertyValue: 178441,
+    propertyValueSource: "Redfin Estimate",
     plan: "free",
     ...saved?.profile,
   });

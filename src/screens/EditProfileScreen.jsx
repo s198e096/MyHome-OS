@@ -6,12 +6,19 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
   const [name, setName] = useState(profile.name);
   const [email, setEmail] = useState(profile.email);
   const [address, setAddress] = useState(profile.address);
+  const [propertyValue, setPropertyValue] = useState(profile.propertyValue != null ? String(profile.propertyValue) : "");
   const [error, setError] = useState("");
 
   function handleSubmit() {
     if (!name.trim()) return setError("Enter your name.");
     if (!email.trim()) return setError("Enter your email.");
-    onSave({ name: name.trim(), email: email.trim(), address: address.trim() });
+    let value = null;
+    if (propertyValue.trim()) {
+      const num = parseFloat(propertyValue);
+      if (isNaN(num) || num < 0) return setError("Enter a valid property value.");
+      value = num;
+    }
+    onSave({ name: name.trim(), email: email.trim(), address: address.trim(), propertyValue: value });
   }
 
   return (
@@ -40,6 +47,14 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         value={address}
         onChange={(e) => setAddress(e.target.value)}
         placeholder="Home address"
+        className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+        style={{ border: "1px solid #E0E8D3" }}
+      />
+      <input
+        value={propertyValue}
+        onChange={(e) => setPropertyValue(e.target.value)}
+        placeholder="Estimated property value ($)"
+        inputMode="decimal"
         className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
         style={{ border: "1px solid #E0E8D3" }}
       />
