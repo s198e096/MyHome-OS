@@ -4,6 +4,7 @@ import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
 import { db, loadAllData, loadProfile, saveProfile as saveProfileRow } from "../lib/db.js";
 import AuthScreen from "../screens/AuthScreen.jsx";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen.jsx";
 import TabBar from "../components/TabBar.jsx";
 import HomeScreen from "../screens/HomeScreen.jsx";
 import SystemsScreen from "../screens/SystemsScreen.jsx";
@@ -19,6 +20,7 @@ import PlanScreen from "../screens/PlanScreen.jsx";
 
 export default function MyHouseOS() {
   const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const [tab, setTab] = useState("home");
@@ -34,7 +36,10 @@ export default function MyHouseOS() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
+      setSession(next);
+      if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -252,6 +257,27 @@ export default function MyHouseOS() {
   }
 
   if (session === undefined) return null;
+
+  if (passwordRecovery) {
+    return (
+      <div
+        className="mx-auto"
+        style={{
+          maxWidth: 400,
+          background: "#F5F8F0",
+          borderRadius: 28,
+          overflow: "hidden",
+          boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
+          border: "1px solid #E0E8D3",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+        }}
+      >
+        <div className="px-4 pt-5 pb-4">
+          <ResetPasswordScreen onDone={() => setPasswordRecovery(false)} />
+        </div>
+      </div>
+    );
+  }
 
   if (!session) {
     return (
