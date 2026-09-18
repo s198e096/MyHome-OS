@@ -11,6 +11,7 @@ const rowToSystem = (r) => ({
   expectedLifeYears: r.expected_life_years,
   replacementCost: r.replacement_cost,
   warrantyExpiration: r.warranty_expiration || "",
+  photoUrl: r.photo_url,
 });
 
 const systemToRow = (s) => ({
@@ -23,6 +24,7 @@ const systemToRow = (s) => ({
   expected_life_years: s.expectedLifeYears,
   replacement_cost: s.replacementCost,
   warranty_expiration: s.warrantyExpiration || null,
+  photo_url: s.photoUrl || null,
 });
 
 const rowToTask = (r) => ({
@@ -133,6 +135,19 @@ async function updateRow(table, id, row, mapper) {
 async function deleteRow(table, id) {
   const { error } = await supabase.from(table).delete().eq("id", id);
   if (error) throw error;
+}
+
+export async function uploadPhoto(file) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const ext = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
+  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage.from("photos").upload(path, file, { cacheControl: "3600" });
+  if (error) throw error;
+
+  return supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
 }
 
 export async function loadAllData() {
