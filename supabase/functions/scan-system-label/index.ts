@@ -2,6 +2,15 @@
 // and category using Claude's vision API. Deploy via the Supabase dashboard
 // (Edge Functions -> Deploy a new function) or `supabase functions deploy scan-system-label`.
 // Requires the ANTHROPIC_API_KEY secret to be set on the project.
+//
+// "Enforce JWT Verification" must be turned OFF for this function, since
+// Supabase's gateway checks the JWT on the CORS preflight (OPTIONS) request
+// too, and browsers never send auth headers on preflight - that check would
+// reject the preflight before this code ever runs. Instead, the caller's
+// identity is verified manually below using the SUPABASE_URL /
+// SUPABASE_ANON_KEY that Supabase automatically injects into every function.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +35,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!
+    );
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
     const { photoUrl } = await req.json();
     if (!photoUrl) {
       return new Response(JSON.stringify({ error: "photoUrl is required" }), {
