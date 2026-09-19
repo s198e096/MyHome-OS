@@ -137,12 +137,20 @@ async function deleteRow(table, id) {
   if (error) throw error;
 }
 
+// crypto.randomUUID() only exists in secure contexts (HTTPS or localhost),
+// so it's unavailable when testing over a plain-HTTP LAN address like a phone
+// hitting the dev server's network IP.
+function generateId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export async function uploadPhoto(file) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
-  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+  const path = `${user.id}/${generateId()}.${ext}`;
 
   const { error } = await supabase.storage.from("photos").upload(path, file, { cacheControl: "3600" });
   if (error) throw error;
