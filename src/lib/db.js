@@ -150,6 +150,14 @@ export async function uploadPhoto(file) {
   return supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
 }
 
+export async function scanSystemLabel(photoUrl) {
+  const { data, error } = await supabase.functions.invoke("scan-system-label", {
+    body: { photoUrl },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function loadAllData() {
   const [systems, tasks, expenses, documents, furniture] = await Promise.all([
     loadTable("systems", rowToSystem),
