@@ -50,6 +50,15 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
           );
         })}
       </div>
+
+      <div className="rounded-xl bg-white p-3 mt-3" style={{ border: "1px solid #E0E8D3" }}>
+        <div className="text-[11px] text-stone-500 leading-relaxed">
+          <span className="font-semibold text-stone-600">Tip:</span> Many home systems are actually made of multiple separate parts, each with its own age, price, and warranty. Log each part as its own system rather than combining them into one entry.
+        </div>
+        <div className="text-[11px] text-stone-500 leading-relaxed mt-2 pt-2" style={{ borderTop: "1px dashed #E7EEDB" }}>
+          <span className="font-semibold text-stone-600">Example:</span> Your HVAC isn't one system — the outdoor unit (the fan on your patio) and the indoor unit (coil and air handler, usually in a closet or attic) are two separate pieces, often installed at different times, with different warranties, and replaced independently.
+        </div>
+      </div>
     </div>
   );
 }

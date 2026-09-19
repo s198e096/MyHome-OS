@@ -18,6 +18,21 @@ import ItemFormScreen from "../screens/ItemFormScreen.jsx";
 import EditProfileScreen from "../screens/EditProfileScreen.jsx";
 import PlanScreen from "../screens/PlanScreen.jsx";
 
+// Drops the animation class (and its will-change hint) once the slide-in
+// finishes, since leaving it applied causes touch targets underneath to miss
+// their first tap on iOS Safari until something else triggers a repaint.
+function AnimatedScreen({ direction, children }) {
+  const [animating, setAnimating] = useState(true);
+  return (
+    <div
+      className={animating ? (direction === "right" ? "tab-slide-right" : "tab-slide-left") : ""}
+      onAnimationEnd={() => setAnimating(false)}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function MyHouseOS() {
   const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
   const [passwordRecovery, setPasswordRecovery] = useState(false);
@@ -316,9 +331,9 @@ export default function MyHouseOS() {
       }}
     >
       <div style={{ height: 560, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
-        <div
+        <AnimatedScreen
           key={formItem ? `${tab}:form:${formItem.kind}:${formItem.item?.id ?? "new"}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
-          className={slideDirection === "right" ? "tab-slide-right" : "tab-slide-left"}
+          direction={slideDirection}
         >
           {formItem?.kind === "profile" ? (
             <EditProfileScreen profile={profile} onBack={closeForm} onSave={saveProfile} />
@@ -427,7 +442,7 @@ export default function MyHouseOS() {
               )}
             </>
           )}
-        </div>
+        </AnimatedScreen>
       </div>
 
       <TabBar

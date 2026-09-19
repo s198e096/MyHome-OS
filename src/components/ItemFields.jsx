@@ -1,4 +1,7 @@
-import { CATEGORY_META, ROOMS } from "../lib/constants.js";
+import { useState } from "react";
+import { Sparkles } from "lucide-react";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS } from "../lib/constants.js";
+import { scanSystemLabel } from "../lib/db.js";
 import PhotoPicker from "./PhotoPicker.jsx";
 
 export default function ItemFields({
@@ -20,6 +23,27 @@ export default function ItemFields({
   sysReplacementCost, setSysReplacementCost,
   sysWarranty, setSysWarranty,
 }) {
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+
+  async function handleScan() {
+    setScanning(true);
+    setScanError("");
+    try {
+      const result = await scanSystemLabel(photoUrl);
+      if (result.brand) setSysBrand(result.brand);
+      if (result.model) setSysModel(result.model);
+      if (result.category) setSysCategory(result.category);
+      if (!result.brand && !result.model && !result.category) {
+        setScanError("Couldn't read the label clearly. Try a closer, well-lit photo, or fill it in manually.");
+      }
+    } catch {
+      setScanError("AI scan failed. You can fill in the fields manually.");
+    } finally {
+      setScanning(false);
+    }
+  }
+
   return (
     <>
       {(kind === "task" || kind === "doc" || kind === "furniture") && (
@@ -111,6 +135,22 @@ export default function ItemFields({
 
       {kind === "system" && (
         <>
+          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
+
+          {photoUrl && (
+            <button
+              type="button"
+              onClick={handleScan}
+              disabled={scanning}
+              className="w-full mb-3 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12.5px] font-semibold"
+              style={{ background: ACCENT_YELLOW, color: PRIMARY, opacity: scanning ? 0.6 : 1 }}
+            >
+              <Sparkles size={15} />
+              {scanning ? "Reading label..." : "Auto-fill with AI"}
+            </button>
+          )}
+          {scanError && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</div>}
+
           <input
             value={sysBrand}
             onChange={(e) => setSysBrand(e.target.value)}
@@ -185,8 +225,6 @@ export default function ItemFields({
             className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
             style={{ border: "1px solid #E0E8D3" }}
           />
-
-          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
       )}
 
