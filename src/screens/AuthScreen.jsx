@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Home } from "lucide-react";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
 import { supabase } from "../lib/supabase.js";
 
@@ -47,8 +48,16 @@ export default function AuthScreen() {
 
   return (
     <div>
-      <div className="text-[17px] font-semibold text-stone-900 mb-1">{titles[mode]}</div>
-      <div className="text-[12.5px] text-stone-400 mb-4">MyHome OS</div>
+      <div className="flex flex-col items-center mb-7">
+        <div
+          className="rounded-2xl flex items-center justify-center mb-3"
+          style={{ width: 56, height: 56, background: PRIMARY }}
+        >
+          <Home size={26} color="white" />
+        </div>
+        <div className="text-[22px] font-bold text-stone-900">MyHome OS</div>
+        <div className="text-[13.5px] text-stone-400 mt-1">{titles[mode]}</div>
+      </div>
 
       <input
         value={email}
