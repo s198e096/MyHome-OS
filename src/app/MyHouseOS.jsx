@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { TAB_ORDER } from "../lib/constants.js";
+import { TAB_ORDER, FREE_SYSTEM_LIMIT } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
 import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession } from "../lib/db.js";
@@ -143,6 +143,18 @@ export default function MyHouseOS() {
   function openPlan() {
     setSlideDirection("right");
     setFormItem({ kind: "plan", item: null });
+  }
+
+  function addSystemAtLimit() {
+    return profile.plan === "free" && systems.length >= FREE_SYSTEM_LIMIT;
+  }
+
+  function handleAddSystem() {
+    if (addSystemAtLimit()) {
+      openPlan();
+      return;
+    }
+    openAdd("system");
   }
 
   function closeForm() {
@@ -402,7 +414,8 @@ export default function MyHouseOS() {
                   systems={systems}
                   tasks={tasks}
                   onSelect={openSystem}
-                  onAdd={() => openAdd("system")}
+                  onAdd={handleAddSystem}
+                  atLimit={addSystemAtLimit()}
                 />
               )}
               {tab === "systems" && selectedSystem && (

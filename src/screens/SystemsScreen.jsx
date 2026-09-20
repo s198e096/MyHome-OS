@@ -1,9 +1,9 @@
 import { Plus, ChevronRight } from "lucide-react";
-import { PRIMARY, CATEGORY_META } from "../lib/constants.js";
+import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT } from "../lib/constants.js";
 import { systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.jsx";
 
-export default function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
+export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -12,6 +12,12 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd }) {
           <Plus size={16} color="white" />
         </button>
       </div>
+
+      {atLimit && (
+        <div className="rounded-xl px-3 py-2 mb-3 text-[12px]" style={{ background: "#FAEEDA", color: "#8A5A0F" }}>
+          Free plan limit reached ({FREE_SYSTEM_LIMIT} systems). Tap + to upgrade for unlimited systems.
+        </div>
+      )}
       <div className="rounded-xl bg-white px-3" style={{ border: "1px solid #E0E8D3" }}>
         {systems.map((s) => {
           const meta = CATEGORY_META[s.category];
