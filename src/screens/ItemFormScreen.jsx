@@ -60,55 +60,64 @@ export default function ItemFormScreen({
     furniture: "Furniture",
   };
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const finalSystemId = systemId || null;
-    if (kind === "task") {
-      if (!title.trim()) return setError("Enter a task name.");
-      if (isEdit) onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId });
-      else onAddTask(title.trim(), dueDate, finalSystemId);
-    } else if (kind === "expense") {
-      const num = parseFloat(amount);
-      if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
-      if (isEdit) onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
-      else onAddExpense(num, category, title.trim() || category, finalSystemId);
-    } else if (kind === "doc") {
-      if (!title.trim()) return setError("Enter a document label.");
-      if (isEdit) onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: photoUrl || null });
-      else onAddDocument(title.trim(), docType, finalSystemId, photoUrl);
-    } else if (kind === "furniture") {
-      if (!title.trim()) return setError("Enter a furniture item name.");
-      const val = parseFloat(amount);
-      if (!amount || isNaN(val) || val < 0) return setError("Enter a valid estimated value.");
+    setError("");
+    try {
+      if (kind === "task") {
+        if (!title.trim()) return setError("Enter a task name.");
+        if (isEdit) await onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId });
+        else await onAddTask(title.trim(), dueDate, finalSystemId);
+      } else if (kind === "expense") {
+        const num = parseFloat(amount);
+        if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
+        if (isEdit) await onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
+        else await onAddExpense(num, category, title.trim() || category, finalSystemId);
+      } else if (kind === "doc") {
+        if (!title.trim()) return setError("Enter a document label.");
+        if (isEdit) await onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: photoUrl || null });
+        else await onAddDocument(title.trim(), docType, finalSystemId, photoUrl);
+      } else if (kind === "furniture") {
+        if (!title.trim()) return setError("Enter a furniture item name.");
+        const val = parseFloat(amount);
+        if (!amount || isNaN(val) || val < 0) return setError("Enter a valid estimated value.");
 
-      const payload = { name: title.trim(), room: category, value: val, photoUrl: photoUrl || null };
-      if (isEdit) onUpdateFurniture(item.id, payload);
-      else onAddFurniture(payload);
-    } else if (kind === "system") {
-      if (!sysBrand.trim()) return setError("Enter a brand.");
-      if (!sysModel.trim()) return setError("Enter a model.");
-      if (!sysLocation.trim()) return setError("Enter a location.");
-      const price = parseFloat(sysPurchasePrice);
-      if (!sysPurchasePrice || isNaN(price) || price < 0) return setError("Enter a valid purchase price.");
-      const life = parseInt(sysLifeYears, 10);
-      if (!sysLifeYears || isNaN(life) || life <= 0) return setError("Enter a valid expected life, in years.");
-      const replCost = parseFloat(sysReplacementCost);
-      if (!sysReplacementCost || isNaN(replCost) || replCost < 0) return setError("Enter a valid replacement cost.");
+        const payload = { name: title.trim(), room: category, value: val, photoUrl: photoUrl || null };
+        if (isEdit) await onUpdateFurniture(item.id, payload);
+        else await onAddFurniture(payload);
+      } else if (kind === "system") {
+        if (!sysBrand.trim()) return setError("Enter a brand.");
+        if (!sysModel.trim()) return setError("Enter a model.");
+        if (!sysLocation.trim()) return setError("Enter a location.");
+        const price = parseFloat(sysPurchasePrice);
+        if (!sysPurchasePrice || isNaN(price) || price < 0) return setError("Enter a valid purchase price.");
+        const life = parseInt(sysLifeYears, 10);
+        if (!sysLifeYears || isNaN(life) || life <= 0) return setError("Enter a valid expected life, in years.");
+        const replCost = parseFloat(sysReplacementCost);
+        if (!sysReplacementCost || isNaN(replCost) || replCost < 0) return setError("Enter a valid replacement cost.");
 
-      const payload = {
-        brand: sysBrand.trim(),
-        model: sysModel.trim(),
-        category: sysCategory,
-        location: sysLocation.trim(),
-        purchaseDate: sysPurchaseDate,
-        purchasePrice: price,
-        expectedLifeYears: life,
-        replacementCost: replCost,
-        warrantyExpiration: sysWarranty,
-        photoUrl: photoUrl || null,
-        filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
-      };
-      if (isEdit) onUpdateSystem(item.id, payload);
-      else onAddSystem(payload);
+        const payload = {
+          brand: sysBrand.trim(),
+          model: sysModel.trim(),
+          category: sysCategory,
+          location: sysLocation.trim(),
+          purchaseDate: sysPurchaseDate,
+          purchasePrice: price,
+          expectedLifeYears: life,
+          replacementCost: replCost,
+          warrantyExpiration: sysWarranty,
+          photoUrl: photoUrl || null,
+          filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
+        };
+        if (isEdit) await onUpdateSystem(item.id, payload);
+        else await onAddSystem(payload);
+      }
+    } catch (err) {
+      setError(
+        err?.message?.includes("schema cache")
+          ? `Couldn't save — the database is missing a column this needs (${err.message.match(/'([^']+)'/)?.[1] || "unknown"}). Run the latest Supabase migration, then try again.`
+          : "Couldn't save. Try again."
+      );
     }
   }
 
