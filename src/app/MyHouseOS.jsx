@@ -275,19 +275,8 @@ export default function MyHouseOS() {
 
   if (passwordRecovery) {
     return (
-      <div
-        className="mx-auto"
-        style={{
-          maxWidth: 400,
-          background: "#F5F8F0",
-          borderRadius: 28,
-          overflow: "hidden",
-          boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
-          border: "1px solid #E0E8D3",
-          fontFamily: "ui-sans-serif, system-ui, sans-serif",
-        }}
-      >
-        <div className="px-4 pt-5 pb-4">
+      <div className="app-shell">
+        <div className="px-4 pt-5 pb-4" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto" }}>
           <ResetPasswordScreen onDone={() => setPasswordRecovery(false)} />
         </div>
       </div>
@@ -296,19 +285,8 @@ export default function MyHouseOS() {
 
   if (!session) {
     return (
-      <div
-        className="mx-auto"
-        style={{
-          maxWidth: 400,
-          background: "#F5F8F0",
-          borderRadius: 28,
-          overflow: "hidden",
-          boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
-          border: "1px solid #E0E8D3",
-          fontFamily: "ui-sans-serif, system-ui, sans-serif",
-        }}
-      >
-        <div className="px-4 pt-5 pb-4">
+      <div className="app-shell">
+        <div className="px-4 pt-5 pb-4" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto" }}>
           <AuthScreen />
         </div>
       </div>
@@ -318,19 +296,8 @@ export default function MyHouseOS() {
   if (!dataLoaded) return null;
 
   return (
-    <div
-      className="mx-auto"
-      style={{
-        maxWidth: 400,
-        background: "#F5F8F0",
-        borderRadius: 28,
-        overflow: "hidden",
-        boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
-        border: "1px solid #E0E8D3",
-        fontFamily: "ui-sans-serif, system-ui, sans-serif",
-      }}
-    >
-      <div style={{ height: 560, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
+    <div className="app-shell">
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
         <AnimatedScreen
           key={formItem ? `${tab}:form:${formItem.kind}:${formItem.item?.id ?? "new"}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
           direction={slideDirection}

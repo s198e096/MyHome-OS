@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #E5E5DC;
+}
+
+/* Fills the real device screen edge-to-edge on phones. On wider (desktop)
+   viewports it becomes a centered, phone-sized card instead, since there's
+   no real device edge to fill there. */
+.app-shell {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 400px;
+  height: 100dvh;
+  background: #F5F8F0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (min-width: 460px) {
+  .app-shell {
+    height: min(100dvh, 844px);
+    margin-top: max(16px, calc((100dvh - 844px) / 2));
+    margin-bottom: max(16px, calc((100dvh - 844px) / 2));
+    border-radius: 28px;
+    border: 1px solid #E0E8D3;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
+}
+
 @keyframes slide-in-right {
   from { transform: translateX(100%); opacity: 0.4; }
   to { transform: translateX(0); opacity: 1; }
