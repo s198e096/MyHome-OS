@@ -16,6 +16,7 @@ html, body {
   margin: 0 auto;
   width: 100%;
   max-width: 400px;
+  height: 100vh;
   height: 100dvh;
   background: #F5F8F0;
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -24,7 +25,7 @@ html, body {
   overflow: hidden;
 }
 
-@media (min-width: 460px) {
+@media (min-width: 640px) {
   .app-shell {
     height: min(100dvh, 844px);
     margin-top: max(16px, calc((100dvh - 844px) / 2));

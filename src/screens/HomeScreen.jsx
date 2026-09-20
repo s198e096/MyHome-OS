@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, LayoutGrid, Home } from "lucide-react";
+import { ChevronRight, Clock, Home } from "lucide-react";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.jsx";
@@ -16,10 +16,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccoun
       className="-mx-4 -mt-5 mb-5 px-5 pt-5 pb-4"
       style={{ background: `linear-gradient(180deg, ${HERO_BG_TOP} 0%, ${HERO_BG_BOTTOM} 100%)`, borderRadius: "0 0 28px 28px" }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="rounded-lg p-1.5" style={{ background: "rgba(255,255,255,0.55)" }}>
-          <LayoutGrid size={18} color={PRIMARY} />
-        </div>
+      <div className="flex items-center justify-end mb-3">
         <button
           onClick={onOpenAccount}
           className="rounded-full flex items-center justify-center flex-shrink-0"
