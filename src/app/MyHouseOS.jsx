@@ -297,7 +297,10 @@ export default function MyHouseOS() {
   if (passwordRecovery) {
     return (
       <div className="app-shell">
-        <div className="px-4 pt-5 pb-4" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto" }}>
+        <div
+          className="px-4 pb-4"
+          style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto", paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}
+        >
           <ResetPasswordScreen onDone={() => setPasswordRecovery(false)} />
         </div>
       </div>
@@ -307,7 +310,10 @@ export default function MyHouseOS() {
   if (!session) {
     return (
       <div className="app-shell">
-        <div className="px-4 pt-5 pb-4" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto" }}>
+        <div
+          className="px-4 pb-4"
+          style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto", paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}
+        >
           <AuthScreen />
         </div>
       </div>
@@ -318,7 +324,10 @@ export default function MyHouseOS() {
 
   return (
     <div className="app-shell">
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative" }} className="px-4 pt-5 pb-4">
+      <div
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative", paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}
+        className="px-4 pb-4"
+      >
         <AnimatedScreen
           key={formItem ? `${tab}:form:${formItem.kind}:${formItem.item?.id ?? "new"}` : selectedSystem ? `${tab}:system:${selectedSystem.id}` : tab}
           direction={slideDirection}

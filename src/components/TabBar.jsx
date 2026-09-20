@@ -11,7 +11,10 @@ export default function TabBar({ active, onChange }) {
     { id: "account", label: "Account", icon: User },
   ];
   return (
-    <div className="flex border-t border-stone-200 bg-white">
+    <div
+      className="flex border-t border-stone-200 bg-white"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       {tabs.map((t) => {
         const Icon = t.icon;
         const isActive = active === t.id;
@@ -19,7 +22,7 @@ export default function TabBar({ active, onChange }) {
           <button
             key={t.id}
             onClick={() => onChange(t.id)}
-            className="flex-1 flex flex-col items-center gap-1 py-2.5"
+            className="flex-1 flex flex-col items-center gap-1 py-3.5"
           >
             <Icon size={20} strokeWidth={isActive ? 2.4 : 1.7} color={isActive ? PRIMARY : "#9C978C"} />
             <span

@@ -13,8 +13,13 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccoun
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   return (
     <div
-      className="-mx-4 -mt-5 mb-5 px-5 pt-5 pb-4"
-      style={{ background: `linear-gradient(180deg, ${HERO_BG_TOP} 0%, ${HERO_BG_BOTTOM} 100%)`, borderRadius: "0 0 28px 28px" }}
+      className="-mx-4 mb-5 px-5 pb-4"
+      style={{
+        background: `linear-gradient(180deg, ${HERO_BG_TOP} 0%, ${HERO_BG_BOTTOM} 100%)`,
+        borderRadius: "0 0 28px 28px",
+        marginTop: "calc(-1.25rem - env(safe-area-inset-top))",
+        paddingTop: "calc(1.25rem + env(safe-area-inset-top))",
+      }}
     >
       <div className="flex items-center justify-end mb-3">
         <button
