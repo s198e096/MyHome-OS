@@ -171,7 +171,7 @@ export default function ItemFields({
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={{ border: "1px solid #E0E8D3" }}
           >
-            {Object.entries(CATEGORY_META).map(([key, meta]) => (
+            {Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac").map(([key, meta]) => (
               <option key={key} value={key}>{meta.label}</option>
             ))}
           </select>

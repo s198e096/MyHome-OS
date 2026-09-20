@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { PRIMARY, STATUS_COLOR, STATUS_BG, CATEGORY_META, ROOMS } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS } from "../lib/constants.js";
 import ItemFields from "../components/ItemFields.jsx";
 
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
@@ -33,7 +33,7 @@ export default function ItemFormScreen({
 
   const [sysBrand, setSysBrand] = useState(item?.brand || "");
   const [sysModel, setSysModel] = useState(item?.model || "");
-  const [sysCategory, setSysCategory] = useState(item?.category || Object.keys(CATEGORY_META)[0]);
+  const [sysCategory, setSysCategory] = useState(item?.category || "hvac_indoor");
   const [sysLocation, setSysLocation] = useState(item?.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "2026-01-01");
   const [sysPurchasePrice, setSysPurchasePrice] = useState(item?.purchasePrice != null ? String(item.purchasePrice) : "");
