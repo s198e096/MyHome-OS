@@ -7,6 +7,8 @@ export const ACCENT_YELLOW = "#F3EA6B";
 
 export const TAB_ORDER = ["home", "furniture", "systems", "tasks", "costs", "docs", "account"];
 
+export const FREE_SYSTEM_LIMIT = 10;
+
 export const ROOMS = ["Living Room", "Dining Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Other"];
 
 export const CATEGORY_META = {

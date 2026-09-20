@@ -166,6 +166,22 @@ export async function scanSystemLabel(photoUrl) {
   return data;
 }
 
+export async function createCheckoutSession(planId) {
+  const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+    body: { planId, origin: window.location.origin },
+  });
+  if (error) throw error;
+  return data.url;
+}
+
+export async function createPortalSession() {
+  const { data, error } = await supabase.functions.invoke("create-portal-session", {
+    body: { origin: window.location.origin },
+  });
+  if (error) throw error;
+  return data.url;
+}
+
 export async function loadAllData() {
   const [systems, tasks, expenses, documents, furniture] = await Promise.all([
     loadTable("systems", rowToSystem),
