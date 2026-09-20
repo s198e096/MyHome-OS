@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER, FREE_SYSTEM_LIMIT } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
-import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession } from "../lib/db.js";
+import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession, loadEnergyChecks, updateEnergyCheckStatus } from "../lib/db.js";
 import AuthScreen from "../screens/AuthScreen.jsx";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen.jsx";
 import TabBar from "../components/TabBar.jsx";
@@ -17,6 +17,7 @@ import FurnitureScreen from "../screens/FurnitureScreen.jsx";
 import ItemFormScreen from "../screens/ItemFormScreen.jsx";
 import EditProfileScreen from "../screens/EditProfileScreen.jsx";
 import PlanScreen from "../screens/PlanScreen.jsx";
+import EnergyAuditScreen from "../screens/EnergyAuditScreen.jsx";
 
 // Drops the animation class (and its will-change hint) once the slide-in
 // finishes, since leaving it applied causes touch targets underneath to miss
@@ -45,6 +46,7 @@ export default function MyHouseOS() {
   const [expenses, setExpenses] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [furniture, setFurniture] = useState([]);
+  const [energyChecks, setEnergyChecks] = useState([]);
   const [selectedSystem, setSelectedSystem] = useState(null);
   const [formItem, setFormItem] = useState(null); // { kind: 'task' | 'expense' | 'system' | 'doc' | 'furniture', item: object | null }
   const [profile, setProfile] = useState(null);
@@ -66,6 +68,7 @@ export default function MyHouseOS() {
       setExpenses([]);
       setDocuments([]);
       setFurniture([]);
+      setEnergyChecks([]);
       setProfile(null);
       return;
     }
@@ -73,13 +76,21 @@ export default function MyHouseOS() {
     let cancelled = false;
     (async () => {
       const fallbackName = session.user.email?.split("@")[0] || "New user";
-      const [all, profileRow] = await Promise.all([loadAllData(), loadProfile(session.user.id, fallbackName)]);
+      const [all, profileRow, checksResult] = await Promise.all([
+        loadAllData(),
+        loadProfile(session.user.id, fallbackName),
+        loadEnergyChecks().catch((err) => {
+          console.error("Failed to load energy checks (has the 0006_energy_checks migration been run?):", err);
+          return [];
+        }),
+      ]);
       if (cancelled) return;
       setSystems(all.systems);
       setTasks(all.tasks);
       setExpenses(all.expenses);
       setDocuments(all.documents);
       setFurniture(all.furniture);
+      setEnergyChecks(checksResult);
       setProfile({ ...profileRow, email: session.user.email });
       setDataLoaded(true);
     })();
@@ -143,6 +154,22 @@ export default function MyHouseOS() {
   function openPlan() {
     setSlideDirection("right");
     setFormItem({ kind: "plan", item: null });
+  }
+
+  function openEnergyAudit() {
+    setSlideDirection("right");
+    setFormItem({ kind: "energyAudit", item: null });
+  }
+
+  async function updateEnergyCheck(id, status) {
+    const updated = await updateEnergyCheckStatus(id, status);
+    setEnergyChecks((cs) => cs.map((c) => (c.id === id ? updated : c)));
+  }
+
+  async function createQuickTask(title) {
+    const dueDate = new Date(TODAY.getTime() + 14 * 86400000).toISOString().slice(0, 10);
+    const created = await db.tasks.add({ title, dueDate, systemId: null, completed: false });
+    setTasks((ts) => [...ts, created]);
   }
 
   function addSystemAtLimit() {
@@ -336,6 +363,15 @@ export default function MyHouseOS() {
             <EditProfileScreen profile={profile} onBack={closeForm} onSave={saveProfile} />
           ) : formItem?.kind === "plan" ? (
             <PlanScreen currentPlan={profile.plan} onBack={closeForm} onSelectPlan={selectPlan} onManageBilling={manageBilling} />
+          ) : formItem?.kind === "energyAudit" ? (
+            <EnergyAuditScreen
+              systems={systems}
+              energyChecks={energyChecks}
+              tasks={tasks}
+              onBack={closeForm}
+              onUpdateCheck={updateEnergyCheck}
+              onCreateTask={createQuickTask}
+            />
           ) : formItem ? (
             <ItemFormScreen
               kind={formItem.kind}
@@ -370,11 +406,13 @@ export default function MyHouseOS() {
                   next12mo={next12mo}
                   monthlyReserve={monthlyReserve}
                   profile={profile}
+                  energyChecks={energyChecks}
                   onOpenSystem={(s) => {
                     setSelectedSystem(s);
                     goToTab("systems");
                   }}
                   onOpenAccount={() => goToTab("account")}
+                  onOpenEnergyAudit={openEnergyAudit}
                   onNavigate={goToTab}
                 />
               )}

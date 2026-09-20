@@ -97,6 +97,23 @@ const furnitureToRow = (f) => ({
   photo_url: f.photoUrl || null,
 });
 
+const rowToEnergyCheck = (r) => ({
+  id: r.id,
+  key: r.key,
+  label: r.label,
+  status: r.status,
+  lastUpdated: r.last_updated,
+});
+
+const ENERGY_CHECK_SEEDS = [
+  { key: "thermostat", label: "Programmable or smart thermostat in use" },
+  { key: "door_window_gaps", label: "No visible gaps around doors or windows" },
+  { key: "attic_insulation", label: "Attic insulation adequate for climate" },
+  { key: "water_heater_temp", label: "Water heater set at or below 120°F" },
+  { key: "led_bulbs", label: "Mostly LED bulbs" },
+  { key: "duct_leaks", label: "Ducts sealed, no visible leaks" },
+];
+
 const rowToProfile = (r) => ({
   name: r.name,
   email: undefined, // comes from the auth session, not this table
@@ -180,6 +197,30 @@ export async function createPortalSession() {
   });
   if (error) throw error;
   return data.url;
+}
+
+export async function loadEnergyChecks() {
+  const { data, error } = await supabase.from("energy_checks").select("*").order("created_at", { ascending: true });
+  if (error) throw error;
+  if (data.length > 0) return data.map(rowToEnergyCheck);
+
+  const { data: created, error: insertError } = await supabase
+    .from("energy_checks")
+    .insert(ENERGY_CHECK_SEEDS.map((c) => ({ ...c, status: "unknown" })))
+    .select();
+  if (insertError) throw insertError;
+  return created.map(rowToEnergyCheck);
+}
+
+export async function updateEnergyCheckStatus(id, status) {
+  const { data, error } = await supabase
+    .from("energy_checks")
+    .update({ status, last_updated: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToEnergyCheck(data);
 }
 
 export async function loadAllData() {

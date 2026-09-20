@@ -1,10 +1,10 @@
-import { ChevronRight, Clock, Home } from "lucide-react";
+import { ChevronRight, Clock, Home, Zap } from "lucide-react";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
+import { computeAutoChecks, computeEnergyScore } from "../lib/energyAudit.js";
 import StatusDot from "../components/StatusDot.jsx";
 
 const seedRecommendations = [
-  { id: "r1", title: "Energy Audit", subtitle: "3 of 6 efficiency checks need attention", cta: "Save Now", highlight: true },
   { id: "r2", title: "Water Bill", subtitle: "Save $100 every month with a simple fix", cta: null, highlight: false },
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
@@ -140,30 +140,49 @@ function RecommendedList({ items }) {
         <div className="text-[13px] text-stone-400">{items.length}</div>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {items.map((r) => (
-          <div
-            key={r.id}
-            className="rounded-xl p-3 flex-shrink-0"
-            style={{ width: 190, background: r.highlight ? ACCENT_YELLOW : "white", border: r.highlight ? "none" : "1px solid #E0E8D3" }}
-          >
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <div className="text-[13.5px] font-bold text-stone-900">{r.title}</div>
-            </div>
-            <div className="text-[12px] text-stone-600 mb-2">{r.subtitle}</div>
-            {r.cta && (
-              <button className="rounded-full px-3 py-1 text-[11.5px] font-semibold" style={{ background: "white", color: PRIMARY }}>
-                {r.cta}
-              </button>
-            )}
-          </div>
-        ))}
+        {items.map((r) => {
+          const Tag = r.onClick ? "button" : "div";
+          const Icon = r.icon;
+          return (
+            <Tag
+              key={r.id}
+              onClick={r.onClick}
+              className="rounded-xl p-3 flex-shrink-0 text-left"
+              style={{ width: 190, background: r.highlight ? ACCENT_YELLOW : "white", border: r.highlight ? "none" : "1px solid #E0E8D3" }}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="text-[13.5px] font-bold text-stone-900">{r.title}</div>
+                {Icon && <Icon size={15} color={PRIMARY} />}
+              </div>
+              <div className="text-[12px] text-stone-600 mb-2">{r.subtitle}</div>
+              {r.cta && (
+                <button className="rounded-full px-3 py-1 text-[11.5px] font-semibold" style={{ background: "white", color: PRIMARY }}>
+                  {r.cta}
+                </button>
+              )}
+            </Tag>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, energyChecks, onOpenSystem, onOpenAccount, onOpenEnergyAudit, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
+
+  const { passed: energyPassed, total: energyTotal } = computeEnergyScore(computeAutoChecks(systems), energyChecks);
+  const recommendations = [
+    {
+      id: "energy-audit",
+      title: "Energy audit",
+      subtitle: `${energyPassed} of ${energyTotal} checks passed`,
+      icon: Zap,
+      highlight: true,
+      onClick: onOpenEnergyAudit,
+    },
+    ...seedRecommendations,
+  ];
   return (
     <div>
       <HomeHero
@@ -197,7 +216,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
 
       <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} onStart={() => {}} />
 
-      <RecommendedList items={seedRecommendations} />
+      <RecommendedList items={recommendations} />
 
       <div className="mb-5">
         <div className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</div>
