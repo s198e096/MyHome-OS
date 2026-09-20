@@ -20,8 +20,9 @@ function systemAgeYears(sys) {
   return (TODAY - new Date(sys.purchaseDate)) / (365.25 * 86400000);
 }
 
-function oldestSystem(systems, category) {
-  const matches = systems.filter((s) => s.category === category && s.purchaseDate);
+function oldestSystem(systems, categories) {
+  const cats = Array.isArray(categories) ? categories : [categories];
+  const matches = systems.filter((s) => cats.includes(s.category) && s.purchaseDate);
   if (matches.length === 0) return null;
   return matches.reduce((oldest, s) => (systemAgeYears(s) > systemAgeYears(oldest) ? s : oldest));
 }
@@ -33,7 +34,7 @@ function ageContext(sys) {
 }
 
 export function computeAutoChecks(systems) {
-  const hvac = oldestSystem(systems, "hvac");
+  const hvac = oldestSystem(systems, ["hvac", "hvac_indoor", "hvac_outdoor"]);
   const waterHeater = oldestSystem(systems, "water_heater");
 
   return [

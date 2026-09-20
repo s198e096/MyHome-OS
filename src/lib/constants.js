@@ -13,6 +13,8 @@ export const ROOMS = ["Living Room", "Dining Room", "Kitchen", "Bedroom", "Bathr
 
 export const CATEGORY_META = {
   hvac: { label: "HVAC", icon: Wind },
+  hvac_indoor: { label: "HVAC - Indoor Unit", icon: Wind },
+  hvac_outdoor: { label: "HVAC - Outdoor Unit", icon: Wind },
   water_heater: { label: "Water heater", icon: Droplet },
   roof: { label: "Roof", icon: Home },
   plumbing: { label: "Plumbing", icon: Droplet },
