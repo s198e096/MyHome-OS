@@ -4,9 +4,9 @@ html, body, #root {
   height: 100%;
 }
 
-body {
+html, body {
   margin: 0;
-  background: #E5E5DC;
+  background: #D3ECBC;
 }
 
 /* Fills the real device screen edge-to-edge on phones. On wider (desktop)
