@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
-import { db, loadAllData, loadProfile, saveProfile as saveProfileRow } from "../lib/db.js";
+import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession } from "../lib/db.js";
 import AuthScreen from "../screens/AuthScreen.jsx";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen.jsx";
 import TabBar from "../components/TabBar.jsx";
@@ -262,9 +262,18 @@ export default function MyHouseOS() {
   }
 
   async function selectPlan(planId) {
-    const updated = await saveProfileRow(session.user.id, { ...profile, plan: planId });
-    setProfile((p) => ({ ...p, ...updated }));
-    closeForm();
+    if (planId === "free") {
+      const url = await createPortalSession();
+      window.location.href = url;
+      return;
+    }
+    const url = await createCheckoutSession(planId);
+    window.location.href = url;
+  }
+
+  async function manageBilling() {
+    const url = await createPortalSession();
+    window.location.href = url;
   }
 
   function signOut() {
@@ -338,7 +347,7 @@ export default function MyHouseOS() {
           {formItem?.kind === "profile" ? (
             <EditProfileScreen profile={profile} onBack={closeForm} onSave={saveProfile} />
           ) : formItem?.kind === "plan" ? (
-            <PlanScreen currentPlan={profile.plan} onBack={closeForm} onSelectPlan={selectPlan} />
+            <PlanScreen currentPlan={profile.plan} onBack={closeForm} onSelectPlan={selectPlan} onManageBilling={manageBilling} />
           ) : formItem ? (
             <ItemFormScreen
               kind={formItem.kind}

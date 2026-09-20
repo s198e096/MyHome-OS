@@ -1,7 +1,33 @@
+import { useState } from "react";
 import { ChevronLeft, Check } from "lucide-react";
 import { PRIMARY, STATUS_COLOR, ACCENT_YELLOW, PLANS } from "../lib/constants.js";
 
-export default function PlanScreen({ currentPlan, onBack, onSelectPlan }) {
+export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManageBilling }) {
+  const [loadingPlanId, setLoadingPlanId] = useState(null);
+  const [error, setError] = useState("");
+
+  async function handleSelect(planId) {
+    setError("");
+    setLoadingPlanId(planId);
+    try {
+      await onSelectPlan(planId);
+    } catch {
+      setError("Something went wrong. Try again.");
+      setLoadingPlanId(null);
+    }
+  }
+
+  async function handleManageBilling() {
+    setError("");
+    setLoadingPlanId("manage");
+    try {
+      await onManageBilling();
+    } catch {
+      setError("Something went wrong. Try again.");
+      setLoadingPlanId(null);
+    }
+  }
+
   return (
     <div>
       <button onClick={onBack} className="flex items-center gap-1 mb-3 text-[13px] text-stone-500">
@@ -14,6 +40,7 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan }) {
       <div className="flex flex-col gap-3">
         {PLANS.map((plan) => {
           const isCurrent = currentPlan === plan.id;
+          const isLoading = loadingPlanId === plan.id;
           return (
             <div
               key={plan.id}
@@ -50,25 +77,38 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan }) {
               </div>
 
               <button
-                onClick={() => onSelectPlan(plan.id)}
-                disabled={isCurrent}
+                onClick={() => handleSelect(plan.id)}
+                disabled={isCurrent || loadingPlanId !== null}
                 className="w-full py-2 rounded-lg text-[13px] font-semibold"
                 style={
                   isCurrent
                     ? { background: "#EFEDE6", color: "#9C978C" }
-                    : { background: PRIMARY, color: "white" }
+                    : { background: PRIMARY, color: "white", opacity: loadingPlanId && !isLoading ? 0.6 : 1 }
                 }
               >
-                {isCurrent ? "Current plan" : "Choose plan"}
+                {isCurrent ? "Current plan" : isLoading ? "Redirecting..." : "Choose plan"}
               </button>
             </div>
           );
         })}
       </div>
 
-      <div className="text-[11px] text-stone-400 text-center mt-4">
-        This is a preview — no payment is processed yet.
-      </div>
+      {error && (
+        <div className="text-[12px] text-center mt-3" style={{ color: STATUS_COLOR.red }}>
+          {error}
+        </div>
+      )}
+
+      {currentPlan !== "free" && (
+        <button
+          onClick={handleManageBilling}
+          disabled={loadingPlanId !== null}
+          className="w-full text-[12.5px] text-center mt-4"
+          style={{ color: PRIMARY }}
+        >
+          {loadingPlanId === "manage" ? "Redirecting..." : "Manage billing"}
+        </button>
+      )}
     </div>
   );
 }
