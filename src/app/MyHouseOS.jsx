@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { TAB_ORDER, FREE_SYSTEM_LIMIT } from "../lib/constants.js";
+import { TAB_ORDER, FREE_SYSTEM_LIMIT, FILTER_OPTIONS } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
 import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession, loadEnergyChecks, updateEnergyCheckStatus } from "../lib/db.js";
@@ -272,9 +272,25 @@ export default function MyHouseOS() {
     closeForm();
   }
 
+  async function syncFilterReminder(sys) {
+    if (sys.category !== "hvac_indoor" || !sys.filterSize) return;
+    const days = FILTER_OPTIONS.find((f) => f.key === sys.filterSize)?.days;
+    if (!days) return;
+    const dueDate = new Date(TODAY.getTime() + days * 86400000).toISOString().slice(0, 10);
+    const existing = tasks.find((t) => t.systemId === sys.id && t.title === "Replace HVAC air filter" && !t.completed);
+    if (existing) {
+      const updated = await db.tasks.update(existing.id, { ...existing, dueDate });
+      setTasks((ts) => ts.map((t) => (t.id === existing.id ? updated : t)));
+    } else {
+      const created = await db.tasks.add({ title: "Replace HVAC air filter", dueDate, systemId: sys.id, completed: false });
+      setTasks((ts) => [...ts, created]);
+    }
+  }
+
   async function addSystem(sys) {
     const created = await db.systems.add(sys);
     setSystems((ss) => [...ss, created]);
+    await syncFilterReminder(created);
     closeForm();
   }
 
@@ -283,6 +299,7 @@ export default function MyHouseOS() {
     const updated = await db.systems.update(id, { ...current, ...patch });
     setSystems((ss) => ss.map((s) => (s.id === id ? updated : s)));
     setSelectedSystem((cur) => (cur && cur.id === id ? updated : cur));
+    await syncFilterReminder(updated);
     closeForm();
   }
 

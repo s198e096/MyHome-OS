@@ -12,6 +12,7 @@ const rowToSystem = (r) => ({
   replacementCost: r.replacement_cost,
   warrantyExpiration: r.warranty_expiration || "",
   photoUrl: r.photo_url,
+  filterSize: r.filter_size || "",
 });
 
 const systemToRow = (s) => ({
@@ -25,6 +26,7 @@ const systemToRow = (s) => ({
   replacement_cost: s.replacementCost,
   warranty_expiration: s.warrantyExpiration || null,
   photo_url: s.photoUrl || null,
+  filter_size: s.filterSize || null,
 });
 
 const rowToTask = (r) => ({

@@ -22,6 +22,13 @@ export const CATEGORY_META = {
   appliance: { label: "Appliance", icon: Wrench },
 };
 
+export const FILTER_OPTIONS = [
+  { key: "1in", label: '1" filter', days: 60 },
+  { key: "4in", label: '4" media filter', days: 180 },
+  { key: "5in", label: '5" media filter', days: 270 },
+  { key: "unsure", label: "Not sure", days: 90 },
+];
+
 export const STATUS_COLOR = {
   green: "#3B6D11",
   yellow: "#BA7517",

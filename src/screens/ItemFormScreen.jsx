@@ -40,6 +40,7 @@ export default function ItemFormScreen({
   const [sysLifeYears, setSysLifeYears] = useState(item?.expectedLifeYears != null ? String(item.expectedLifeYears) : "10");
   const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
   const [sysWarranty, setSysWarranty] = useState(item?.warrantyExpiration || "");
+  const [sysFilterSize, setSysFilterSize] = useState(item?.filterSize || "");
 
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -104,6 +105,7 @@ export default function ItemFormScreen({
         replacementCost: replCost,
         warrantyExpiration: sysWarranty,
         photoUrl: photoUrl || null,
+        filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
       };
       if (isEdit) onUpdateSystem(item.id, payload);
       else onAddSystem(payload);
@@ -159,6 +161,7 @@ export default function ItemFormScreen({
         sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
         sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
         sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
+        sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
       />
 
       {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}

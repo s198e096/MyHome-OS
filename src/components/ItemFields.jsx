@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
-import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS } from "../lib/constants.js";
+import { Sparkles, Calculator } from "lucide-react";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS } from "../lib/constants.js";
 import { scanSystemLabel } from "../lib/db.js";
 import PhotoPicker from "./PhotoPicker.jsx";
 
@@ -22,6 +22,7 @@ export default function ItemFields({
   sysLifeYears, setSysLifeYears,
   sysReplacementCost, setSysReplacementCost,
   sysWarranty, setSysWarranty,
+  sysFilterSize, setSysFilterSize,
 }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -175,6 +176,41 @@ export default function ItemFields({
               <option key={key} value={key}>{meta.label}</option>
             ))}
           </select>
+
+          {sysCategory === "hvac_indoor" && (
+            <div className="rounded-xl bg-white p-3 mb-2" style={{ border: "1px solid #E0E8D3" }}>
+              <div className="text-[13px] font-semibold text-stone-800 mb-2">Filter size</div>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {FILTER_OPTIONS.map((f) => {
+                  const selected = sysFilterSize === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setSysFilterSize(f.key)}
+                      className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
+                      style={{
+                        background: selected ? PRIMARY : "white",
+                        color: selected ? "white" : "#5F5B50",
+                        border: selected ? "none" : "1px solid #D8D5CB",
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {sysFilterSize && (
+                <div className="rounded-lg px-3 py-2 text-[12px] flex items-start gap-2" style={{ background: "#EAF1F8", color: "#3B5169" }}>
+                  <Calculator size={15} className="flex-shrink-0 mt-0.5" />
+                  <span>
+                    Filter reminder set automatically: every {FILTER_OPTIONS.find((f) => f.key === sysFilterSize)?.days} days, based on filter size — not a fixed guess.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <input
             value={sysLocation}
             onChange={(e) => setSysLocation(e.target.value)}
