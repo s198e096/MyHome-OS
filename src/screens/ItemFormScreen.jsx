@@ -10,7 +10,7 @@ export default function ItemFormScreen({
   onAddTask, onUpdateTask, onDeleteTask,
   onAddExpense, onUpdateExpense, onDeleteExpense,
   onAddDocument, onUpdateDocument, onDeleteDocument,
-  onAddSystem, onUpdateSystem, onDeleteSystem,
+  onAddSystem, onUpdateSystem, onDeleteSystem, onAttachManual,
   onAddFurniture, onUpdateFurniture, onDeleteFurniture,
 }) {
   const isEdit = !!item;
@@ -41,6 +41,7 @@ export default function ItemFormScreen({
   const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
   const [sysWarranty, setSysWarranty] = useState(item?.warrantyExpiration || "");
   const [sysFilterSize, setSysFilterSize] = useState(item?.filterSize || "");
+  const [sysManualUrl, setSysManualUrl] = useState("");
 
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -109,8 +110,10 @@ export default function ItemFormScreen({
           photoUrl: photoUrl || null,
           filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
         };
-        if (isEdit) await onUpdateSystem(item.id, payload);
-        else await onAddSystem(payload);
+        const savedSystem = isEdit ? await onUpdateSystem(item.id, payload) : await onAddSystem(payload);
+        if (sysManualUrl && savedSystem) {
+          await onAttachManual(savedSystem.id, savedSystem.brand, savedSystem.model, sysManualUrl);
+        }
       }
     } catch (err) {
       setError(
@@ -139,7 +142,7 @@ export default function ItemFormScreen({
         <ChevronLeft size={16} /> {backLabels[kind]}
       </button>
 
-      {photoUrl && (kind === "system" || kind === "furniture" || kind === "doc") && (
+      {photoUrl && !photoUrl.toLowerCase().endsWith(".pdf") && (kind === "system" || kind === "furniture" || kind === "doc") && (
         <div className="rounded-xl bg-white p-2 mb-4" style={{ border: "1px solid #E0E8D3" }}>
           <img
             src={photoUrl}
@@ -171,6 +174,7 @@ export default function ItemFormScreen({
         sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
         sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
         sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
+        sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
       />
 
       {error && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</div>}

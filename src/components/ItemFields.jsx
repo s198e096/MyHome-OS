@@ -23,6 +23,7 @@ export default function ItemFields({
   sysReplacementCost, setSysReplacementCost,
   sysWarranty, setSysWarranty,
   sysFilterSize, setSysFilterSize,
+  sysManualUrl, setSysManualUrl,
 }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -30,11 +31,13 @@ export default function ItemFields({
   async function handleScan() {
     setScanning(true);
     setScanError("");
+    setSysManualUrl("");
     try {
       const result = await scanSystemLabel(photoUrl);
       if (result.brand) setSysBrand(result.brand);
       if (result.model) setSysModel(result.model);
       if (result.category) setSysCategory(result.category);
+      if (result.manualUrl) setSysManualUrl(result.manualUrl);
       if (!result.brand && !result.model && !result.category) {
         setScanError("Couldn't read the label clearly. Try a closer, well-lit photo, or fill it in manually.");
       }
@@ -151,6 +154,11 @@ export default function ItemFields({
             </button>
           )}
           {scanError && <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</div>}
+          {sysManualUrl && (
+            <div className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
+              Found the owner's manual — it'll be attached to this system's Documents when you save.
+            </div>
+          )}
 
           <input
             value={sysBrand}

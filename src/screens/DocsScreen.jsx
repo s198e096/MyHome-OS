@@ -20,7 +20,7 @@ export default function DocsScreen({ documents, systemById, onEdit, onAdd }) {
               className="w-full flex items-center gap-3 py-2.5 text-left"
               style={{ borderBottom: "1px solid #E7EEDB" }}
             >
-              {d.photoUrl ? (
+              {d.photoUrl && !d.photoUrl.toLowerCase().endsWith(".pdf") ? (
                 <img
                   src={d.photoUrl}
                   alt=""

@@ -292,6 +292,7 @@ export default function MyHouseOS() {
     setSystems((ss) => [...ss, created]);
     await syncFilterReminder(created);
     closeForm();
+    return created;
   }
 
   async function updateSystem(id, patch) {
@@ -301,6 +302,12 @@ export default function MyHouseOS() {
     setSelectedSystem((cur) => (cur && cur.id === id ? updated : cur));
     await syncFilterReminder(updated);
     closeForm();
+    return updated;
+  }
+
+  async function attachManualDocument(systemId, brand, model, manualUrl) {
+    const created = await db.documents.add({ label: `${brand} ${model} Manual`, type: "Manual", systemId, photoUrl: manualUrl });
+    setDocuments((ds) => [...ds, created]);
   }
 
   async function deleteSystem(id) {
@@ -405,6 +412,7 @@ export default function MyHouseOS() {
               onUpdateDocument={updateDocument}
               onDeleteDocument={deleteDocument}
               onAddSystem={addSystem}
+              onAttachManual={attachManualDocument}
               onUpdateSystem={updateSystem}
               onDeleteSystem={deleteSystem}
               onAddFurniture={addFurniture}
