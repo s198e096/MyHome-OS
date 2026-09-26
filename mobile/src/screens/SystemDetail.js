@@ -1,4 +1,5 @@
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Pencil } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG } from "../lib/constants.js";
 import { TODAY, money, replacementYear } from "../lib/forecast.js";
@@ -10,9 +11,10 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) 
   const repYear = replacementYear(sys);
   const monthsOut = Math.max(1, (repYear - TODAY.getFullYear()) * 12 - TODAY.getMonth());
   const reserve = Math.round(sys.replacementCost / monthsOut);
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4 pt-5" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Pressable onPress={onBack} className="flex-row items-center gap-1">
           <ChevronLeft size={16} color="#78716c" />

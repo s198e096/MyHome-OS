@@ -1,5 +1,19 @@
-import Placeholder from "../../../components/Placeholder.js";
+import { useRouter } from "expo-router";
+import { useAppData } from "../../../lib/app-data-context.js";
+import EditProfileScreen from "../../../screens/EditProfileScreen.js";
 
 export default function EditProfile() {
-  return <Placeholder title="Edit profile" backLabel="Account" />;
+  const router = useRouter();
+  const { profile, saveProfile } = useAppData();
+
+  return (
+    <EditProfileScreen
+      profile={profile}
+      onBack={() => router.back()}
+      onSave={async (next) => {
+        await saveProfile(next);
+        router.back();
+      }}
+    />
+  );
 }

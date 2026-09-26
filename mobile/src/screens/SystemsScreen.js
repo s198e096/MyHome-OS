@@ -1,12 +1,14 @@
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT } from "../lib/constants.js";
 import { systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.js";
 
 export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit }) {
+  const insets = useSafeAreaInsets();
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4 pt-5" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-[17px] font-semibold text-stone-900">Systems</Text>
         <Pressable onPress={onAdd} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>

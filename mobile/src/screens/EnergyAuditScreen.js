@@ -1,4 +1,5 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, CheckCircle2, XCircle, HelpCircle } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
 import { computeAutoChecks, computeEnergyScore, FAIL_TASK_TITLES } from "../lib/energyAudit.js";
@@ -28,9 +29,10 @@ export default function EnergyAuditScreen({ systems, energyChecks, tasks, onBack
   const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
 
   const hasTask = (title) => tasks.some((t) => t.title === title);
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4 pt-5" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">Home</Text>

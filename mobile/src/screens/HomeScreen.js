@@ -1,4 +1,5 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Clock, Home, Zap } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
@@ -13,8 +14,13 @@ const seedRecommendations = [
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
+  const insets = useSafeAreaInsets();
   return (
-    <LinearGradient colors={[HERO_BG_TOP, HERO_BG_BOTTOM]} className="px-5 pb-4 pt-5 mb-5" style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
+    <LinearGradient
+      colors={[HERO_BG_TOP, HERO_BG_BOTTOM]}
+      className="px-5 pb-4 mb-5"
+      style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20 }}
+    >
       <View className="flex-row items-center justify-end mb-3">
         <Pressable
           onPress={onOpenAccount}

@@ -1,11 +1,13 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, Check } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
 
 export default function TasksScreen({ tasks, completed, systemById, onToggle, onEdit, onAdd }) {
+  const insets = useSafeAreaInsets();
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4 pt-5" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-[17px] font-semibold text-stone-900">Tasks</Text>
         <Pressable onPress={onAdd} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>

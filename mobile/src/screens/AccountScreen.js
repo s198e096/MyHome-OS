@@ -1,4 +1,5 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pencil, ChevronRight } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
@@ -6,9 +7,10 @@ import LedgerRow from "../components/LedgerRow.js";
 
 export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut }) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4 pt-5" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-[17px] font-semibold text-stone-900">Account</Text>
         <Pressable onPress={onEdit} className="flex-row items-center gap-1">

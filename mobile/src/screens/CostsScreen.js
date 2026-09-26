@@ -1,4 +1,5 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
 import { PRIMARY } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
@@ -6,8 +7,9 @@ import LedgerRow from "../components/LedgerRow.js";
 
 export default function CostsScreen({ expenses, forecast, systemById, onEdit, onAdd }) {
   const maxAmt = Math.max(...forecast.map((f) => f.amount), 1);
+  const insets = useSafeAreaInsets();
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4 pt-5" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-[17px] font-semibold text-stone-900">Costs</Text>
         <Pressable onPress={onAdd} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
