@@ -11,10 +11,13 @@
     "backgroundColor": "#F5F8F0",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.myhomeos.app"
+      "bundleIdentifier": "com.myhomeosapp.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.myhomeos.app",
+      "package": "com.myhomeosapp.app",
       "adaptiveIcon": {
         "backgroundColor": "#F5F8F0",
         "foregroundImage": "./assets/android-icon-foreground.png",
