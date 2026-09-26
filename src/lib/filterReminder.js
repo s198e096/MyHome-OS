@@ -1,21 +1,36 @@
-import { TODAY } from "./forecast.js";
+import { FILTER_OPTIONS } from "./constants.js";
 
+export const FILTER_TASK_TITLE = "Replace HVAC air filter";
+const DEFAULT_FILTER_DAYS = 90;
+
+// The filter lives in the indoor unit, so prefer it. A generic "HVAC" system
+// (entered before the indoor/outdoor split) also counts; an outdoor unit alone doesn't.
 export function findFilterUnit(systems) {
-  const indoorUnits = systems.filter((s) => s.category === "hvac_indoor");
-  return indoorUnits.find((s) => s.filterSize) || indoorUnits[0] || null;
+  for (const category of ["hvac_indoor", "hvac"]) {
+    const matches = systems.filter((s) => s.category === category);
+    if (matches.length) return matches.find((s) => s.filterSize) || matches[0];
+  }
+  return null;
+}
+
+export function filterReminderInfo(unit) {
+  const option = FILTER_OPTIONS.find((f) => f.key === unit.filterSize);
+  return {
+    days: option?.days ?? DEFAULT_FILTER_DAYS,
+    label: option && option.key !== "unsure" ? option.label : "air filter",
+  };
 }
 
 const icsDate = (d) => d.toISOString().slice(0, 10).replace(/-/g, "");
 const icsEscape = (s) => String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 
-// A repeating all-day calendar event with two alarms (9am the day before and
-// 9am the day of), so the phone's own notification system does the reminding.
-// The first date matches the due date of the in-app "Replace HVAC air filter" task.
-export function buildFilterReminderIcs({ systemId, brand, model, filterLabel, days }) {
-  const start = new Date(TODAY.getTime() + days * 86400000);
+// A repeating all-day calendar event with alarms at 9am the day before and the
+// day of, so the phone's own notification system does the reminding. firstDate
+// is the due date of the in-app task (YYYY-MM-DD).
+export function buildFilterReminderIcs({ systemId, brand, model, filterLabel, days, firstDate }) {
+  const start = new Date(`${firstDate}T00:00:00Z`);
   const end = new Date(start.getTime() + 86400000);
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const title = "Replace HVAC air filter";
   const description = `Time to replace the ${filterLabel} in your ${brand} ${model}. Repeats every ${days} days.`;
 
   return [
@@ -29,16 +44,16 @@ export function buildFilterReminderIcs({ systemId, brand, model, filterLabel, da
     `DTSTART;VALUE=DATE:${icsDate(start)}`,
     `DTEND;VALUE=DATE:${icsDate(end)}`,
     `RRULE:FREQ=DAILY;INTERVAL=${days}`,
-    `SUMMARY:${icsEscape(title)}`,
+    `SUMMARY:${icsEscape(FILTER_TASK_TITLE)}`,
     `DESCRIPTION:${icsEscape(description)}`,
     "BEGIN:VALARM",
     "ACTION:DISPLAY",
-    `DESCRIPTION:${icsEscape(title)}`,
+    `DESCRIPTION:${icsEscape(FILTER_TASK_TITLE)}`,
     "TRIGGER:-PT15H",
     "END:VALARM",
     "BEGIN:VALARM",
     "ACTION:DISPLAY",
-    `DESCRIPTION:${icsEscape(title)}`,
+    `DESCRIPTION:${icsEscape(FILTER_TASK_TITLE)}`,
     "TRIGGER:PT9H",
     "END:VALARM",
     "END:VEVENT",

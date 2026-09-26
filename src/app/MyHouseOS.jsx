@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER, FREE_SYSTEM_LIMIT, FILTER_OPTIONS } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
-import { findFilterUnit, buildFilterReminderIcs, downloadIcs } from "../lib/filterReminder.js";
+import { findFilterUnit, filterReminderInfo, buildFilterReminderIcs, downloadIcs, FILTER_TASK_TITLE } from "../lib/filterReminder.js";
 import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession, loadEnergyChecks, updateEnergyCheckStatus } from "../lib/db.js";
 import AuthScreen from "../screens/AuthScreen.jsx";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen.jsx";
@@ -142,9 +142,9 @@ export default function MyHouseOS() {
     setSelectedSystem(null);
   }
 
-  function openAdd(kind) {
+  function openAdd(kind, hint) {
     setSlideDirection("right");
-    setFormItem({ kind, item: null });
+    setFormItem({ kind, item: null, hint });
   }
 
   function openEdit(kind, item) {
@@ -162,15 +162,26 @@ export default function MyHouseOS() {
     setFormItem({ kind: "energyAudit", item: null });
   }
 
-  function handleFilterReminder() {
+  // First tap creates the reminder task from the user's HVAC system; once it
+  // exists, tapping again hands the phone a calendar event with alarms.
+  async function handleFilterReminder() {
     const unit = findFilterUnit(systems);
-    if (!unit) return handleAddSystem();
-    if (!unit.filterSize) return openEdit("system", unit);
-    const option = FILTER_OPTIONS.find((f) => f.key === unit.filterSize);
-    downloadIcs(
-      "hvac-filter-reminder.ics",
-      buildFilterReminderIcs({ systemId: unit.id, brand: unit.brand, model: unit.model, filterLabel: option.label, days: option.days })
-    );
+    if (!unit) {
+      if (addSystemAtLimit()) return openPlan();
+      return openAdd("system", "Add your HVAC indoor unit first. Your filter reminder is built from it.");
+    }
+
+    const { days, label } = filterReminderInfo(unit);
+    const existing = tasks.find((t) => t.systemId === unit.id && t.title === FILTER_TASK_TITLE && !t.completed);
+    try {
+      if (!existing) return await upsertFilterTask(unit, days, false);
+      downloadIcs(
+        "hvac-filter-reminder.ics",
+        buildFilterReminderIcs({ systemId: unit.id, brand: unit.brand, model: unit.model, filterLabel: label, days, firstDate: existing.dueDate })
+      );
+    } catch {
+      window.alert("Couldn't set up the filter reminder. Try again.");
+    }
   }
 
   async function updateEnergyCheck(id, status) {
@@ -284,19 +295,23 @@ export default function MyHouseOS() {
     closeForm();
   }
 
-  async function syncFilterReminder(sys) {
-    if (sys.category !== "hvac_indoor" || !sys.filterSize) return;
-    const days = FILTER_OPTIONS.find((f) => f.key === sys.filterSize)?.days;
-    if (!days) return;
+  async function upsertFilterTask(unit, days, reschedule) {
     const dueDate = new Date(TODAY.getTime() + days * 86400000).toISOString().slice(0, 10);
-    const existing = tasks.find((t) => t.systemId === sys.id && t.title === "Replace HVAC air filter" && !t.completed);
+    const existing = tasks.find((t) => t.systemId === unit.id && t.title === FILTER_TASK_TITLE && !t.completed);
     if (existing) {
+      if (!reschedule) return;
       const updated = await db.tasks.update(existing.id, { ...existing, dueDate });
       setTasks((ts) => ts.map((t) => (t.id === existing.id ? updated : t)));
     } else {
-      const created = await db.tasks.add({ title: "Replace HVAC air filter", dueDate, systemId: sys.id, completed: false });
+      const created = await db.tasks.add({ title: FILTER_TASK_TITLE, dueDate, systemId: unit.id, completed: false });
       setTasks((ts) => [...ts, created]);
     }
+  }
+
+  async function syncFilterReminder(sys) {
+    if (sys.category !== "hvac_indoor" || !sys.filterSize) return;
+    const days = FILTER_OPTIONS.find((f) => f.key === sys.filterSize)?.days;
+    if (days) await upsertFilterTask(sys, days, true);
   }
 
   async function addSystem(sys) {
@@ -412,6 +427,7 @@ export default function MyHouseOS() {
             <ItemFormScreen
               kind={formItem.kind}
               item={formItem.item}
+              hint={formItem.hint}
               systems={systems}
               onBack={closeForm}
               onAddTask={addTask}

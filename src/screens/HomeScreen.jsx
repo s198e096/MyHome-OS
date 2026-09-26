@@ -1,8 +1,8 @@
 import { ChevronRight, Clock, Home, Zap, CalendarPlus } from "lucide-react";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, FILTER_OPTIONS } from "../lib/constants.js";
+import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import { computeAutoChecks, computeEnergyScore } from "../lib/energyAudit.js";
-import { findFilterUnit } from "../lib/filterReminder.js";
+import { findFilterUnit, FILTER_TASK_TITLE } from "../lib/filterReminder.js";
 import StatusDot from "../components/StatusDot.jsx";
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount, onNavigate }) {
@@ -168,7 +168,15 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
 
   const { passed: energyPassed, total: energyTotal } = computeEnergyScore(computeAutoChecks(systems), energyChecks);
-  const filterDays = FILTER_OPTIONS.find((f) => f.key === findFilterUnit(systems)?.filterSize)?.days;
+  const filterUnit = findFilterUnit(systems);
+  const filterTask = filterUnit && tasks.find((t) => t.systemId === filterUnit.id && t.title === FILTER_TASK_TITLE && !t.completed);
+  let filterSubtitle = "Add your HVAC system to set up a filter reminder";
+  if (filterTask) {
+    const due = new Date(filterTask.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    filterSubtitle = `Next change due ${due}. Tap to add it to your phone's calendar.`;
+  } else if (filterUnit) {
+    filterSubtitle = `Tap to set up a reminder for your ${filterUnit.brand} ${filterUnit.model}`;
+  }
   const recommendations = [
     {
       id: "energy-audit",
@@ -181,9 +189,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
     {
       id: "filter-reminder",
       title: "Filter Reminder",
-      subtitle: filterDays
-        ? `Every ${filterDays} days. Tap to add it to your phone's calendar.`
-        : "Set up auto-reminders for your HVAC filter",
+      subtitle: filterSubtitle,
       icon: CalendarPlus,
       highlight: false,
       onClick: onFilterReminder,

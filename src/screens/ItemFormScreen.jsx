@@ -6,7 +6,7 @@ import ItemFields from "../components/ItemFields.jsx";
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
 
 export default function ItemFormScreen({
-  kind, item, systems, onBack,
+  kind, item, hint, systems, onBack,
   onAddTask, onUpdateTask, onDeleteTask,
   onAddExpense, onUpdateExpense, onDeleteExpense,
   onAddDocument, onUpdateDocument, onDeleteDocument,
@@ -150,6 +150,12 @@ export default function ItemFormScreen({
             className="w-full rounded-lg object-cover"
             style={{ height: 180 }}
           />
+        </div>
+      )}
+
+      {hint && (
+        <div className="rounded-lg px-3 py-2 mb-3 text-[12px]" style={{ background: "#EAF1F8", color: "#3B5169" }}>
+          {hint}
         </div>
       )}
 
