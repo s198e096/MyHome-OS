@@ -1,13 +1,9 @@
-import { ChevronRight, Clock, Home, Zap } from "lucide-react";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
+import { ChevronRight, Clock, Home, Zap, CalendarPlus } from "lucide-react";
+import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, FILTER_OPTIONS } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import { computeAutoChecks, computeEnergyScore } from "../lib/energyAudit.js";
+import { findFilterUnit } from "../lib/filterReminder.js";
 import StatusDot from "../components/StatusDot.jsx";
-
-const seedRecommendations = [
-  { id: "r2", title: "Water Bill", subtitle: "Save $100 every month with a simple fix", cta: null, highlight: false },
-  { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
-];
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
@@ -168,10 +164,11 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, energyChecks, onOpenSystem, onOpenAccount, onOpenEnergyAudit, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, energyChecks, onOpenSystem, onOpenAccount, onOpenEnergyAudit, onFilterReminder, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
 
   const { passed: energyPassed, total: energyTotal } = computeEnergyScore(computeAutoChecks(systems), energyChecks);
+  const filterDays = FILTER_OPTIONS.find((f) => f.key === findFilterUnit(systems)?.filterSize)?.days;
   const recommendations = [
     {
       id: "energy-audit",
@@ -181,7 +178,16 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
       highlight: true,
       onClick: onOpenEnergyAudit,
     },
-    ...seedRecommendations,
+    {
+      id: "filter-reminder",
+      title: "Filter Reminder",
+      subtitle: filterDays
+        ? `Every ${filterDays} days. Tap to add it to your phone's calendar.`
+        : "Set up auto-reminders for your HVAC filter",
+      icon: CalendarPlus,
+      highlight: false,
+      onClick: onFilterReminder,
+    },
   ];
   return (
     <div>

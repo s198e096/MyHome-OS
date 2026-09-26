@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { TAB_ORDER, FREE_SYSTEM_LIMIT, FILTER_OPTIONS } from "../lib/constants.js";
 import { TODAY, daysUntil, computeForecast } from "../lib/forecast.js";
 import { supabase } from "../lib/supabase.js";
+import { findFilterUnit, buildFilterReminderIcs, downloadIcs } from "../lib/filterReminder.js";
 import { db, loadAllData, loadProfile, saveProfile as saveProfileRow, createCheckoutSession, createPortalSession, loadEnergyChecks, updateEnergyCheckStatus } from "../lib/db.js";
 import AuthScreen from "../screens/AuthScreen.jsx";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen.jsx";
@@ -159,6 +160,17 @@ export default function MyHouseOS() {
   function openEnergyAudit() {
     setSlideDirection("right");
     setFormItem({ kind: "energyAudit", item: null });
+  }
+
+  function handleFilterReminder() {
+    const unit = findFilterUnit(systems);
+    if (!unit) return handleAddSystem();
+    if (!unit.filterSize) return openEdit("system", unit);
+    const option = FILTER_OPTIONS.find((f) => f.key === unit.filterSize);
+    downloadIcs(
+      "hvac-filter-reminder.ics",
+      buildFilterReminderIcs({ systemId: unit.id, brand: unit.brand, model: unit.model, filterLabel: option.label, days: option.days })
+    );
   }
 
   async function updateEnergyCheck(id, status) {
@@ -438,6 +450,7 @@ export default function MyHouseOS() {
                   }}
                   onOpenAccount={() => goToTab("account")}
                   onOpenEnergyAudit={openEnergyAudit}
+                  onFilterReminder={handleFilterReminder}
                   onNavigate={goToTab}
                 />
               )}
