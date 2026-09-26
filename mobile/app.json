@@ -2,6 +2,7 @@
   "expo": {
     "name": "MyHome OS",
     "slug": "myhome-os",
+    "owner": "myhome-os",
     "scheme": "myhomeos",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,6 +32,12 @@
       "expo-web-browser",
       "expo-asset",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2fb325b4-1bc3-4cb3-87c6-5d64dff41f22"
+      }
+    }
   }
 }
