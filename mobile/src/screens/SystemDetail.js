@@ -8,9 +8,10 @@ import LedgerRow from "../components/LedgerRow.js";
 export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) {
   const meta = CATEGORY_META[sys.category];
   const Icon = meta.icon;
-  const repYear = replacementYear(sys);
-  const monthsOut = Math.max(1, (repYear - TODAY.getFullYear()) * 12 - TODAY.getMonth());
-  const reserve = Math.round(sys.replacementCost / monthsOut);
+  const hasReplacementInfo = sys.purchaseDate != null && sys.expectedLifeYears != null && sys.replacementCost != null;
+  const repYear = hasReplacementInfo ? replacementYear(sys) : null;
+  const monthsOut = hasReplacementInfo ? Math.max(1, (repYear - TODAY.getFullYear()) * 12 - TODAY.getMonth()) : null;
+  const reserve = hasReplacementInfo ? Math.round(sys.replacementCost / monthsOut) : null;
   const insets = useSafeAreaInsets();
 
   return (
@@ -43,10 +44,16 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) 
       </View>
 
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-        <LedgerRow label="Installed" value={new Date(sys.purchaseDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })} />
-        <LedgerRow label="Purchase price" value={money(sys.purchasePrice)} />
-        <LedgerRow label="Expected life" value={`${sys.expectedLifeYears} years`} />
-        <LedgerRow label="Est. replacement" value={`${money(sys.replacementCost)}, ${repYear}`} />
+        <LedgerRow
+          label="Installed"
+          value={sys.purchaseDate ? new Date(sys.purchaseDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Not set"}
+        />
+        <LedgerRow label="Purchase price" value={sys.purchasePrice != null ? money(sys.purchasePrice) : "Not set"} />
+        <LedgerRow label="Expected life" value={sys.expectedLifeYears != null ? `${sys.expectedLifeYears} years` : "Not set"} />
+        <LedgerRow
+          label="Est. replacement"
+          value={hasReplacementInfo ? `${money(sys.replacementCost)}, ${repYear}` : "Not set"}
+        />
         <LedgerRow
           label="Warranty"
           value={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? "Active" : "Expired"}
@@ -54,10 +61,12 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) 
         />
       </View>
 
-      <View className="rounded-xl p-3 mb-4" style={{ backgroundColor: STATUS_BG.yellow, borderWidth: 1, borderColor: "#F0DDB3" }}>
-        <Text className="text-[11px]" style={{ color: STATUS_COLOR.yellow, fontWeight: "600" }}>Recommended savings</Text>
-        <Text className="text-[15px]" style={{ color: STATUS_COLOR.yellow, fontWeight: "600" }}>{money(reserve)}/mo toward replacement</Text>
-      </View>
+      {hasReplacementInfo && (
+        <View className="rounded-xl p-3 mb-4" style={{ backgroundColor: STATUS_BG.yellow, borderWidth: 1, borderColor: "#F0DDB3" }}>
+          <Text className="text-[11px]" style={{ color: STATUS_COLOR.yellow, fontWeight: "600" }}>Recommended savings</Text>
+          <Text className="text-[15px]" style={{ color: STATUS_COLOR.yellow, fontWeight: "600" }}>{money(reserve)}/mo toward replacement</Text>
+        </View>
+      )}
 
       <Text className="text-[12px] font-semibold text-stone-500 mb-1">Upcoming tasks</Text>
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>

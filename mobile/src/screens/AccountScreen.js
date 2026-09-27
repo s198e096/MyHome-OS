@@ -3,11 +3,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pencil, ChevronRight } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
+import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import LedgerRow from "../components/LedgerRow.js";
 
 export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut }) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
   const insets = useSafeAreaInsets();
+  const featureChips = buildFeatureSummary(profile);
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -27,12 +29,23 @@ export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut
         <Text className="text-[12.5px] text-stone-400">{profile.email}</Text>
       </View>
 
-      <Text className="text-[12px] font-semibold text-stone-500 mb-1">Home</Text>
+      <Text className="text-[12px] font-semibold text-stone-500 mb-1">
+        {profile.propertyName || "Home"}
+      </Text>
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         <View className="py-2.5" style={{ borderBottomWidth: 1, borderBottomColor: "#E7EEDB" }}>
           <Text className="text-[13.5px] text-stone-800">Address</Text>
           <Text className="text-[12px] text-stone-500 mt-0.5">{profile.address}</Text>
         </View>
+        {(profile.bedrooms != null || profile.yearBuilt != null) && (
+          <LedgerRow
+            label="Details"
+            value={[profile.bedrooms != null ? `${profile.bedrooms} bed` : null, profile.yearBuilt != null ? `Built ${profile.yearBuilt}` : null]
+              .filter(Boolean)
+              .join(" · ")}
+          />
+        )}
+        {profile.purchasePrice != null && <LedgerRow label="Purchase price" value={money(profile.purchasePrice)} />}
         {profile.propertyValue != null && (
           <LedgerRow
             label="Home value"
@@ -48,6 +61,15 @@ export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut
           </View>
         </Pressable>
       </View>
+
+      {featureChips.length > 0 && (
+        <>
+          <Text className="text-[12px] font-semibold text-stone-500 mb-1">Property features</Text>
+          <View className="rounded-xl bg-white p-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+            <Text className="text-[12.5px] text-stone-600 leading-relaxed">{featureChips.join(" · ")}</Text>
+          </View>
+        </>
+      )}
 
       <Pressable onPress={onSignOut} className="w-full py-2.5 rounded-lg items-center mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         <Text className="text-[13.5px] font-semibold" style={{ color: STATUS_COLOR.red }}>Sign out</Text>

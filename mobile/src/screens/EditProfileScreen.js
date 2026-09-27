@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, Text, TextInput, Pressable } from "react-native";
+import { ScrollView, View, Text, TextInput, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
@@ -9,8 +9,12 @@ const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 export default function EditProfileScreen({ profile, onBack, onSave }) {
   const [name, setName] = useState(profile.name);
   const [email, setEmail] = useState(profile.email);
+  const [propertyName, setPropertyName] = useState(profile.propertyName || "");
   const [address, setAddress] = useState(profile.address);
   const [propertyValue, setPropertyValue] = useState(profile.propertyValue != null ? String(profile.propertyValue) : "");
+  const [bedrooms, setBedrooms] = useState(profile.bedrooms != null ? String(profile.bedrooms) : "");
+  const [yearBuilt, setYearBuilt] = useState(profile.yearBuilt != null ? String(profile.yearBuilt) : "");
+  const [purchasePrice, setPurchasePrice] = useState(profile.purchasePrice != null ? String(profile.purchasePrice) : "");
   const [error, setError] = useState("");
   const insets = useSafeAreaInsets();
 
@@ -23,7 +27,16 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
       if (isNaN(num) || num < 0) return setError("Enter a valid property value.");
       value = num;
     }
-    onSave({ name: name.trim(), email: email.trim(), address: address.trim(), propertyValue: value });
+    onSave({
+      name: name.trim(),
+      email: email.trim(),
+      propertyName: propertyName.trim(),
+      address: address.trim(),
+      propertyValue: value,
+      bedrooms: bedrooms.trim() ? parseInt(bedrooms, 10) : null,
+      yearBuilt: yearBuilt.trim() ? parseInt(yearBuilt, 10) : null,
+      purchasePrice: purchasePrice.trim() ? parseFloat(purchasePrice) : null,
+    });
   }
 
   return (
@@ -50,6 +63,13 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         style={fieldStyle}
       />
       <TextInput
+        value={propertyName}
+        onChangeText={setPropertyName}
+        placeholder="Property name (e.g. Main House)"
+        className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+        style={fieldStyle}
+      />
+      <TextInput
         value={address}
         onChangeText={setAddress}
         placeholder="Home address"
@@ -61,9 +81,35 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         onChangeText={setPropertyValue}
         placeholder="Estimated property value ($)"
         inputMode="decimal"
-        className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
+        className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
       />
+      <TextInput
+        value={purchasePrice}
+        onChangeText={setPurchasePrice}
+        placeholder="Purchase price ($)"
+        inputMode="decimal"
+        className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+        style={fieldStyle}
+      />
+      <View className="flex-row gap-2 mb-3">
+        <TextInput
+          value={bedrooms}
+          onChangeText={setBedrooms}
+          placeholder="Bedrooms"
+          inputMode="numeric"
+          className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
+          style={fieldStyle}
+        />
+        <TextInput
+          value={yearBuilt}
+          onChangeText={setYearBuilt}
+          placeholder="Year built"
+          inputMode="numeric"
+          className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
+          style={fieldStyle}
+        />
+      </View>
 
       {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 

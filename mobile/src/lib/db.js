@@ -121,17 +121,67 @@ const rowToProfile = (r) => ({
   name: r.name,
   email: undefined, // comes from the auth session, not this table
   address: r.address,
+  propertyName: r.property_name || "",
   propertyValue: r.property_value,
   propertyValueSource: r.property_value_source,
+  bedrooms: r.bedrooms,
+  yearBuilt: r.year_built,
+  purchasePrice: r.purchase_price,
+  bathrooms: r.bathrooms,
+  squareFootage: r.square_footage,
+  lotSize: r.lot_size,
+  propertyType: r.property_type,
+  roomCount: r.room_count,
+  floorCount: r.floor_count,
+  roofType: r.roof_type,
+  heatingType: r.heating_type,
+  coolingType: r.cooling_type,
+  foundationType: r.foundation_type,
+  exteriorType: r.exterior_type,
+  architectureType: r.architecture_type,
+  hasGarage: r.has_garage,
+  garageType: r.garage_type,
+  garageSpaces: r.garage_spaces,
+  hasPool: r.has_pool,
+  poolType: r.pool_type,
+  hasFireplace: r.has_fireplace,
+  fireplaceType: r.fireplace_type,
+  hoaFee: r.hoa_fee,
   plan: r.plan,
+  onboardingCompleted: r.onboarding_completed,
 });
 
 const profileToRow = (p) => ({
   name: p.name,
   address: p.address,
+  property_name: p.propertyName || null,
   property_value: p.propertyValue ?? null,
   property_value_source: p.propertyValueSource || null,
+  bedrooms: p.bedrooms ?? null,
+  year_built: p.yearBuilt ?? null,
+  purchase_price: p.purchasePrice ?? null,
+  bathrooms: p.bathrooms ?? null,
+  square_footage: p.squareFootage ?? null,
+  lot_size: p.lotSize ?? null,
+  property_type: p.propertyType ?? null,
+  room_count: p.roomCount ?? null,
+  floor_count: p.floorCount ?? null,
+  roof_type: p.roofType ?? null,
+  heating_type: p.heatingType ?? null,
+  cooling_type: p.coolingType ?? null,
+  foundation_type: p.foundationType ?? null,
+  exterior_type: p.exteriorType ?? null,
+  architecture_type: p.architectureType ?? null,
+  has_garage: p.hasGarage ?? null,
+  garage_type: p.garageType ?? null,
+  garage_spaces: p.garageSpaces ?? null,
+  has_pool: p.hasPool ?? null,
+  pool_type: p.poolType ?? null,
+  has_fireplace: p.hasFireplace ?? null,
+  fireplace_type: p.fireplaceType ?? null,
+  hoa_fee: p.hoaFee ?? null,
   plan: p.plan,
+  onboarding_completed: p.onboardingCompleted,
 });
 
 async function loadTable(table, mapper) {
@@ -187,6 +237,14 @@ export async function uploadPhoto(asset) {
 export async function scanSystemLabel(photoUrl) {
   const { data, error } = await supabase.functions.invoke("scan-system-label", {
     body: { photoUrl },
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchPropertyDetails(address) {
+  const { data, error } = await supabase.functions.invoke("property-lookup", {
+    body: { address },
   });
   if (error) throw error;
   return data;

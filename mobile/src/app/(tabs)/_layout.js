@@ -2,10 +2,12 @@ import { Tabs } from "expo-router";
 import { Home, Wrench, CalendarCheck, Banknote, FileText, User } from "lucide-react-native";
 import { PRIMARY } from "../../lib/constants.js";
 import { AppDataProvider, useAppData } from "../../lib/app-data-context.js";
+import OnboardingScreen from "../../screens/OnboardingScreen.js";
 
 function TabsNavigator() {
-  const { dataLoaded } = useAppData();
+  const { dataLoaded, profile } = useAppData();
   if (!dataLoaded) return null;
+  if (!profile.onboardingCompleted) return <OnboardingScreen />;
 
   return (
     <Tabs

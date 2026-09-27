@@ -12,7 +12,7 @@ const seedRecommendations = [
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
 
-function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccount, onNavigate }) {
+function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   const insets = useSafeAreaInsets();
   return (
@@ -21,7 +21,10 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccoun
       className="px-5 pb-4 mb-5"
       style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20 }}
     >
-      <View className="flex-row items-center justify-end mb-3">
+      <View className="flex-row items-center justify-between mb-3">
+        <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }} numberOfLines={1}>
+          {profile.propertyName || "Home"}
+        </Text>
         <Pressable
           onPress={onOpenAccount}
           className="rounded-full items-center justify-center"
@@ -38,6 +41,13 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, onOpenAccoun
           </Text>
         ))}
       </View>
+
+      {estimatedValue != null && (
+        <View className="items-center mb-4">
+          <Text className="text-[11px]" style={{ color: "#3B5169" }}>Estimated home value</Text>
+          <Text className="text-[26px] font-bold" style={{ color: PRIMARY }}>{money(estimatedValue)}</Text>
+        </View>
+      )}
 
       <View className="items-center mb-4">
         <View className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
@@ -159,6 +169,9 @@ function RecommendedList({ items }) {
 export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, energyChecks, onOpenSystem, onOpenAccount, onOpenEnergyAudit, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
 
+  const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
+  const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
+
   const { passed: energyPassed, total: energyTotal } = computeEnergyScore(computeAutoChecks(systems), energyChecks);
   const recommendations = [
     {
@@ -179,6 +192,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
         overdueCount={overdueCount}
         systemsCount={systems.length}
         profile={profile}
+        estimatedValue={estimatedValue}
         onOpenAccount={onOpenAccount}
         onNavigate={onNavigate}
       />
