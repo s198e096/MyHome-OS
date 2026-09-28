@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Image } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MapPin, Sparkles, ChevronLeft, Check, Search } from "lucide-react-native";
@@ -221,10 +221,12 @@ export default function OnboardingScreen() {
   if (step === "property") {
     const canFindDetails = propertyName.trim() && address.trim() && !detailsLoading;
     return (
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <ScrollView
         className="flex-1 bg-[#F5F8F0] px-4"
         contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Add your property</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">
@@ -284,6 +286,7 @@ export default function OnboardingScreen() {
           <Text className="text-[13.5px] font-semibold text-white">Find property details</Text>
         </Pressable>
       </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -291,10 +294,12 @@ export default function OnboardingScreen() {
   const featureChips = extraDetails ? buildFeatureSummary(extraDetails) : [];
 
   return (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
     <ScrollView
       className="flex-1 bg-[#F5F8F0] px-4"
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <Pressable onPress={() => setStep("property")} className="flex-row items-center gap-1 mb-3">
         <ChevronLeft size={16} color="#78716c" />
@@ -410,5 +415,6 @@ export default function OnboardingScreen() {
         <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Save property"}</Text>
       </Pressable>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

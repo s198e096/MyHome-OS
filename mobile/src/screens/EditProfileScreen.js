@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, View, Text, TextInput, Pressable } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
@@ -40,7 +40,13 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
   }
 
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+    <ScrollView
+      className="flex-1 bg-[#F5F8F0] px-4"
+      style={{ paddingTop: insets.top + 20 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">Account</Text>
@@ -117,5 +123,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         <Text className="text-[13.5px] font-semibold text-white">Save changes</Text>
       </Pressable>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

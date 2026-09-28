@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, View, Text, Pressable, Image } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS } from "../lib/constants.js";
@@ -118,6 +118,7 @@ export default function ItemFormScreen({
           await onAttachManual(savedSystem.id, savedSystem.brand, savedSystem.model, sysManualUrl);
         }
       }
+      onBack();
     } catch (err) {
       setError(
         err?.message?.includes("schema cache")
@@ -137,10 +138,17 @@ export default function ItemFormScreen({
     else if (kind === "doc") onDeleteDocument(item.id);
     else if (kind === "furniture") onDeleteFurniture(item.id);
     else if (kind === "system") onDeleteSystem(item.id);
+    onBack();
   }
 
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+    <ScrollView
+      className="flex-1 bg-[#F5F8F0] px-4"
+      style={{ paddingTop: insets.top + 20 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">{backLabels[kind]}</Text>
@@ -210,5 +218,6 @@ export default function ItemFormScreen({
 
       <View style={{ height: 24 }} />
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
