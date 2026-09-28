@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { useAppData } from "../../lib/app-data-context.js";
+import AnimatedTabScreen from "../../components/AnimatedTabScreen.js";
 import HomeScreen from "../../screens/HomeScreen.js";
 
 export default function Home() {
@@ -7,6 +8,7 @@ export default function Home() {
   const data = useAppData();
 
   return (
+    <AnimatedTabScreen tabKey="home">
     <HomeScreen
       upcomingTasks={data.upcomingTasks}
       systemById={data.systemById}
@@ -22,5 +24,6 @@ export default function Home() {
       onOpenEnergyAudit={() => router.push("/energy-audit")}
       onNavigate={(path) => router.push(path)}
     />
+    </AnimatedTabScreen>
   );
 }

@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "myhome-os-mobile",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "mobile", "run", "web"],
+      "port": 8081
+    },
+    {
       "name": "myhome-os-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
