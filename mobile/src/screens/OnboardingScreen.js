@@ -9,6 +9,7 @@ import { fetchPropertyDetails } from "../lib/db.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
+import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -240,6 +241,7 @@ export default function OnboardingScreen() {
           placeholder="e.g. Main House, The Lake House"
           className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
+          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
 
         <Text className="text-[11px] text-stone-500 mb-1">Address</Text>
@@ -249,6 +251,7 @@ export default function OnboardingScreen() {
           placeholder="Start typing your address..."
           className="w-full px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
+          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
 
         {searching && (
@@ -286,6 +289,7 @@ export default function OnboardingScreen() {
           <Text className="text-[13.5px] font-semibold text-white">Find property details</Text>
         </Pressable>
       </ScrollView>
+      <KeyboardDoneBar />
       </KeyboardAvoidingView>
     );
   }
@@ -331,6 +335,7 @@ export default function OnboardingScreen() {
             inputMode="numeric"
             className="w-full px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
         </View>
         <View className="flex-1">
@@ -342,6 +347,7 @@ export default function OnboardingScreen() {
             inputMode="numeric"
             className="w-full px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
         </View>
       </View>
@@ -354,6 +360,7 @@ export default function OnboardingScreen() {
         inputMode="decimal"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
+        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
 
       <Text className="text-[11px] text-stone-500 mb-1">Current market value ($)</Text>
@@ -363,6 +370,7 @@ export default function OnboardingScreen() {
         placeholder="e.g. 425000"
         inputMode="decimal"
         className="w-full mb-4 px-3 py-2 rounded-lg text-[13.5px]"
+        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         style={fieldStyle}
       />
 
@@ -415,6 +423,7 @@ export default function OnboardingScreen() {
         <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Save property"}</Text>
       </Pressable>
     </ScrollView>
+    <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }

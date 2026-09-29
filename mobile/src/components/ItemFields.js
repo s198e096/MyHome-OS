@@ -5,6 +5,7 @@ import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS } from "../lib/constants.js";
 import { scanSystemLabel } from "../lib/db.js";
+import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
@@ -100,6 +101,7 @@ export default function ItemFields({
           }
           className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
+          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
       )}
 
@@ -114,6 +116,7 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <TextInput
             value={title}
@@ -121,6 +124,7 @@ export default function ItemFields({
             placeholder="Note (e.g. Gutter cleaning)"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <View className="w-full mb-2" style={pickerBoxStyle}>
             <Picker selectedValue={category} onValueChange={setCategory}>
@@ -189,6 +193,7 @@ export default function ItemFields({
             placeholder="Brand (e.g. Carrier)"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <TextInput
             value={sysModel}
@@ -196,6 +201,7 @@ export default function ItemFields({
             placeholder="Model (e.g. Infinity)"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <View className="w-full mb-2" style={pickerBoxStyle}>
             <Picker selectedValue={sysCategory} onValueChange={setSysCategory}>
@@ -246,6 +252,7 @@ export default function ItemFields({
             placeholder="Location (e.g. Attic, Garage, Kitchen)"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           <DateField label="Purchase date" value={sysPurchaseDate} onChange={setSysPurchaseDate} />
@@ -257,6 +264,7 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <TextInput
             value={sysLifeYears}
@@ -265,6 +273,7 @@ export default function ItemFields({
             inputMode="numeric"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <TextInput
             value={sysReplacementCost}
@@ -273,6 +282,7 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           <DateField label="Warranty expiration (optional)" value={sysWarranty} onChange={setSysWarranty} />
@@ -295,6 +305,7 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
