@@ -11,27 +11,53 @@ import PhotoPicker from "./PhotoPicker.js";
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
 
-function DateField({ label, value, onChange }) {
-  const [show, setShow] = useState(Platform.OS === "ios");
+function DateField({ label, value, onChange, optional }) {
+  const [active, setActive] = useState(!optional || !!value);
+  const [androidOpen, setAndroidOpen] = useState(false);
   const dateObj = value ? new Date(`${value}T00:00:00`) : new Date();
 
   function handleChange(event, selected) {
-    if (Platform.OS === "android") setShow(false);
+    if (Platform.OS === "android") setAndroidOpen(false);
     if (event.type === "dismissed") return;
     if (selected) onChange(selected.toISOString().slice(0, 10));
   }
 
+  function handleClear() {
+    onChange("");
+    setActive(false);
+  }
+
+  if (!active) {
+    return (
+      <View className="mb-2">
+        {label && <Text className="text-[11px] text-stone-500 mb-1">{label}</Text>}
+        <Pressable onPress={() => setActive(true)} className="w-full px-3 py-2 rounded-lg" style={fieldStyle}>
+          <Text className="text-[13.5px]" style={{ color: "#9C978C" }}>Not set — tap to add a date</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View className="mb-2">
-      {label && <Text className="text-[11px] text-stone-500 mb-1">{label}</Text>}
+      {label && (
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-[11px] text-stone-500">{label}</Text>
+          {optional && (
+            <Pressable onPress={handleClear} hitSlop={8}>
+              <Text className="text-[11px] font-semibold" style={{ color: STATUS_COLOR.red }}>Clear</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
       {Platform.OS === "android" && (
-        <Pressable onPress={() => setShow(true)} className="w-full px-3 py-2 rounded-lg" style={fieldStyle}>
+        <Pressable onPress={() => setAndroidOpen(true)} className="w-full px-3 py-2 rounded-lg" style={fieldStyle}>
           <Text className="text-[13.5px] text-stone-800">
             {value ? dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Select date"}
           </Text>
         </Pressable>
       )}
-      {show && (
+      {(Platform.OS === "ios" || androidOpen) && (
         <DateTimePicker
           value={dateObj}
           mode="date"
@@ -285,7 +311,7 @@ export default function ItemFields({
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
-          <DateField label="Warranty expiration (optional)" value={sysWarranty} onChange={setSysWarranty} />
+          <DateField label="Warranty expiration (optional)" value={sysWarranty} onChange={setSysWarranty} optional />
         </>
       )}
 
