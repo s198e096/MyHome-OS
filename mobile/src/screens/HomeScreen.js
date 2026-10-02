@@ -7,7 +7,6 @@ import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.js";
 
 const seedRecommendations = [
-  { id: "r2", title: "Water Bill", subtitle: "Save $100 every month with a simple fix", cta: null, highlight: false },
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
 
