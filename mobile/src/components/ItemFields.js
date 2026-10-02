@@ -281,7 +281,7 @@ export default function ItemFields({
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
-          <DateField label="Purchase date" value={sysPurchaseDate} onChange={setSysPurchaseDate} />
+          <DateField label="Date installed" value={sysPurchaseDate} onChange={setSysPurchaseDate} />
 
           <TextInput
             value={sysPurchasePrice}
