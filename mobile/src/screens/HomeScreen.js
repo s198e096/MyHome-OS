@@ -1,10 +1,9 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Clock, Home, Zap } from "lucide-react-native";
+import { ChevronRight, Clock, Home } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
-import { computeAutoChecks, computeEnergyScore } from "../lib/energyAudit.js";
 import StatusDot from "../components/StatusDot.js";
 
 const seedRecommendations = [
@@ -166,24 +165,11 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, energyChecks, onOpenSystem, onOpenAccount, onOpenEnergyAudit, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
 
   const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
-
-  const { passed: energyPassed, total: energyTotal } = computeEnergyScore(computeAutoChecks(systems), energyChecks);
-  const recommendations = [
-    {
-      id: "energy-audit",
-      title: "Energy audit",
-      subtitle: `${energyPassed} of ${energyTotal} checks passed`,
-      icon: Zap,
-      highlight: true,
-      onClick: onOpenEnergyAudit,
-    },
-    ...seedRecommendations,
-  ];
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0]" contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
@@ -220,7 +206,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
 
         <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} />
 
-        <RecommendedList items={recommendations} />
+        <RecommendedList items={seedRecommendations} />
 
         <View className="mb-5">
           <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>

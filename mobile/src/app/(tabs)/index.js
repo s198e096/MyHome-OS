@@ -18,10 +18,8 @@ export default function Home() {
       next12mo={data.next12mo}
       monthlyReserve={data.monthlyReserve}
       profile={data.profile}
-      energyChecks={data.energyChecks}
       onOpenSystem={(s) => router.push(`/systems/${s.id}`)}
       onOpenAccount={() => router.push("/account")}
-      onOpenEnergyAudit={() => router.push("/energy-audit")}
       onNavigate={(path) => router.push(path)}
     />
     </AnimatedTabScreen>
