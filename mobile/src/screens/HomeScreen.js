@@ -10,7 +10,7 @@ const seedRecommendations = [
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
 
-function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onNavigate }) {
+function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   const insets = useSafeAreaInsets();
   return (
@@ -48,10 +48,10 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
       )}
 
       <View className="items-center mb-4">
-        <View className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
+        <Pressable onPress={onOpenAssistant} className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
           <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Ask Anything</Text>
           <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
-        </View>
+        </Pressable>
       </View>
 
       <View className="rounded-2xl bg-white flex-row overflow-hidden">
@@ -164,7 +164,7 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount, onOpenAssistant, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
 
   const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
@@ -179,6 +179,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
         profile={profile}
         estimatedValue={estimatedValue}
         onOpenAccount={onOpenAccount}
+        onOpenAssistant={onOpenAssistant}
         onNavigate={onNavigate}
       />
 

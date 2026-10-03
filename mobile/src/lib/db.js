@@ -250,6 +250,14 @@ export async function fetchPropertyDetails(address) {
   return data;
 }
 
+export async function askAssistant(messages) {
+  const { data, error } = await supabase.functions.invoke("ask-assistant", {
+    body: { messages },
+  });
+  if (error) throw error;
+  return data.reply;
+}
+
 export async function createCheckoutSession(planId) {
   const origin = Linking.createURL("/");
   const { data, error } = await supabase.functions.invoke("create-checkout-session", {
