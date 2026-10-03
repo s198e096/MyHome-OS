@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
     const imageResp = await fetch(photoUrl);
     if (!imageResp.ok) throw new Error("Could not fetch the photo");
     const mediaType = imageResp.headers.get("content-type") || "image/jpeg";
+    console.log("photoUrl:", photoUrl, "| fetched content-type:", JSON.stringify(imageResp.headers.get("content-type")), "| using mediaType:", JSON.stringify(mediaType));
     const base64 = arrayBufferToBase64(await imageResp.arrayBuffer());
 
     const prompt = `You are reading a photo of a home system's nameplate/label (e.g. water heater, HVAC unit, appliance). Extract only what is actually visible on the label. Respond with ONLY a JSON object, no other text, in this exact shape:
@@ -191,6 +192,7 @@ Rules:
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("scan-system-label failed:", err instanceof Error ? err.stack || err.message : err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

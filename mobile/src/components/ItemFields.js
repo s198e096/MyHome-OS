@@ -90,6 +90,7 @@ export default function ItemFields({
   sysWarranty, setSysWarranty,
   sysFilterSize, setSysFilterSize,
   sysManualUrl, setSysManualUrl,
+  hideCategoryPicker,
 }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -229,13 +230,15 @@ export default function ItemFields({
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
-          <View className="w-full mb-2" style={pickerBoxStyle}>
-            <Picker selectedValue={sysCategory} onValueChange={setSysCategory}>
-              {Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac").map(([key, meta]) => (
-                <Picker.Item key={key} label={meta.label} value={key} />
-              ))}
-            </Picker>
-          </View>
+          {!hideCategoryPicker && (
+            <View className="w-full mb-2" style={pickerBoxStyle}>
+              <Picker selectedValue={sysCategory} onValueChange={setSysCategory}>
+                {Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac").map(([key, meta]) => (
+                  <Picker.Item key={key} label={meta.label} value={key} />
+                ))}
+              </Picker>
+            </View>
+          )}
 
           {sysCategory === "hvac_indoor" && (
             <View className="rounded-xl bg-white p-3 mb-2" style={fieldStyle}>

@@ -2,16 +2,380 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MapPin, Sparkles, ChevronLeft, Check, Search } from "lucide-react-native";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
+import { Picker } from "@react-native-picker/picker";
+import { MapPin, Sparkles, ChevronLeft, Check, Search, X, Plus, Minus, List } from "lucide-react-native";
+import {
+  PRIMARY,
+  HERO_BG_TOP,
+  HERO_BG_BOTTOM,
+  ACCENT_YELLOW,
+  STATUS_COLOR,
+  STATUS_BG,
+  CATEGORY_META,
+  ONBOARDING_SYSTEM_CATEGORIES,
+  ONBOARDING_STRUCTURE_CATEGORIES,
+} from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails } from "../lib/db.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
 import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
+import ItemFields from "../components/ItemFields.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
+const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
+
+// Shared "add a few of these, one at a time" step used for systems,
+// appliances, and house-structure items after the property step. Each add
+// persists immediately (addSystem), so nothing is lost if the app is
+// backgrounded mid-step; items can be removed again with one tap.
+function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, onDone, onBack, backLabel }) {
+  const insets = useSafeAreaInsets();
+  const { systems, addSystem, deleteSystem } = useAppData();
+  const [category, setCategory] = useState(fixedCategory || categories[0]);
+  const [name, setName] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [adding, setAdding] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+
+  const relevantCategories = fixedCategory ? [fixedCategory] : categories;
+  const added = systems.filter((s) => relevantCategories.includes(s.category));
+
+  async function handleAdd() {
+    setAdding(true);
+    const trimmedName = name.trim();
+    try {
+      // One tap adds `quantity` separate entries (so e.g. "3 windows" doesn't
+      // mean tapping Add three times) — numbered individually when a name
+      // was given, so they stay distinguishable in the list.
+      for (let i = 0; i < quantity; i++) {
+        const brand = trimmedName ? (quantity > 1 ? `${trimmedName} ${i + 1}` : trimmedName) : null;
+        await addSystem({ category: fixedCategory || category, brand, model: null, location: "" });
+      }
+      setName("");
+      setQuantity(1);
+    } catch {
+      // Stay on the step with whatever was typed so the user can retry.
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleDone() {
+    setFinishing(true);
+    try {
+      await onDone();
+    } finally {
+      setFinishing(false);
+    }
+  }
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+      <ScrollView
+        className="flex-1 bg-[#F5F8F0] px-4"
+        contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {onBack && (
+          <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+            <ChevronLeft size={16} color="#78716c" />
+            <Text className="text-[13px] text-stone-500">{backLabel}</Text>
+          </Pressable>
+        )}
+
+        <Text className="text-[17px] font-semibold text-stone-900 mb-1">{title}</Text>
+        <Text className="text-[12.5px] text-stone-500 mb-4">{subtitle}</Text>
+
+        {added.length > 0 && (
+          <View className="rounded-xl bg-white px-3 mb-4" style={fieldStyle}>
+            {added.map((sys, i) => {
+              const meta = CATEGORY_META[sys.category];
+              const Icon = meta.icon;
+              return (
+                <View
+                  key={sys.id}
+                  className="flex-row items-center justify-between py-2.5"
+                  style={{ borderBottomWidth: i < added.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
+                >
+                  <View className="flex-row items-center gap-2 flex-1">
+                    <Icon size={16} color="#5F5B50" />
+                    <Text className="text-[13.5px] text-stone-800 flex-1">
+                      {sys.brand ? sys.brand : meta.label}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => deleteSystem(sys.id)} hitSlop={8}>
+                    <X size={16} color="#B8B4A8" />
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {!fixedCategory && (
+          <>
+            <Text className="text-[11px] text-stone-500 mb-1">Category</Text>
+            <View className="w-full mb-2" style={pickerBoxStyle}>
+              <Picker selectedValue={category} onValueChange={setCategory}>
+                {categories.map((key) => (
+                  <Picker.Item key={key} label={CATEGORY_META[key].label} value={key} />
+                ))}
+              </Picker>
+            </View>
+          </>
+        )}
+
+        <View className="flex-row gap-2 mb-3">
+          <View className="flex-1">
+            <Text className="text-[11px] text-stone-500 mb-1">Name (optional)</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={fixedCategory ? "e.g. Refrigerator, Dishwasher" : "e.g. Carrier, Front windows"}
+              className="w-full px-3 py-2 rounded-lg text-[13.5px]"
+              style={fieldStyle}
+              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+              returnKeyType="done"
+              onSubmitEditing={handleAdd}
+            />
+          </View>
+          <View>
+            <Text className="text-[11px] text-stone-500 mb-1">Qty</Text>
+            <View className="flex-row items-center rounded-lg" style={fieldStyle}>
+              <Pressable
+                onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="items-center justify-center"
+                style={{ width: 32, height: 36 }}
+                hitSlop={6}
+              >
+                <Minus size={14} color={PRIMARY} />
+              </Pressable>
+              <Text className="text-[13.5px] font-semibold text-center" style={{ width: 22 }}>{quantity}</Text>
+              <Pressable
+                onPress={() => setQuantity((q) => Math.min(20, q + 1))}
+                className="items-center justify-center"
+                style={{ width: 32, height: 36 }}
+                hitSlop={6}
+              >
+                <Plus size={14} color={PRIMARY} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        <Pressable
+          onPress={handleAdd}
+          disabled={adding}
+          className="w-full py-2.5 rounded-lg items-center flex-row justify-center gap-1.5 mb-6"
+          style={{ borderWidth: 1, borderColor: PRIMARY, opacity: adding ? 0.6 : 1 }}
+        >
+          <Plus size={15} color={PRIMARY} />
+          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>
+            {quantity > 1 ? `Add ${quantity}` : "Add"}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleDone}
+          disabled={finishing}
+          className="w-full py-2.5 rounded-lg items-center"
+          style={{ backgroundColor: PRIMARY, opacity: finishing ? 0.6 : 1 }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">{finishing ? "Saving..." : doneLabel}</Text>
+        </Pressable>
+      </ScrollView>
+      <KeyboardDoneBar />
+    </KeyboardAvoidingView>
+  );
+}
+
+// A system counts as "completed" for the walkthrough once it has any detail
+// beyond what quick-add sets (category/brand/empty location) — i.e. the user
+// has actually been through SystemDetailsStep and saved something for it.
+function systemHasDetails(s) {
+  return !!(s.model || s.photoUrl || s.purchaseDate || s.warrantyExpiration || s.replacementCost || s.expectedLifeYears || s.purchasePrice || s.filterSize);
+}
+
+// Full-screen list of every system in the current details-walkthrough queue,
+// so the user can jump to any of them — forward or backward — instead of
+// only ever moving to the next one.
+function SystemsListModal({ queue, systems, currentIndex, onSelect, onClose }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+      <Pressable
+        onPress={onClose}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)" }}
+      />
+      <View
+        className="absolute left-0 right-0 bottom-0 bg-white rounded-t-2xl px-4"
+        style={{ maxHeight: "75%", paddingTop: 16, paddingBottom: insets.bottom + 16 }}
+      >
+        <View className="flex-row items-center justify-between mb-3">
+          <Text className="text-[15px] font-semibold text-stone-900">Your systems</Text>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <X size={18} color="#78716c" />
+          </Pressable>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {queue.map((id, i) => {
+            const sys = systems.find((s) => s.id === id);
+            if (!sys) return null;
+            const meta = CATEGORY_META[sys.category];
+            const Icon = meta.icon;
+            const done = systemHasDetails(sys);
+            const isCurrent = i === currentIndex;
+            return (
+              <Pressable
+                key={id}
+                onPress={() => onSelect(i)}
+                className="flex-row items-center justify-between py-2.5 px-2 rounded-lg"
+                style={{
+                  borderBottomWidth: i < queue.length - 1 ? 1 : 0,
+                  borderBottomColor: "#E7EEDB",
+                  backgroundColor: isCurrent ? "#F5F8F0" : "transparent",
+                }}
+              >
+                <View className="flex-row items-center gap-2 flex-1">
+                  <Icon size={16} color="#5F5B50" />
+                  <Text className="text-[13.5px] text-stone-800 flex-1" numberOfLines={1}>
+                    {sys.brand ? sys.brand : meta.label}
+                  </Text>
+                </View>
+                <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: done ? STATUS_BG.green : "#F2F0EA" }}>
+                  <Text className="text-[10.5px] font-semibold" style={{ color: done ? STATUS_COLOR.green : "#9C9890" }}>
+                    {done ? "Completed" : "Not started"}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+// Walks the user through one just-added item at a time: take a photo (AI
+// auto-fill, same scanSystemLabel flow as the regular Add/Edit System form)
+// or fill it in manually, then move on. Nothing here is required — Save
+// keeps whatever was filled in (even partial), and Skip moves on with no
+// changes at all, so this never blocks finishing onboarding.
+function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
+  const insets = useSafeAreaInsets();
+  const { updateSystem, attachManualDocument } = useAppData();
+  const [photoUrl, setPhotoUrl] = useState(system.photoUrl || "");
+  const [sysBrand, setSysBrand] = useState(system.brand || "");
+  const [sysModel, setSysModel] = useState(system.model || "");
+  const [sysCategory, setSysCategory] = useState(system.category);
+  const [sysLocation, setSysLocation] = useState(system.location || "");
+  const [sysPurchaseDate, setSysPurchaseDate] = useState(system.purchaseDate || "");
+  const [sysPurchasePrice, setSysPurchasePrice] = useState(system.purchasePrice != null ? String(system.purchasePrice) : "");
+  const [sysLifeYears, setSysLifeYears] = useState(system.expectedLifeYears != null ? String(system.expectedLifeYears) : "");
+  const [sysReplacementCost, setSysReplacementCost] = useState(system.replacementCost != null ? String(system.replacementCost) : "");
+  const [sysWarranty, setSysWarranty] = useState(system.warrantyExpiration || "");
+  const [sysFilterSize, setSysFilterSize] = useState(system.filterSize || "");
+  const [sysManualUrl, setSysManualUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const meta = CATEGORY_META[system.category];
+  const isLast = index + 1 === total;
+
+  async function handleSaveNext() {
+    setError("");
+    setSaving(true);
+    try {
+      const num = (s) => (s.trim() ? parseFloat(s) : null);
+      const int = (s) => (s.trim() ? parseInt(s, 10) : null);
+      const updated = await updateSystem(system.id, {
+        brand: sysBrand.trim() || null,
+        model: sysModel.trim() || null,
+        category: sysCategory,
+        location: sysLocation.trim(),
+        purchaseDate: sysPurchaseDate || null,
+        purchasePrice: num(sysPurchasePrice),
+        expectedLifeYears: int(sysLifeYears),
+        replacementCost: num(sysReplacementCost),
+        warrantyExpiration: sysWarranty || null,
+        photoUrl: photoUrl || null,
+        filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
+      });
+      if (sysManualUrl && updated) {
+        await attachManualDocument(updated.id, updated.brand, updated.model, sysManualUrl);
+      }
+      onNext();
+    } catch {
+      setError("Couldn't save. You can try again or skip for now.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+      <ScrollView
+        className="flex-1 bg-[#F5F8F0] px-4"
+        contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-[12px] text-stone-400">Item {index + 1} of {total}</Text>
+          <Pressable onPress={onShowList} className="flex-row items-center gap-1" hitSlop={8}>
+            <List size={14} color={PRIMARY} />
+            <Text className="text-[12px] font-semibold" style={{ color: PRIMARY }}>Systems list</Text>
+          </Pressable>
+        </View>
+        <Text className="text-[17px] font-semibold text-stone-900 mb-1">Let&apos;s add details about your {meta.label}</Text>
+        <Text className="text-[12.5px] text-stone-500 mb-4">
+          Take a photo to auto-fill with AI, or fill in what you know. Nothing here is required.
+        </Text>
+
+        <ItemFields
+          kind="system"
+          systems={[]}
+          photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
+          sysBrand={sysBrand} setSysBrand={setSysBrand}
+          sysModel={sysModel} setSysModel={setSysModel}
+          sysCategory={sysCategory} setSysCategory={setSysCategory}
+          sysLocation={sysLocation} setSysLocation={setSysLocation}
+          sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}
+          sysPurchasePrice={sysPurchasePrice} setSysPurchasePrice={setSysPurchasePrice}
+          sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
+          sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
+          sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
+          sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
+          sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
+          hideCategoryPicker
+        />
+
+        {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+
+        <Pressable
+          onPress={handleSaveNext}
+          disabled={saving}
+          className="w-full py-2.5 rounded-lg items-center mb-2"
+          style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">
+            {saving ? "Saving..." : isLast ? "Save & finish" : "Save & next"}
+          </Text>
+        </Pressable>
+
+        <Pressable onPress={onNext} disabled={saving} className="w-full py-2.5 rounded-lg items-center">
+          <Text className="text-[13.5px] font-semibold text-stone-500">
+            {isLast ? "Skip, I'll add this later" : "Skip, add this later"}
+          </Text>
+        </Pressable>
+      </ScrollView>
+      <KeyboardDoneBar />
+    </KeyboardAvoidingView>
+  );
+}
 
 // What we can confidently turn into an actual System entry from RentCast's
 // construction/feature data. Only category + a short detected-from label are
@@ -33,7 +397,7 @@ function buildDetectedSystems(d) {
 }
 
 export default function OnboardingScreen() {
-  const { saveProfile, addSystem } = useAppData();
+  const { saveProfile, addSystem, systems } = useAppData();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState("welcome");
   const [propertyName, setPropertyName] = useState("");
@@ -50,6 +414,10 @@ export default function OnboardingScreen() {
   const [detectedSystems, setDetectedSystems] = useState([]);
   const [confirmedSystems, setConfirmedSystems] = useState({});
 
+  const [detailQueue, setDetailQueue] = useState([]);
+  const [detailIndex, setDetailIndex] = useState(0);
+  const [showSystemsList, setShowSystemsList] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const debounceRef = useRef(null);
@@ -60,6 +428,37 @@ export default function OnboardingScreen() {
     const timer = setTimeout(() => setStep("property"), 1600);
     return () => clearTimeout(timer);
   }, [step]);
+
+  // Defensive: if the current queued item somehow no longer exists (it
+  // shouldn't during normal use), just skip past it instead of getting
+  // stuck on a missing system.
+  useEffect(() => {
+    if (step !== "fill-details") return;
+    const currentId = detailQueue[detailIndex];
+    if (currentId && !systems.find((s) => s.id === currentId)) {
+      advanceDetails();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, detailIndex, systems]);
+
+  function beginDetailsWalkthrough() {
+    const queue = systems.map((s) => s.id);
+    if (queue.length === 0) {
+      finishOnboarding();
+      return;
+    }
+    setDetailQueue(queue);
+    setDetailIndex(0);
+    setStep("fill-details");
+  }
+
+  function advanceDetails() {
+    if (detailIndex + 1 >= detailQueue.length) {
+      finishOnboarding();
+    } else {
+      setDetailIndex((i) => i + 1);
+    }
+  }
 
   function handleAddressChange(text) {
     setAddress(text);
@@ -167,16 +566,25 @@ export default function OnboardingScreen() {
         hasFireplace: extraDetails?.hasFireplace ?? null,
         fireplaceType: extraDetails?.fireplaceType ?? null,
         hoaFee: extraDetails?.hoaFee ?? null,
-        onboardingCompleted: true,
       });
       for (const sys of detectedSystems) {
         if (!confirmedSystems[sys.key]) continue;
         await addSystem({ category: sys.category, brand: null, model: null, location: "" });
       }
+      // Clear these so navigating back to this step and tapping Continue
+      // again (now possible via the add-steps' back buttons) doesn't
+      // re-create the same detected systems a second time.
+      setDetectedSystems([]);
+      setStep("add-systems");
     } catch {
       setError("Couldn't save. Try again.");
+    } finally {
       setSaving(false);
     }
+  }
+
+  async function finishOnboarding() {
+    await saveProfile({ onboardingCompleted: true });
   }
 
   if (step === "welcome") {
@@ -291,6 +699,78 @@ export default function OnboardingScreen() {
       </ScrollView>
       <KeyboardDoneBar />
       </KeyboardAvoidingView>
+    );
+  }
+
+  if (step === "add-systems") {
+    return (
+      <QuickAddStep
+        title="Let's add your systems"
+        subtitle="HVAC, water heater, plumbing, electrical — add anything you'd like to track. You can skip this and add them later from the Systems tab."
+        categories={ONBOARDING_SYSTEM_CATEGORIES}
+        doneLabel="Done with systems"
+        onDone={() => setStep("add-appliances")}
+        onBack={() => setStep("review")}
+        backLabel="Back"
+      />
+    );
+  }
+
+  if (step === "add-appliances") {
+    return (
+      <QuickAddStep
+        title="Add your appliances"
+        subtitle="Refrigerator, dishwasher, washer, dryer — add them one by one, or skip and add them later."
+        fixedCategory="appliance"
+        doneLabel="Done with appliances"
+        onDone={() => setStep("add-structure")}
+        onBack={() => setStep("add-systems")}
+        backLabel="Back to systems"
+      />
+    );
+  }
+
+  if (step === "add-structure") {
+    return (
+      <QuickAddStep
+        title="Add your house structure"
+        subtitle="Roof, windows, exterior/paint, balcony, deck, garden — anything about the structure itself worth tracking."
+        categories={ONBOARDING_STRUCTURE_CATEGORIES}
+        doneLabel="Continue"
+        onDone={beginDetailsWalkthrough}
+        onBack={() => setStep("add-appliances")}
+        backLabel="Back to appliances"
+      />
+    );
+  }
+
+  if (step === "fill-details") {
+    const currentId = detailQueue[detailIndex];
+    const currentSystem = systems.find((s) => s.id === currentId);
+    if (!currentSystem) return null;
+    return (
+      <View style={{ flex: 1 }}>
+        <SystemDetailsStep
+          key={currentSystem.id}
+          system={currentSystem}
+          index={detailIndex}
+          total={detailQueue.length}
+          onNext={advanceDetails}
+          onShowList={() => setShowSystemsList(true)}
+        />
+        {showSystemsList && (
+          <SystemsListModal
+            queue={detailQueue}
+            systems={systems}
+            currentIndex={detailIndex}
+            onSelect={(i) => {
+              setDetailIndex(i);
+              setShowSystemsList(false);
+            }}
+            onClose={() => setShowSystemsList(false)}
+          />
+        )}
+      </View>
     );
   }
 
@@ -420,7 +900,7 @@ export default function OnboardingScreen() {
         className="w-full py-2.5 rounded-lg items-center"
         style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
       >
-        <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Save property"}</Text>
+        <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Continue"}</Text>
       </Pressable>
     </ScrollView>
     <KeyboardDoneBar />
