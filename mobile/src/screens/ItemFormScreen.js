@@ -36,6 +36,7 @@ export default function ItemFormScreen({
 
   const [sysBrand, setSysBrand] = useState(item?.brand || "");
   const [sysModel, setSysModel] = useState(item?.model || "");
+  const [sysSerial, setSysSerial] = useState(item?.serialNumber || "");
   const [sysCategory, setSysCategory] = useState(item?.category || "hvac_indoor");
   const [sysLocation, setSysLocation] = useState(item?.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "2026-01-01");
@@ -104,6 +105,7 @@ export default function ItemFormScreen({
         const payload = {
           brand: sysBrand.trim(),
           model: sysModel.trim(),
+          serialNumber: sysSerial.trim() || null,
           category: sysCategory,
           location: sysLocation.trim(),
           purchaseDate: sysPurchaseDate,
@@ -180,6 +182,7 @@ export default function ItemFormScreen({
         photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
         sysBrand={sysBrand} setSysBrand={setSysBrand}
         sysModel={sysModel} setSysModel={setSysModel}
+        sysSerial={sysSerial} setSysSerial={setSysSerial}
         sysCategory={sysCategory} setSysCategory={setSysCategory}
         sysLocation={sysLocation} setSysLocation={setSysLocation}
         sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}

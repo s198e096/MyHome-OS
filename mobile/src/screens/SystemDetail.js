@@ -44,6 +44,7 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) 
       </View>
 
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+        {!!sys.serialNumber && <LedgerRow label="Serial number" value={sys.serialNumber} />}
         <LedgerRow
           label="Installed"
           value={sys.purchaseDate ? new Date(sys.purchaseDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Not set"}

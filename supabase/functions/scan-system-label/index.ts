@@ -143,11 +143,12 @@ Deno.serve(async (req) => {
     const base64 = arrayBufferToBase64(await imageResp.arrayBuffer());
 
     const prompt = `You are reading a photo of a home system's nameplate/label (e.g. water heater, HVAC unit, appliance). Extract only what is actually visible on the label. Respond with ONLY a JSON object, no other text, in this exact shape:
-{"brand": string or null, "model": string or null, "category": one of ${JSON.stringify(CATEGORIES)} or null}
+{"brand": string or null, "model": string or null, "serialNumber": string or null, "category": one of ${JSON.stringify(CATEGORIES)} or null}
 
 Rules:
 - "brand" is the manufacturer name (e.g. "Rheem", "Carrier", "Whirlpool").
-- "model" is the model number/name, not the serial number.
+- "model" is the model number/name (often labeled "Model", "MOD", or "M/N").
+- "serialNumber" is the serial number (often labeled "Serial", "S/N", or "SER") — distinct from the model number.
 - "category" is your best guess at which listed category this system belongs to. For HVAC equipment, pick "hvac_outdoor" if it's the outdoor condenser/compressor unit (sits outside, has a large fan), or "hvac_indoor" if it's the indoor evaporator coil / air handler / furnace (sits in a closet, attic, or basement). Use null if you cannot tell.
 - If a field isn't visible or legible, use null for it. Do not guess or invent values.`;
 
@@ -180,6 +181,7 @@ Rules:
     const result = {
       brand: typeof parsed.brand === "string" ? parsed.brand : null,
       model: typeof parsed.model === "string" ? parsed.model : null,
+      serialNumber: typeof parsed.serialNumber === "string" ? parsed.serialNumber : null,
       category: CATEGORIES.includes(parsed.category) ? parsed.category : null,
     };
 

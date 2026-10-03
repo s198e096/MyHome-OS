@@ -81,6 +81,7 @@ export default function ItemFields({
   photoUrl, setPhotoUrl,
   sysBrand, setSysBrand,
   sysModel, setSysModel,
+  sysSerial, setSysSerial,
   sysCategory, setSysCategory,
   sysLocation, setSysLocation,
   sysPurchaseDate, setSysPurchaseDate,
@@ -91,6 +92,7 @@ export default function ItemFields({
   sysFilterSize, setSysFilterSize,
   sysManualUrl, setSysManualUrl,
   hideCategoryPicker,
+  hidePhotoSection,
 }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -103,6 +105,7 @@ export default function ItemFields({
       const result = await scanSystemLabel(photoUrl);
       if (result.brand) setSysBrand(result.brand);
       if (result.model) setSysModel(result.model);
+      if (result.serialNumber) setSysSerial(result.serialNumber);
       if (result.category) setSysCategory(result.category);
       if (result.manualUrl) setSysManualUrl(result.manualUrl);
       if (!result.brand && !result.model && !result.category) {
@@ -192,26 +195,30 @@ export default function ItemFields({
 
       {kind === "system" && (
         <>
-          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
+          {!hidePhotoSection && (
+            <>
+              <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
 
-          {photoUrl && (
-            <Pressable
-              onPress={handleScan}
-              disabled={scanning}
-              className="w-full mb-3 flex-row items-center justify-center gap-1.5 py-2 rounded-lg"
-              style={{ backgroundColor: ACCENT_YELLOW, opacity: scanning ? 0.6 : 1 }}
-            >
-              <Sparkles size={15} color={PRIMARY} />
-              <Text className="text-[12.5px] font-semibold" style={{ color: PRIMARY }}>
-                {scanning ? "Reading label..." : "Auto-fill with AI"}
-              </Text>
-            </Pressable>
-          )}
-          {scanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</Text>}
-          {sysManualUrl && (
-            <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
-              Found the owner&apos;s manual — it&apos;ll be attached to this system&apos;s Documents when you save.
-            </Text>
+              {photoUrl && (
+                <Pressable
+                  onPress={handleScan}
+                  disabled={scanning}
+                  className="w-full mb-3 flex-row items-center justify-center gap-1.5 py-2 rounded-lg"
+                  style={{ backgroundColor: ACCENT_YELLOW, opacity: scanning ? 0.6 : 1 }}
+                >
+                  <Sparkles size={15} color={PRIMARY} />
+                  <Text className="text-[12.5px] font-semibold" style={{ color: PRIMARY }}>
+                    {scanning ? "Reading label..." : "Auto-fill with AI"}
+                  </Text>
+                </Pressable>
+              )}
+              {scanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</Text>}
+              {sysManualUrl && (
+                <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
+                  Found the owner&apos;s manual — it&apos;ll be attached to this system&apos;s Documents when you save.
+                </Text>
+              )}
+            </>
           )}
 
           <TextInput
@@ -226,6 +233,14 @@ export default function ItemFields({
             value={sysModel}
             onChangeText={setSysModel}
             placeholder="Model (e.g. Infinity)"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+          />
+          <TextInput
+            value={sysSerial}
+            onChangeText={setSysSerial}
+            placeholder="Serial number (S/N)"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}

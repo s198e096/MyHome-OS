@@ -6,6 +6,7 @@ const rowToSystem = (r) => ({
   id: r.id,
   brand: r.brand,
   model: r.model,
+  serialNumber: r.serial_number || "",
   category: r.category,
   location: r.location,
   purchaseDate: r.purchase_date || "",
@@ -20,6 +21,7 @@ const rowToSystem = (r) => ({
 const systemToRow = (s) => ({
   brand: s.brand,
   model: s.model,
+  serial_number: s.serialNumber || null,
   category: s.category,
   location: s.location,
   purchase_date: s.purchaseDate || null,

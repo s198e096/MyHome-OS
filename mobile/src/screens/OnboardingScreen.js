@@ -16,12 +16,13 @@ import {
   ONBOARDING_STRUCTURE_CATEGORIES,
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
-import { fetchPropertyDetails } from "../lib/db.js";
+import { fetchPropertyDetails, scanSystemLabel } from "../lib/db.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
 import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 import ItemFields from "../components/ItemFields.js";
+import PhotoPicker from "../components/PhotoPicker.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
@@ -37,6 +38,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
   const [finishing, setFinishing] = useState(false);
 
   const relevantCategories = fixedCategory ? [fixedCategory] : categories;
@@ -44,19 +46,24 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
 
   async function handleAdd() {
     setAdding(true);
+    setAddError("");
     const trimmedName = name.trim();
+    // Guard against a stale `category` value (e.g. left over from this same
+    // component instance being reused for a previous step's categories) —
+    // always fall back to a category this step actually offers.
+    const categoryToAdd = fixedCategory || (categories.includes(category) ? category : categories[0]);
     try {
       // One tap adds `quantity` separate entries (so e.g. "3 windows" doesn't
       // mean tapping Add three times) — numbered individually when a name
       // was given, so they stay distinguishable in the list.
       for (let i = 0; i < quantity; i++) {
         const brand = trimmedName ? (quantity > 1 ? `${trimmedName} ${i + 1}` : trimmedName) : null;
-        await addSystem({ category: fixedCategory || category, brand, model: null, location: "" });
+        await addSystem({ category: categoryToAdd, brand, model: null, location: "" });
       }
       setName("");
       setQuantity(1);
     } catch {
-      // Stay on the step with whatever was typed so the user can retry.
+      setAddError("Couldn't add that. Try again.");
     } finally {
       setAdding(false);
     }
@@ -166,6 +173,8 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
           </View>
         </View>
 
+        {addError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{addError}</Text>}
+
         <Pressable
           onPress={handleAdd}
           disabled={adding}
@@ -266,10 +275,25 @@ function SystemsListModal({ queue, systems, currentIndex, onSelect, onClose }) {
 // changes at all, so this never blocks finishing onboarding.
 function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
   const insets = useSafeAreaInsets();
-  const { updateSystem, attachManualDocument } = useAppData();
+  const { updateSystem, attachManualDocument, addDocument } = useAppData();
+  const isStructure = ONBOARDING_STRUCTURE_CATEGORIES.includes(system.category);
+
+  // Guides the user through: 1) a photo (label for systems/appliances, a
+  // condition photo for structure items) which auto-fills from the label
+  // when possible, 2) an optional receipt/warranty photo, 3) the rest of
+  // the fields, pre-filled from the scan where available.
+  const [subStep, setSubStep] = useState("photo");
+
   const [photoUrl, setPhotoUrl] = useState(system.photoUrl || "");
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+
+  const [receiptPhotoUrl, setReceiptPhotoUrl] = useState("");
+  const [receiptType, setReceiptType] = useState("Receipt");
+
   const [sysBrand, setSysBrand] = useState(system.brand || "");
   const [sysModel, setSysModel] = useState(system.model || "");
+  const [sysSerial, setSysSerial] = useState(system.serialNumber || "");
   const [sysCategory, setSysCategory] = useState(system.category);
   const [sysLocation, setSysLocation] = useState(system.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(system.purchaseDate || "");
@@ -285,6 +309,36 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
   const meta = CATEGORY_META[system.category];
   const isLast = index + 1 === total;
 
+  async function runScan() {
+    setScanning(true);
+    setScanError("");
+    setSysManualUrl("");
+    try {
+      const result = await scanSystemLabel(photoUrl);
+      if (result.brand) setSysBrand(result.brand);
+      if (result.model) setSysModel(result.model);
+      if (result.serialNumber) setSysSerial(result.serialNumber);
+      if (result.category) setSysCategory(result.category);
+      if (result.manualUrl) setSysManualUrl(result.manualUrl);
+      if (!result.brand && !result.model && !result.category) {
+        setScanError("Couldn't read the label clearly. You can fill in the fields manually.");
+      }
+    } catch {
+      setScanError("AI scan failed. You can fill in the fields manually.");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  async function handlePhotoContinue() {
+    // Only auto-scan the first time — avoids re-scanning (and re-billing
+    // the API) when revisiting an already-filled-in system via the list.
+    if (photoUrl && !isStructure && !sysBrand && !sysModel) {
+      await runScan();
+    }
+    setSubStep("receipt");
+  }
+
   async function handleSaveNext() {
     setError("");
     setSaving(true);
@@ -294,6 +348,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
       const updated = await updateSystem(system.id, {
         brand: sysBrand.trim() || null,
         model: sysModel.trim() || null,
+        serialNumber: sysSerial.trim() || null,
         category: sysCategory,
         location: sysLocation.trim(),
         purchaseDate: sysPurchaseDate || null,
@@ -307,6 +362,9 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
       if (sysManualUrl && updated) {
         await attachManualDocument(updated.id, updated.brand, updated.model, sysManualUrl);
       }
+      if (receiptPhotoUrl && updated) {
+        await addDocument(`${updated.brand || meta.label} ${receiptType}`, receiptType, updated.id, receiptPhotoUrl);
+      }
       onNext();
     } catch {
       setError("Couldn't save. You can try again or skip for now.");
@@ -315,6 +373,119 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
     }
   }
 
+  const topBar = (
+    <View className="flex-row items-center justify-between mb-1">
+      <Text className="text-[12px] text-stone-400">Item {index + 1} of {total}</Text>
+      <Pressable onPress={onShowList} className="flex-row items-center gap-1" hitSlop={8}>
+        <List size={14} color={PRIMARY} />
+        <Text className="text-[12px] font-semibold" style={{ color: PRIMARY }}>Systems list</Text>
+      </Pressable>
+    </View>
+  );
+
+  if (subStep === "photo") {
+    return (
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView
+          className="flex-1 bg-[#F5F8F0] px-4"
+          contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {topBar}
+          <Text className="text-[17px] font-semibold text-stone-900 mb-1">
+            {isStructure ? `Add a picture of its condition (${meta.label})` : `Take a picture of the ${meta.label} label`}
+          </Text>
+          <Text className="text-[12.5px] text-stone-500 mb-4">
+            {isStructure
+              ? "This helps you track its condition over time. You can skip if you don't have one handy."
+              : "We'll automatically read the brand, model, and other details from it."}
+          </Text>
+
+          <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
+
+          {scanning && (
+            <View className="flex-row items-center gap-2 mb-3">
+              <ActivityIndicator size="small" color={PRIMARY} />
+              <Text className="text-[12.5px] text-stone-500">Reading label...</Text>
+            </View>
+          )}
+          {scanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</Text>}
+
+          <Pressable
+            onPress={handlePhotoContinue}
+            disabled={scanning}
+            className="w-full py-2.5 rounded-lg items-center"
+            style={{ backgroundColor: PRIMARY, opacity: scanning ? 0.6 : 1 }}
+          >
+            <Text className="text-[13.5px] font-semibold text-white">
+              {photoUrl ? "Continue" : "Skip, I don't have a picture"}
+            </Text>
+          </Pressable>
+        </ScrollView>
+        <KeyboardDoneBar />
+      </KeyboardAvoidingView>
+    );
+  }
+
+  if (subStep === "receipt") {
+    return (
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView
+          className="flex-1 bg-[#F5F8F0] px-4"
+          contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {topBar}
+          <Pressable onPress={() => setSubStep("photo")} className="flex-row items-center gap-1 mb-3">
+            <ChevronLeft size={16} color="#78716c" />
+            <Text className="text-[13px] text-stone-500">Back</Text>
+          </Pressable>
+
+          <Text className="text-[17px] font-semibold text-stone-900 mb-1">
+            {isStructure ? "Add a receipt photo?" : "Add a receipt or warranty photo?"}
+          </Text>
+          <Text className="text-[12.5px] text-stone-500 mb-4">
+            {isStructure
+              ? "If you have a receipt from a repair or installation, add it here. Optional, if applicable."
+              : "If you have one, we'll save it with this system's documents. Optional."}
+          </Text>
+
+          <PhotoPicker photoUrl={receiptPhotoUrl} onChange={setReceiptPhotoUrl} />
+
+          {receiptPhotoUrl && !isStructure && (
+            <View className="flex-row gap-2 mb-4">
+              {["Receipt", "Warranty"].map((t) => {
+                const selected = receiptType === t;
+                return (
+                  <Pressable
+                    key={t}
+                    onPress={() => setReceiptType(t)}
+                    className="rounded-full px-3 py-1.5"
+                    style={{ backgroundColor: selected ? PRIMARY : "white", borderWidth: selected ? 0 : 1, borderColor: "#D8D5CB" }}
+                  >
+                    <Text className="text-[12.5px] font-semibold" style={{ color: selected ? "white" : "#5F5B50" }}>{t}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          <Pressable
+            onPress={() => setSubStep("fields")}
+            className="w-full py-2.5 rounded-lg items-center"
+            style={{ backgroundColor: PRIMARY }}
+          >
+            <Text className="text-[13.5px] font-semibold text-white">
+              {receiptPhotoUrl ? "Continue" : "Skip, I don't have one"}
+            </Text>
+          </Pressable>
+        </ScrollView>
+        <KeyboardDoneBar />
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // subStep === "fields"
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <ScrollView
@@ -323,17 +494,22 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-[12px] text-stone-400">Item {index + 1} of {total}</Text>
-          <Pressable onPress={onShowList} className="flex-row items-center gap-1" hitSlop={8}>
-            <List size={14} color={PRIMARY} />
-            <Text className="text-[12px] font-semibold" style={{ color: PRIMARY }}>Systems list</Text>
-          </Pressable>
-        </View>
-        <Text className="text-[17px] font-semibold text-stone-900 mb-1">Let&apos;s add details about your {meta.label}</Text>
+        {topBar}
+        <Pressable onPress={() => setSubStep("receipt")} className="flex-row items-center gap-1 mb-3">
+          <ChevronLeft size={16} color="#78716c" />
+          <Text className="text-[13px] text-stone-500">Back</Text>
+        </Pressable>
+
+        <Text className="text-[17px] font-semibold text-stone-900 mb-1">Fill in the rest</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">
-          Take a photo to auto-fill with AI, or fill in what you know. Nothing here is required.
+          {sysBrand || sysModel ? "Auto-filled from the label — review and edit anything below." : "Nothing here is required."}
         </Text>
+
+        {sysManualUrl && (
+          <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
+            Found the owner&apos;s manual — it&apos;ll be attached to this system&apos;s Documents when you save.
+          </Text>
+        )}
 
         <ItemFields
           kind="system"
@@ -341,6 +517,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
           photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
           sysBrand={sysBrand} setSysBrand={setSysBrand}
           sysModel={sysModel} setSysModel={setSysModel}
+          sysSerial={sysSerial} setSysSerial={setSysSerial}
           sysCategory={sysCategory} setSysCategory={setSysCategory}
           sysLocation={sysLocation} setSysLocation={setSysLocation}
           sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}
@@ -351,6 +528,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
           sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
           sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
           hideCategoryPicker
+          hidePhotoSection
         />
 
         {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
@@ -705,6 +883,7 @@ export default function OnboardingScreen() {
   if (step === "add-systems") {
     return (
       <QuickAddStep
+        key="add-systems"
         title="Let's add your systems"
         subtitle="HVAC, water heater, plumbing, electrical — add anything you'd like to track. You can skip this and add them later from the Systems tab."
         categories={ONBOARDING_SYSTEM_CATEGORIES}
@@ -719,6 +898,7 @@ export default function OnboardingScreen() {
   if (step === "add-appliances") {
     return (
       <QuickAddStep
+        key="add-appliances"
         title="Add your appliances"
         subtitle="Refrigerator, dishwasher, washer, dryer — add them one by one, or skip and add them later."
         fixedCategory="appliance"
@@ -733,6 +913,7 @@ export default function OnboardingScreen() {
   if (step === "add-structure") {
     return (
       <QuickAddStep
+        key="add-structure"
         title="Add your house structure"
         subtitle="Roof, windows, exterior/paint, balcony, deck, garden — anything about the structure itself worth tracking."
         categories={ONBOARDING_STRUCTURE_CATEGORIES}
