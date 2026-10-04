@@ -312,6 +312,13 @@ export const db = {
   tasks: {
     add: (t) => insertRow("tasks", taskToRow(t), rowToTask),
     update: (id, patch) => updateRow("tasks", id, taskToRow(patch), rowToTask),
+    setCompleted: (id, completed, reopenedAt) =>
+      updateRow(
+        "tasks",
+        id,
+        { completed, reopened_at: reopenedAt ? new Date(reopenedAt).toISOString() : null },
+        rowToTask
+      ),
     remove: (id) => deleteRow("tasks", id),
   },
   expenses: {

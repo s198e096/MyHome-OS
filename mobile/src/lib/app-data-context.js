@@ -111,8 +111,8 @@ export function AppDataProvider({ children }) {
 
   async function toggleTask(id) {
     const t = tasks.find((t) => t.id === id);
-    const patch = t.completed ? { completed: false, reopenedAt: Date.now() } : { completed: true, reopenedAt: null };
-    const updated = await db.tasks.update(id, { ...t, ...patch });
+    const completed = !t.completed;
+    const updated = await db.tasks.setCompleted(id, completed, completed ? null : Date.now());
     setTasks((ts) => ts.map((t) => (t.id === id ? updated : t)));
   }
 
@@ -226,6 +226,11 @@ export function AppDataProvider({ children }) {
   async function deleteSystem(id) {
     await db.systems.remove(id);
     setSystems((ss) => ss.filter((s) => s.id !== id));
+    // The database nulls system_id on linked rows (on delete set null); mirror that locally.
+    const unlink = (row) => (row.systemId === id ? { ...row, systemId: null } : row);
+    setTasks((ts) => ts.map(unlink));
+    setExpenses((es) => es.map(unlink));
+    setDocuments((ds) => ds.map(unlink));
   }
 
   async function saveProfile(next) {
