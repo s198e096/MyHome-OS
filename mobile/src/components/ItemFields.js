@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator } from "lucide-react-native";
-import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS } from "../lib/constants.js";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, systemName } from "../lib/constants.js";
 import { scanSystemLabel } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
@@ -185,9 +185,9 @@ export default function ItemFields({
       {(kind === "task" || kind === "expense" || kind === "doc") && (
         <View className="w-full mb-3" style={pickerBoxStyle}>
           <Picker selectedValue={systemId} onValueChange={setSystemId}>
-            <Picker.Item label="General (no system)" value="" />
+            <Picker.Item label="General" value="" />
             {systems.map((s) => (
-              <Picker.Item key={s.id} label={`${s.brand} ${s.model}`} value={s.id} />
+              <Picker.Item key={s.id} label={systemName(s)} value={s.id} />
             ))}
           </Picker>
         </View>

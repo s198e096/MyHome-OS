@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight } from "lucide-react-native";
-import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT } from "../lib/constants.js";
+import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT, systemName } from "../lib/constants.js";
 import { systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.js";
 
@@ -45,7 +45,7 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit
                   </View>
                 )}
                 <View>
-                  <Text className="text-[13.5px] text-stone-800">{s.brand} {s.model}</Text>
+                  <Text className="text-[13.5px] text-stone-800">{systemName(s)}</Text>
                   <Text className="text-[11.5px] text-stone-400">{meta.label} · {s.location}</Text>
                 </View>
               </View>

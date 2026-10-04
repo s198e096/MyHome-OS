@@ -2,7 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
-import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, systemName } from "../lib/constants.js";
 import ItemFields from "../components/ItemFields.js";
 import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 
@@ -62,7 +62,7 @@ export default function ItemFormScreen({
     task: "Tasks",
     expense: "Costs",
     doc: "Docs",
-    system: isEdit ? `${item.brand} ${item.model}` : "Systems",
+    system: isEdit ? systemName(item) : "Systems",
     furniture: "Furniture",
   };
 

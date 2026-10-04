@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
-import { PRIMARY } from "../lib/constants.js";
+import { PRIMARY, systemName } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
 
@@ -41,7 +41,7 @@ export default function CostsScreen({ expenses, forecast, systemById, onEdit, on
               <LedgerRow
                 key={e.id}
                 label={e.note}
-                sub={`${e.category}${sys ? " · " + sys.brand + " " + sys.model : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                sub={`${e.category}${sys ? " · " + systemName(sys) : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
                 value={money(e.amount)}
                 onPress={() => onEdit(e)}
               />

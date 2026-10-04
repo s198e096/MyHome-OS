@@ -27,6 +27,13 @@ export const CATEGORY_META = {
   garden: { label: "Garden / Backyard", icon: Trees },
 };
 
+// Display name for a system. Onboarding can create systems with only a
+// category (brand/model empty), so fall back to the category label.
+export function systemName(sys) {
+  const name = [sys.brand, sys.model].filter(Boolean).join(" ");
+  return name || CATEGORY_META[sys.category]?.label || "System";
+}
+
 // Which categories each onboarding step offers, and in which order they're
 // walked through after the property step.
 export const ONBOARDING_SYSTEM_CATEGORIES = ["hvac_indoor", "hvac_outdoor", "water_heater", "plumbing", "electrical"];

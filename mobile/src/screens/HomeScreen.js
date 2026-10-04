@@ -2,7 +2,7 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Clock, Home } from "lucide-react-native";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META } from "../lib/constants.js";
+import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, systemName } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.js";
 
@@ -99,7 +99,7 @@ function TodayList({ tasks, systemById }) {
                 <View className="flex-row items-center justify-between gap-2">
                   <View className="flex-1 min-w-0">
                     <Text className="text-[14px] font-semibold text-stone-900" numberOfLines={1}>{t.title}</Text>
-                    {sys && <Text className="text-[12px] text-stone-400">{sys.brand} {sys.model}</Text>}
+                    {sys && <Text className="text-[12px] text-stone-400">{systemName(sys)}</Text>}
                   </View>
                 </View>
                 {(t.duration || t.difficulty) && (

@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, Check } from "lucide-react-native";
-import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
 
 export default function TasksScreen({ tasks, completed, systemById, onToggle, onEdit, onAdd }) {
@@ -31,7 +31,7 @@ export default function TasksScreen({ tasks, completed, systemById, onToggle, on
                 </Pressable>
                 <Pressable onPress={() => onEdit(t)} className="flex-1 min-w-0">
                   <Text className="text-[13.5px] text-stone-800" numberOfLines={1}>{t.title}</Text>
-                  <Text className="text-[11.5px] text-stone-400">{sys ? `${sys.brand} ${sys.model}` : "General"}</Text>
+                  <Text className="text-[11.5px] text-stone-400">{sys ? systemName(sys) : "General"}</Text>
                 </Pressable>
               </View>
               <Text

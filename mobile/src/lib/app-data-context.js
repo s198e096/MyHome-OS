@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS } from "./constants.js";
+import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName } from "./constants.js";
 import { TODAY, daysUntil, computeForecast } from "./forecast.js";
 import {
   db,
@@ -219,7 +219,8 @@ export function AppDataProvider({ children }) {
   }
 
   async function attachManualDocument(systemId, brand, model, manualUrl) {
-    const created = await db.documents.add({ label: `${brand} ${model} Manual`, type: "Manual", systemId, photoUrl: manualUrl });
+    const category = systems.find((s) => s.id === systemId)?.category;
+    const created = await db.documents.add({ label: `${systemName({ brand, model, category })} Manual`, type: "Manual", systemId, photoUrl: manualUrl });
     setDocuments((ds) => [...ds, created]);
   }
 

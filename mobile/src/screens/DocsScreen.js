@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, FileText } from "lucide-react-native";
-import { PRIMARY } from "../lib/constants.js";
+import { PRIMARY, systemName } from "../lib/constants.js";
 
 export default function DocsScreen({ documents, systemById, onEdit, onAdd }) {
   const insets = useSafeAreaInsets();
@@ -30,7 +30,7 @@ export default function DocsScreen({ documents, systemById, onEdit, onAdd }) {
               )}
               <View>
                 <Text className="text-[13.5px] text-stone-800">{d.label}</Text>
-                <Text className="text-[11.5px] text-stone-400">{d.type}{sys ? " · " + sys.brand + " " + sys.model : ""}</Text>
+                <Text className="text-[11.5px] text-stone-400">{d.type}{sys ? " · " + systemName(sys) : ""}</Text>
               </View>
             </Pressable>
           );

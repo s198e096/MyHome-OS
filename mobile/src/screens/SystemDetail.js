@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Pencil } from "lucide-react-native";
-import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG } from "../lib/constants.js";
+import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName } from "../lib/constants.js";
 import { TODAY, money, replacementYear } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
 
@@ -38,7 +38,7 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit }) 
           <Icon size={20} color="#5F5B50" />
         </View>
         <View>
-          <Text className="text-[17px] font-semibold text-stone-900">{sys.brand} {sys.model}</Text>
+          <Text className="text-[17px] font-semibold text-stone-900">{systemName(sys)}</Text>
           <Text className="text-[12px] text-stone-400">{meta.label} · {sys.location}</Text>
         </View>
       </View>
