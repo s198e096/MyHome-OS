@@ -4,11 +4,36 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Clock, Home } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, systemName } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
+import { missingSystemInfo } from "../lib/system-info.js";
 import StatusDot from "../components/StatusDot.js";
 
 const seedRecommendations = [
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
+
+// Nudges the user to fill in details missing from the systems they've logged.
+// Tapping opens the first incomplete system's edit form.
+function completeSystemsRecommendation(systems, onEditSystem) {
+  const incomplete = systems
+    .map((sys) => ({ sys, missing: missingSystemInfo(sys) }))
+    .filter((x) => x.missing.length > 0);
+  if (incomplete.length === 0) return null;
+
+  const labels = [...new Set(incomplete.flatMap((x) => x.missing))];
+  const shown = labels.slice(0, 4).join(", ");
+  const more = labels.length > 4 ? ` +${labels.length - 4} more` : "";
+  const single = incomplete.length === 1;
+  const who = single ? systemName(incomplete[0].sys) : `${incomplete.length} systems`;
+
+  return {
+    id: "complete-systems",
+    title: "Complete your systems",
+    subtitle: `${who} ${single ? "is" : "are"} missing: ${shown}${more}.`,
+    cta: "Add details",
+    highlight: true,
+    onClick: () => onEditSystem(incomplete[0].sys),
+  };
+}
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
@@ -164,8 +189,9 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onOpenAccount, onOpenAssistant, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onEditSystem, onOpenAccount, onOpenAssistant, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
+  const recommendations = [completeSystemsRecommendation(systems, onEditSystem), ...seedRecommendations].filter(Boolean);
 
   const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
@@ -206,7 +232,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
 
         <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} />
 
-        <RecommendedList items={seedRecommendations} />
+        <RecommendedList items={recommendations} />
 
         <View className="mb-5">
           <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>
