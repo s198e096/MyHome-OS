@@ -90,6 +90,7 @@ export default function ItemFields({
   sysReplacementCost, setSysReplacementCost,
   sysWarranty, setSysWarranty,
   sysFilterSize, setSysFilterSize,
+  sysPlanned, setSysPlanned,
   sysManualUrl, setSysManualUrl,
   hideCategoryPicker,
   hidePhotoSection,
@@ -330,6 +331,15 @@ export default function ItemFields({
           />
 
           <DateField label="Warranty expiration (optional)" value={sysWarranty} onChange={setSysWarranty} optional />
+
+          {setSysPlanned && (
+            <>
+              <DateField label="Planned replacement (optional)" value={sysPlanned} onChange={setSysPlanned} optional />
+              <Text className="text-[11px] text-stone-400 mb-3">
+                When you plan to replace it. Savings are calculated from this date alone. Leave empty to base them on expected life and estimated replacement.
+              </Text>
+            </>
+          )}
         </>
       )}
 

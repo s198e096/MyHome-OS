@@ -16,6 +16,7 @@ const rowToSystem = (r) => ({
   warrantyExpiration: r.warranty_expiration || "",
   photoUrl: r.photo_url,
   filterSize: r.filter_size || "",
+  plannedReplacementDate: r.planned_replacement_date || "",
 });
 
 const systemToRow = (s) => ({
@@ -31,6 +32,11 @@ const systemToRow = (s) => ({
   warranty_expiration: s.warrantyExpiration || null,
   photo_url: s.photoUrl || null,
   filter_size: s.filterSize || null,
+  // "" means never set: leave the column out so saves still work before the
+  // planned_replacement_date migration is run. null clears an existing plan.
+  ...(s.plannedReplacementDate === undefined || s.plannedReplacementDate === ""
+    ? {}
+    : { planned_replacement_date: s.plannedReplacementDate || null }),
 });
 
 const rowToTask = (r) => ({
@@ -330,6 +336,8 @@ export const db = {
   systems: {
     add: (s) => insertRow("systems", systemToRow(s), rowToSystem),
     update: (id, patch) => updateRow("systems", id, systemToRow(patch), rowToSystem),
+    setPlannedReplacement: (id, date) =>
+      updateRow("systems", id, { planned_replacement_date: date || null }, rowToSystem),
     remove: (id) => deleteRow("systems", id),
   },
   tasks: {

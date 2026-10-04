@@ -218,6 +218,13 @@ export function AppDataProvider({ children }) {
     return updated;
   }
 
+  // Writes only the plan date (no filter-reminder resync), for the detail-page planner.
+  async function setPlannedReplacement(id, date) {
+    const updated = await db.systems.setPlannedReplacement(id, date);
+    setSystems((ss) => ss.map((s) => (s.id === id ? updated : s)));
+    return updated;
+  }
+
   async function attachManualDocument(systemId, brand, model, manualUrl) {
     const category = systems.find((s) => s.id === systemId)?.category;
     const created = await db.documents.add({ label: `${systemName({ brand, model, category })} Manual`, type: "Manual", systemId, photoUrl: manualUrl });
@@ -281,6 +288,7 @@ export function AppDataProvider({ children }) {
     deleteFurniture,
     addSystem,
     updateSystem,
+    setPlannedReplacement,
     attachManualDocument,
     deleteSystem,
     saveProfile,

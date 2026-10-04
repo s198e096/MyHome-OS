@@ -45,6 +45,7 @@ export default function ItemFormScreen({
   const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
   const [sysWarranty, setSysWarranty] = useState(item?.warrantyExpiration || "");
   const [sysFilterSize, setSysFilterSize] = useState(item?.filterSize || "");
+  const [sysPlanned, setSysPlanned] = useState(item?.plannedReplacementDate || "");
   const [sysManualUrl, setSysManualUrl] = useState("");
 
   const [error, setError] = useState("");
@@ -115,6 +116,8 @@ export default function ItemFormScreen({
           warrantyExpiration: sysWarranty,
           photoUrl: photoUrl || null,
           filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
+          // null clears a plan that was set; "" (never set) is left out of the save.
+          plannedReplacementDate: sysPlanned || (item?.plannedReplacementDate ? null : ""),
         };
         const savedSystem = isEdit ? await onUpdateSystem(item.id, payload) : await onAddSystem(payload);
         if (sysManualUrl && savedSystem) {
@@ -191,6 +194,7 @@ export default function ItemFormScreen({
         sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
         sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
         sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
+        sysPlanned={sysPlanned} setSysPlanned={setSysPlanned}
         sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
       />
 
