@@ -28,6 +28,7 @@ function TabsNavigator() {
         <Tabs.Screen name="account" options={{ title: "Account", tabBarIcon: ({ color, size }) => <User size={size} color={color} /> }} />
         <Tabs.Screen name="furniture" options={{ href: null }} />
         <Tabs.Screen name="energy-audit" options={{ href: null }} />
+        <Tabs.Screen name="ask" options={{ href: null }} />
       </Tabs>
     </TabTransitionProvider>
   );

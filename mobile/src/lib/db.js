@@ -1,10 +1,12 @@
 import * as Linking from "expo-linking";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { supabase } from "./supabase.js";
 
 const rowToSystem = (r) => ({
   id: r.id,
   brand: r.brand,
   model: r.model,
+  serialNumber: r.serial_number || "",
   category: r.category,
   location: r.location,
   purchaseDate: r.purchase_date || "",
@@ -19,6 +21,7 @@ const rowToSystem = (r) => ({
 const systemToRow = (s) => ({
   brand: s.brand,
   model: s.model,
+  serial_number: s.serialNumber || null,
   category: s.category,
   location: s.location,
   purchase_date: s.purchaseDate || null,
@@ -219,15 +222,27 @@ export async function uploadPhoto(asset) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const ext = asset.fileName?.includes(".") ? asset.fileName.split(".").pop() : (asset.mimeType?.split("/")[1] || "jpg");
-  const path = `${user.id}/${generateId()}.${ext}`;
+  // Normalize to JPEG regardless of source format — iPhone cameras capture
+  // HEIC by default, which Claude's vision API (used by the AI label-scan
+  // feature) rejects outright. Also downscale to a max width and compress —
+  // full-resolution camera photos can exceed Claude's 10MB image limit.
+  const context = ImageManipulator.manipulate(asset.uri);
+  context.resize({ width: 1600 });
+  const rendered = await context.renderAsync();
+  const { uri: jpegUri } = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
 
-  const response = await fetch(asset.uri);
-  const blob = await response.blob();
+  const path = `${user.id}/${generateId()}.jpg`;
 
-  const { error } = await supabase.storage.from("photos").upload(path, blob, {
+  // Upload the raw bytes as an ArrayBuffer rather than a Blob — React
+  // Native's fetch().blob() polyfill doesn't carry the content-type through
+  // to Supabase Storage's upload, which then serves the file back as
+  // text/plain regardless of the `contentType` option passed here.
+  const response = await fetch(jpegUri);
+  const arrayBuffer = await response.arrayBuffer();
+
+  const { error } = await supabase.storage.from("photos").upload(path, arrayBuffer, {
     cacheControl: "3600",
-    contentType: asset.mimeType || "image/jpeg",
+    contentType: "image/jpeg",
   });
   if (error) throw error;
 
@@ -248,6 +263,14 @@ export async function fetchPropertyDetails(address) {
   });
   if (error) throw error;
   return data;
+}
+
+export async function askAssistant(messages) {
+  const { data, error } = await supabase.functions.invoke("ask-assistant", {
+    body: { messages },
+  });
+  if (error) throw error;
+  return data.reply;
 }
 
 export async function createCheckoutSession(planId) {

@@ -20,6 +20,7 @@ export default function Home() {
       profile={data.profile}
       onOpenSystem={(s) => router.push(`/systems/${s.id}`)}
       onOpenAccount={() => router.push("/account")}
+      onOpenAssistant={() => router.push("/ask")}
       onNavigate={(path) => router.push(path)}
     />
     </AnimatedTabScreen>
