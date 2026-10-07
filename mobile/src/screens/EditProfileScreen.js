@@ -28,12 +28,16 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
       if (isNaN(num) || num < 0) return setError("Enter a valid property value.");
       value = num;
     }
+    // Flags it as a manual override only when the number actually changed,
+    // so the monthly RentCast refresh knows to protect it going forward.
+    const valueChanged = value !== (profile.propertyValue ?? null);
     onSave({
       name: name.trim(),
       email: email.trim(),
       propertyName: propertyName.trim(),
       address: address.trim(),
       propertyValue: value,
+      ...(valueChanged ? { propertyValueSource: "Manual" } : {}),
       bedrooms: bedrooms.trim() ? parseInt(bedrooms, 10) : null,
       yearBuilt: yearBuilt.trim() ? parseInt(yearBuilt, 10) : null,
       purchasePrice: purchasePrice.trim() ? parseFloat(purchasePrice) : null,

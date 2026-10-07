@@ -49,7 +49,12 @@ export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut
         {profile.propertyValue != null && (
           <LedgerRow
             label="Home value"
-            sub={profile.propertyValueSource ? `Source: ${profile.propertyValueSource}` : undefined}
+            sub={[
+              profile.propertyValueSource ? `Source: ${profile.propertyValueSource}` : null,
+              profile.propertyValueUpdatedAt
+                ? `Updated ${new Date(profile.propertyValueUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                : null,
+            ].filter(Boolean).join(" · ") || undefined}
             value={money(profile.propertyValue)}
           />
         )}

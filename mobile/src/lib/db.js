@@ -133,6 +133,9 @@ const rowToProfile = (r) => ({
   propertyName: r.property_name || "",
   propertyValue: r.property_value,
   propertyValueSource: r.property_value_source,
+  propertyValueUpdatedAt: r.property_value_updated_at,
+  propertyValuePending: r.property_value_pending,
+  propertyValuePendingFetchedAt: r.property_value_pending_fetched_at,
   bedrooms: r.bedrooms,
   yearBuilt: r.year_built,
   purchasePrice: r.purchase_price,
@@ -390,6 +393,24 @@ export async function saveProfile(userId, profile) {
     .eq("user_id", userId)
     .select()
     .single();
+  if (error) throw error;
+  return rowToProfile(data);
+}
+
+// Answers the "RentCast refreshed your home value" prompt: accept switches
+// to the new estimate, decline just clears the pending suggestion and keeps
+// the user's manually-entered value.
+export async function resolvePendingPropertyValue(userId, accept, pendingValue) {
+  const patch = accept
+    ? {
+        property_value: pendingValue,
+        property_value_source: "RentCast",
+        property_value_updated_at: new Date().toISOString(),
+        property_value_pending: null,
+        property_value_pending_fetched_at: null,
+      }
+    : { property_value_pending: null, property_value_pending_fetched_at: null };
+  const { data, error } = await supabase.from("profiles").update(patch).eq("user_id", userId).select().single();
   if (error) throw error;
   return rowToProfile(data);
 }

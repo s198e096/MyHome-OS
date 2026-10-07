@@ -6,6 +6,7 @@ import {
   loadAllData,
   loadProfile,
   saveProfile as saveProfileRow,
+  resolvePendingPropertyValue as resolvePendingPropertyValueRow,
   createCheckoutSession,
   createPortalSession,
   loadEnergyChecks,
@@ -246,6 +247,11 @@ export function AppDataProvider({ children }) {
     setProfile((p) => ({ ...p, ...updated }));
   }
 
+  async function resolvePropertyValuePrompt(accept) {
+    const updated = await resolvePendingPropertyValueRow(session.user.id, accept, profile.propertyValuePending);
+    setProfile((p) => ({ ...p, ...updated }));
+  }
+
   async function selectPlan(planId) {
     if (planId === "free") return createPortalSession();
     return createCheckoutSession(planId);
@@ -292,6 +298,7 @@ export function AppDataProvider({ children }) {
     attachManualDocument,
     deleteSystem,
     saveProfile,
+    resolvePropertyValuePrompt,
     selectPlan,
     manageBilling,
   };

@@ -4,14 +4,23 @@ import { PRIMARY } from "../../lib/constants.js";
 import { AppDataProvider, useAppData } from "../../lib/app-data-context.js";
 import { TabTransitionProvider } from "../../lib/tab-transition.js";
 import OnboardingScreen from "../../screens/OnboardingScreen.js";
+import PropertyValuePrompt from "../../components/PropertyValuePrompt.js";
 
 function TabsNavigator() {
-  const { dataLoaded, profile } = useAppData();
+  const { dataLoaded, profile, resolvePropertyValuePrompt } = useAppData();
   if (!dataLoaded) return null;
   if (!profile.onboardingCompleted) return <OnboardingScreen />;
 
   return (
     <TabTransitionProvider>
+      {profile.propertyValuePending != null && (
+        <PropertyValuePrompt
+          currentValue={profile.propertyValue}
+          pendingValue={profile.propertyValuePending}
+          onKeep={() => resolvePropertyValuePrompt(false)}
+          onAccept={() => resolvePropertyValuePrompt(true)}
+        />
+      )}
       <Tabs
         screenOptions={{
           headerShown: false,
