@@ -19,7 +19,7 @@ export default function Home() {
       monthlyReserve={data.monthlyReserve}
       profile={data.profile}
       onOpenSystem={(s) => router.push(`/systems/${s.id}`)}
-      onEditSystem={(s) => router.push(`/systems/${s.id}/edit`)}
+      onViewIncompleteSystems={() => router.push("/systems/incomplete")}
       onOpenAccount={() => router.push("/account")}
       onOpenAssistant={() => router.push("/ask")}
       onNavigate={(path) => router.push(path)}

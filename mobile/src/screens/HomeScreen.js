@@ -12,8 +12,8 @@ const seedRecommendations = [
 ];
 
 // Nudges the user to fill in details missing from the systems they've logged.
-// Tapping opens the first incomplete system's edit form.
-function completeSystemsRecommendation(systems, onEditSystem) {
+// Tapping opens the list of incomplete systems so the user picks which to complete.
+function completeSystemsRecommendation(systems, onViewIncompleteSystems) {
   const incomplete = systems
     .map((sys) => ({ sys, missing: missingSystemInfo(sys) }))
     .filter((x) => x.missing.length > 0);
@@ -31,7 +31,7 @@ function completeSystemsRecommendation(systems, onEditSystem) {
     subtitle: `${who} ${single ? "is" : "are"} missing: ${shown}${more}.`,
     cta: "Add details",
     highlight: true,
-    onClick: () => onEditSystem(incomplete[0].sys),
+    onClick: onViewIncompleteSystems,
   };
 }
 
@@ -189,9 +189,9 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onEditSystem, onOpenAccount, onOpenAssistant, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
-  const recommendations = [completeSystemsRecommendation(systems, onEditSystem), ...seedRecommendations].filter(Boolean);
+  const recommendations = [completeSystemsRecommendation(systems, onViewIncompleteSystems), ...seedRecommendations].filter(Boolean);
 
   const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
