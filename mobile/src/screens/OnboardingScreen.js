@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Image,
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-import { MapPin, Sparkles, ChevronLeft, Check, Search, X, Plus, Minus, List } from "lucide-react-native";
+import { MapPin, Sparkles, ChevronLeft, ChevronRight, Check, Search, X, Plus, Minus, List } from "lucide-react-native";
 import {
   PRIMARY,
   HERO_BG_TOP,
@@ -23,6 +23,8 @@ import OnboardingTransition from "../components/OnboardingTransition.js";
 import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 import ItemFields from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
+import HvacGuideIllustration from "../components/HvacGuideIllustrations.js";
+import WaterHeaterGuideIllustration from "../components/WaterHeaterGuideIllustrations.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
@@ -555,6 +557,460 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
   );
 }
 
+// The five HVAC configurations we can recognize. Each maps to one or two
+// actual system entries (most configurations split into an indoor and an
+// outdoor unit) — brand/model are left for the user to fill in later via the
+// regular details walkthrough, but the model field gets a descriptive
+// placeholder so indoor/outdoor entries stay distinguishable in the list.
+const HVAC_TYPES = {
+  furnace_ac: {
+    label: "Gas Furnace + Central AC",
+    hint: "Most common",
+    units: [
+      { category: "hvac_indoor", model: "Gas furnace" },
+      { category: "hvac_outdoor", model: "Central AC condenser" },
+    ],
+  },
+  heat_pump: {
+    label: "Central heat pump system",
+    units: [
+      { category: "hvac_indoor", model: "Heat pump air handler" },
+      { category: "hvac_outdoor", model: "Heat pump outdoor unit" },
+    ],
+  },
+  mini_split: {
+    label: "Ductless mini split",
+    units: [
+      { category: "hvac_indoor", model: "Mini split indoor head" },
+      { category: "hvac_outdoor", model: "Mini split outdoor compressor" },
+    ],
+  },
+  packaged: {
+    label: "Packaged HVAC system",
+    units: [{ category: "hvac_outdoor", model: "Packaged HVAC unit" }],
+  },
+  through_wall: {
+    label: "Through-wall AC",
+    units: [{ category: "hvac_indoor", model: "Through-wall AC unit" }],
+  },
+};
+
+// A short decision tree for "Guide me" — each node is a yes/no question;
+// "yes"/"no" point to either another node key, or directly to an HVAC_TYPES
+// key once the answers resolve to a specific configuration.
+const HVAC_GUIDE_TREE = {
+  start: {
+    text: "Do you have ductwork — vents in the ceiling or floor throughout the house?",
+    yes: "packaged_check",
+    no: "wall_unit",
+  },
+  packaged_check: {
+    text: "Is there a single box outside (often on the roof or a concrete pad) that handles both heating and cooling by itself, with no separate furnace indoors?",
+    yes: "packaged",
+    no: "heat_source",
+  },
+  heat_source: {
+    text: "Does the heat come from a gas furnace indoors (a flame or pilot light), rather than a heat pump outside?",
+    yes: "furnace_ac",
+    no: "heat_pump",
+  },
+  wall_unit: {
+    text: "Is it a single unit built into one wall, cooling just that room — not a separate box outside connected by a thin pipe?",
+    yes: "through_wall",
+    no: "mini_split",
+  },
+};
+
+// The five water heater types we can recognize. Unlike HVAC these are
+// always a single unit — brand/model are left for later, but the model
+// field gets a descriptive placeholder.
+const WATER_HEATER_TYPES = {
+  tank: {
+    label: "Conventional Tank Water Heater",
+    hint: "Most common",
+    units: [{ category: "water_heater", model: "Conventional tank water heater" }],
+  },
+  tankless: {
+    label: "Tankless (On-Demand) Water Heater",
+    units: [{ category: "water_heater", model: "Tankless water heater" }],
+  },
+  heat_pump_wh: {
+    label: "Heat Pump (Hybrid) Water Heater",
+    units: [{ category: "water_heater", model: "Heat pump (hybrid) water heater" }],
+  },
+  solar: {
+    label: "Solar Water Heater",
+    units: [{ category: "water_heater", model: "Solar water heater" }],
+  },
+  point_of_use: {
+    label: "Point-of-Use Water Heater",
+    units: [{ category: "water_heater", model: "Point-of-use water heater" }],
+  },
+};
+
+// Decision tree for the water heater "Guide me" flow — same shape as
+// HVAC_GUIDE_TREE above.
+const WATER_HEATER_GUIDE_TREE = {
+  start: {
+    text: "Is there a tank that stores a large amount of hot water (usually 40–80 gallons)?",
+    yes: "tank_fan_check",
+    no: "single_fixture_check",
+  },
+  tank_fan_check: {
+    text: "Does it have a fan on top, or make a humming/compressor sound like a mini air conditioner?",
+    yes: "heat_pump_wh",
+    no: "solar_check",
+  },
+  solar_check: {
+    text: "Are there solar panels or a collector on the roof connected to it?",
+    yes: "solar",
+    no: "tank",
+  },
+  single_fixture_check: {
+    text: "Is it a small unit installed right at (or under) a single sink or fixture, just for that one tap?",
+    yes: "point_of_use",
+    no: "tankless",
+  },
+};
+
+// Creates/updates the system entries for a chosen type's unit list — shared
+// by every guided walkthrough (HVAC, water heater, ...). Reuses a bare
+// (brand/model-less) existing system of the matching category when one is
+// already there (e.g. from RentCast detection) instead of duplicating it.
+async function applySystemUnits(units, { systems, addSystem, updateSystem }) {
+  const claimed = new Set();
+  for (const unit of units) {
+    const existing = systems.find((s) => s.category === unit.category && !s.model && !claimed.has(s.id));
+    if (existing) {
+      claimed.add(existing.id);
+      await updateSystem(existing.id, { model: unit.model });
+    } else {
+      await addSystem({ category: unit.category, brand: null, model: unit.model, location: "" });
+    }
+  }
+}
+
+// Shared chrome for every screen in a guided system walkthrough (HVAC, water
+// heater, ...): a back button (when provided), a "Skip" link that confirms
+// before bailing out of the whole step, and the step's title.
+function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, children }) {
+  const insets = useSafeAreaInsets();
+  const [confirmingSkip, setConfirmingSkip] = useState(false);
+
+  return (
+    <ScrollView
+      className="flex-1 bg-[#F5F8F0] px-4"
+      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View className="flex-row items-center justify-between mb-3">
+        {onBackPress ? (
+          <Pressable onPress={onBackPress} className="flex-row items-center gap-1">
+            <ChevronLeft size={16} color="#78716c" />
+            <Text className="text-[13px] text-stone-500">Back</Text>
+          </Pressable>
+        ) : (
+          <View />
+        )}
+        <Pressable onPress={() => setConfirmingSkip(true)} hitSlop={8}>
+          <Text className="text-[13px] font-semibold text-stone-400">Skip</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ flex: 1, justifyContent: "center" }}>
+        <Text className="text-[17px] font-semibold text-stone-900 mb-4 text-center">{title}</Text>
+        {children}
+      </View>
+
+      {confirmingSkip && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} className="items-center justify-center px-6">
+          <Pressable
+            onPress={() => setConfirmingSkip(false)}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }}
+          />
+          <View className="w-full rounded-xl bg-white p-4" style={fieldStyle}>
+            <Text className="text-[15px] font-semibold text-stone-900 mb-1.5">Skip {skipSubject}?</Text>
+            <Text className="text-[12.5px] text-stone-500 mb-4">
+              You sure you want to skip {skipSubject}? You can always add it later from the Systems tab.
+            </Text>
+            <Pressable onPress={onSkip} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+              <Text className="text-[13.5px] font-semibold text-white">Yes, skip it</Text>
+            </Pressable>
+            <Pressable onPress={() => setConfirmingSkip(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+              <Text className="text-[13.5px] font-semibold text-stone-700">Keep going</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+// Shared "pick a type" list for a guided walkthrough's type-picker screen —
+// each row is its own card, with the suggested one (from "Guide me", if any)
+// highlighted. `types` is a map of key -> { label, hint? }.
+function TypePickerList({ types, suggestedKey, onSelect, saving, Icon }) {
+  return (
+    <View className="rounded-xl bg-white p-1.5 mb-4" style={fieldStyle}>
+      {Object.entries(types).map(([key, type]) => {
+        const suggested = key === suggestedKey;
+        return (
+          <Pressable
+            key={key}
+            onPress={() => onSelect(key)}
+            disabled={saving}
+            className="flex-row items-center justify-between py-2.5 px-2.5 mb-1 rounded-lg"
+            style={{
+              backgroundColor: suggested ? ACCENT_YELLOW : "white",
+              borderWidth: suggested ? 1.5 : 0,
+              borderColor: PRIMARY,
+            }}
+          >
+            <View className="flex-row items-center gap-2.5 flex-1">
+              <View
+                className="items-center justify-center rounded-lg"
+                style={{ width: 30, height: 30, backgroundColor: suggested ? "white" : "#F5F8F0" }}
+              >
+                <Icon size={16} color={suggested ? PRIMARY : "#5F5B50"} />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-[13.5px] text-stone-800 ${suggested ? "font-semibold" : ""}`}>{type.label}</Text>
+                {suggested ? (
+                  <View className="flex-row items-center gap-1 mt-0.5">
+                    <Sparkles size={11} color={PRIMARY} />
+                    <Text className="text-[11px] font-semibold" style={{ color: PRIMARY }}>Suggested, based on your answers</Text>
+                  </View>
+                ) : (
+                  type.hint && <Text className="text-[11px] text-stone-400">{type.hint}</Text>
+                )}
+              </View>
+            </View>
+            {saving ? <ActivityIndicator size="small" color={PRIMARY} /> : <ChevronRight size={15} color={suggested ? PRIMARY : "#B8B4A8"} />}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// Dedicated HVAC walkthrough, run right after the property step and before
+// the rest of the systems. If RentCast already detected an HVAC system,
+// skips straight to "do you know your type?"; otherwise asks first whether
+// there's an HVAC system at all. Every screen can be skipped (with a
+// confirmation), since nothing here is required to finish onboarding.
+function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
+  const { systems, addSystem, updateSystem } = useAppData();
+  const [subStep, setSubStep] = useState(hasExisting ? "know" : "ask");
+  const [guideNode, setGuideNode] = useState("start");
+  const [guideHistory, setGuideHistory] = useState([]);
+  const [suggestedType, setSuggestedType] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  async function applyHvacType(typeKey) {
+    setSaving(true);
+    try {
+      await applySystemUnits(HVAC_TYPES[typeKey].units, { systems, addSystem, updateSystem });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function answerGuide(yes) {
+    const node = HVAC_GUIDE_TREE[guideNode];
+    const next = yes ? node.yes : node.no;
+    if (HVAC_GUIDE_TREE[next]) {
+      setGuideHistory((h) => [...h, guideNode]);
+      setGuideNode(next);
+    } else {
+      setSuggestedType(next);
+      setSubStep("pick");
+    }
+  }
+
+  function backGuide() {
+    if (guideHistory.length === 0) {
+      setSubStep("know");
+      return;
+    }
+    setGuideNode(guideHistory[guideHistory.length - 1]);
+    setGuideHistory((h) => h.slice(0, -1));
+  }
+
+  const Icon = CATEGORY_META.hvac.icon;
+
+  const guideScreenProps = { title: "Let's add your HVAC system", skipSubject: "HVAC" };
+
+  if (subStep === "ask") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have an HVAC system?</Text>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "know") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={hasExisting ? onBack : () => setSubStep("ask")} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your HVAC system type?</Text>
+        <Pressable
+          onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
+          className="w-full py-2.5 rounded-lg items-center mb-2"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
+          className="w-full py-2.5 rounded-lg items-center"
+          style={fieldStyle}
+        >
+          <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "guide") {
+    const node = HVAC_GUIDE_TREE[guideNode];
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
+        <HvacGuideIllustration guideKey={guideNode} />
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  // subStep === "pick"
+  return (
+    <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("know")} onSkip={onDone}>
+      <Text className="text-[12.5px] text-stone-500 mb-3 text-center">
+        {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your system?"}
+      </Text>
+      <TypePickerList types={HVAC_TYPES} suggestedKey={suggestedType} onSelect={applyHvacType} saving={saving} Icon={Icon} />
+    </OnboardingGuideScreen>
+  );
+}
+
+// Same shape as HvacOnboardingStep above, for water heaters. Water heaters
+// are always a single unit, so there's no indoor/outdoor split to reconcile.
+function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
+  const { systems, addSystem, updateSystem } = useAppData();
+  const [subStep, setSubStep] = useState(hasExisting ? "know" : "ask");
+  const [guideNode, setGuideNode] = useState("start");
+  const [guideHistory, setGuideHistory] = useState([]);
+  const [suggestedType, setSuggestedType] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  async function applyWaterHeaterType(typeKey) {
+    setSaving(true);
+    try {
+      await applySystemUnits(WATER_HEATER_TYPES[typeKey].units, { systems, addSystem, updateSystem });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function answerGuide(yes) {
+    const node = WATER_HEATER_GUIDE_TREE[guideNode];
+    const next = yes ? node.yes : node.no;
+    if (WATER_HEATER_GUIDE_TREE[next]) {
+      setGuideHistory((h) => [...h, guideNode]);
+      setGuideNode(next);
+    } else {
+      setSuggestedType(next);
+      setSubStep("pick");
+    }
+  }
+
+  function backGuide() {
+    if (guideHistory.length === 0) {
+      setSubStep("know");
+      return;
+    }
+    setGuideNode(guideHistory[guideHistory.length - 1]);
+    setGuideHistory((h) => h.slice(0, -1));
+  }
+
+  const Icon = CATEGORY_META.water_heater.icon;
+  const guideScreenProps = { title: "Let's add your water heater", skipSubject: "your water heater" };
+
+  if (subStep === "ask") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have a water heater?</Text>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "know") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={hasExisting ? onBack : () => setSubStep("ask")} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your water heater type?</Text>
+        <Pressable
+          onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
+          className="w-full py-2.5 rounded-lg items-center mb-2"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
+          className="w-full py-2.5 rounded-lg items-center"
+          style={fieldStyle}
+        >
+          <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "guide") {
+    const node = WATER_HEATER_GUIDE_TREE[guideNode];
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
+        <WaterHeaterGuideIllustration guideKey={guideNode} />
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  // subStep === "pick"
+  return (
+    <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("know")} onSkip={onDone}>
+      <Text className="text-[12.5px] text-stone-500 mb-3 text-center">
+        {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your water heater?"}
+      </Text>
+      <TypePickerList types={WATER_HEATER_TYPES} suggestedKey={suggestedType} onSelect={applyWaterHeaterType} saving={saving} Icon={Icon} />
+    </OnboardingGuideScreen>
+  );
+}
+
 // What we can confidently turn into an actual System entry from RentCast's
 // construction/feature data. Only category + a short detected-from label are
 // set — brand, model, install date, etc. are left for the user to fill in
@@ -757,7 +1213,7 @@ export default function OnboardingScreen() {
       // again (now possible via the add-steps' back buttons) doesn't
       // re-create the same detected systems a second time.
       setDetectedSystems([]);
-      setStep("add-systems");
+      setStep("hvac");
     } catch {
       setError("Couldn't save. Try again.");
     } finally {
@@ -884,16 +1340,38 @@ export default function OnboardingScreen() {
     );
   }
 
+  if (step === "hvac") {
+    const hasExistingHvac = systems.some((s) => s.category === "hvac_indoor" || s.category === "hvac_outdoor");
+    return (
+      <HvacOnboardingStep
+        hasExisting={hasExistingHvac}
+        onBack={() => setStep("review")}
+        onDone={() => setStep("water-heater")}
+      />
+    );
+  }
+
+  if (step === "water-heater") {
+    const hasExistingWaterHeater = systems.some((s) => s.category === "water_heater");
+    return (
+      <WaterHeaterOnboardingStep
+        hasExisting={hasExistingWaterHeater}
+        onBack={() => setStep("hvac")}
+        onDone={() => setStep("add-systems")}
+      />
+    );
+  }
+
   if (step === "add-systems") {
     return (
       <QuickAddStep
         key="add-systems"
-        title="Let's add your systems"
-        subtitle="HVAC, water heater, plumbing, electrical — add anything you'd like to track. You can skip this and add them later from the Systems tab."
-        categories={ONBOARDING_SYSTEM_CATEGORIES}
+        title="Add your other systems"
+        subtitle="Plumbing, electrical — add anything else you'd like to track. You can skip this and add them later from the Systems tab."
+        categories={ONBOARDING_SYSTEM_CATEGORIES.filter((c) => c !== "hvac_indoor" && c !== "hvac_outdoor" && c !== "water_heater")}
         doneLabel="Done with systems"
         onDone={() => setStep("add-appliances")}
-        onBack={() => setStep("review")}
+        onBack={() => setStep("water-heater")}
         backLabel="Back"
       />
     );
