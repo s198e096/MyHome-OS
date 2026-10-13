@@ -640,6 +640,7 @@ export default function OnboardingScreen() {
 
   function handleAddressChange(text) {
     setAddress(text);
+    setError("");
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!text.trim()) {
@@ -655,7 +656,10 @@ export default function OnboardingScreen() {
         const results = await autocompleteAddress(text);
         if (requestId === requestIdRef.current) setSuggestions(results);
       } catch {
-        if (requestId === requestIdRef.current) setSuggestions([]);
+        if (requestId === requestIdRef.current) {
+          setSuggestions([]);
+          setError("Couldn't load address suggestions — check your internet connection. You can still continue and fill in details manually.");
+        }
       } finally {
         if (requestId === requestIdRef.current) setSearching(false);
       }
