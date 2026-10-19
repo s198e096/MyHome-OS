@@ -1,4 +1,4 @@
-import { Home, Wind, Droplet, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Grid2x2, Trees } from "lucide-react-native";
+import { Home, Wind, Droplet, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Grid2x2, Trees, Toilet, Faucet, PlugZap, Sun, EvCharger } from "lucide-react-native";
 
 export const PRIMARY = "#16240F";
 export const HERO_BG_TOP = "#D3ECBC";
@@ -18,7 +18,13 @@ export const CATEGORY_META = {
   water_heater: { label: "Water heater", icon: Droplet },
   roof: { label: "Roof", icon: Home },
   plumbing: { label: "Plumbing", icon: Droplet },
+  toilet: { label: "Toilet", icon: Toilet },
+  faucet: { label: "Faucet", icon: Faucet },
+  sink: { label: "Sink", icon: Droplet },
   electrical: { label: "Electrical", icon: Zap },
+  generator: { label: "Backup Generator", icon: PlugZap },
+  solar: { label: "Solar Panels", icon: Sun },
+  ev_charger: { label: "EV Charger", icon: EvCharger },
   appliance: { label: "Appliance", icon: Wrench },
   windows: { label: "Windows", icon: AppWindow },
   exterior: { label: "Exterior / Paint", icon: PaintBucket },
@@ -38,6 +44,7 @@ export function systemName(sys) {
 // walked through after the property step.
 export const ONBOARDING_SYSTEM_CATEGORIES = ["hvac_indoor", "hvac_outdoor", "water_heater", "plumbing", "electrical"];
 export const ONBOARDING_STRUCTURE_CATEGORIES = ["roof", "windows", "exterior", "balcony", "deck", "garden"];
+export const ONBOARDING_FIXTURE_CATEGORIES = ["toilet", "faucet", "sink"];
 
 export const FILTER_OPTIONS = [
   { key: "1in", label: '1" filter', days: 60 },

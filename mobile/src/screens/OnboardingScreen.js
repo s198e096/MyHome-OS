@@ -14,6 +14,7 @@ import {
   CATEGORY_META,
   ONBOARDING_SYSTEM_CATEGORIES,
   ONBOARDING_STRUCTURE_CATEGORIES,
+  ONBOARDING_FIXTURE_CATEGORIES,
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel } from "../lib/db.js";
@@ -25,6 +26,9 @@ import ItemFields from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
 import HvacGuideIllustration from "../components/HvacGuideIllustrations.js";
 import WaterHeaterGuideIllustration from "../components/WaterHeaterGuideIllustrations.js";
+import GeneratorGuideIllustration from "../components/GeneratorGuideIllustrations.js";
+import SolarGuideIllustration from "../components/SolarGuideIllustrations.js";
+import EvChargerGuideIllustration from "../components/EvChargerGuideIllustrations.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
@@ -673,6 +677,115 @@ const WATER_HEATER_GUIDE_TREE = {
   },
 };
 
+// The four backup generator types we can recognize. Always a single unit.
+const GENERATOR_TYPES = {
+  standby: {
+    label: "Standby Generator",
+    hint: "Most common",
+    units: [{ category: "generator", model: "Standby generator" }],
+  },
+  portable: {
+    label: "Portable Generator",
+    units: [{ category: "generator", model: "Portable generator" }],
+  },
+  inverter: {
+    label: "Inverter Generator",
+    units: [{ category: "generator", model: "Inverter generator" }],
+  },
+  diesel: {
+    label: "Diesel Generator",
+    units: [{ category: "generator", model: "Diesel generator" }],
+  },
+};
+
+// Decision tree for the generator "Guide me" flow — same shape as the
+// others above.
+const GENERATOR_GUIDE_TREE = {
+  start: {
+    text: "Is it permanently installed outside and turns on automatically during a power outage, without you starting it?",
+    yes: "fuel_check",
+    no: "size_check",
+  },
+  fuel_check: {
+    text: "Does it run on diesel fuel, rather than natural gas or propane?",
+    yes: "diesel",
+    no: "standby",
+  },
+  size_check: {
+    text: "Is it a small, quiet unit you'd carry by a handle — rather than a larger wheeled unit you roll into place?",
+    yes: "inverter",
+    no: "portable",
+  },
+};
+
+// The three solar panel installations we can recognize. Always a single
+// unit.
+const SOLAR_TYPES = {
+  roof_mounted: {
+    label: "Roof-Mounted Solar Panels",
+    hint: "Most common",
+    units: [{ category: "solar", model: "Roof-mounted solar panels" }],
+  },
+  ground_mounted: {
+    label: "Ground-Mounted Solar Panels",
+    units: [{ category: "solar", model: "Ground-mounted solar panels" }],
+  },
+  roof_tiles: {
+    label: "Solar Roof Tiles / Shingles",
+    units: [{ category: "solar", model: "Solar roof tiles / shingles" }],
+  },
+};
+
+// Decision tree for the solar panel "Guide me" flow — same shape as the
+// others above.
+const SOLAR_GUIDE_TREE = {
+  start: {
+    text: "Are the panels mounted on the ground or a pole away from the house, rather than on the roof?",
+    yes: "ground_mounted",
+    no: "tile_check",
+  },
+  tile_check: {
+    text: "Do the panels look like a normal roof surface itself (flat, shingle-like), rather than separate panels racked on top of the roof?",
+    yes: "roof_tiles",
+    no: "roof_mounted",
+  },
+};
+
+// The three EV charger configurations we can recognize — Level 1, and
+// Level 2 split into hardwired vs. plug-in. Always a single unit.
+const EV_CHARGER_TYPES = {
+  level1: {
+    label: "Level 1 Charger",
+    hint: "Plugs into a standard outlet",
+    units: [{ category: "ev_charger", model: "Level 1 EV charger" }],
+  },
+  level2_hardwired: {
+    label: "Level 2 Charger — Hardwired",
+    hint: "Wired directly, no plug",
+    units: [{ category: "ev_charger", model: "Level 2 EV charger (hardwired)" }],
+  },
+  level2_plugin: {
+    label: "Level 2 Charger — Plug-in",
+    hint: "Plugs into a dedicated outlet",
+    units: [{ category: "ev_charger", model: "Level 2 EV charger (plug-in)" }],
+  },
+};
+
+// Decision tree for the EV charger "Guide me" flow — first distinguishes
+// Level 1 from Level 2, then (within Level 2) hardwired from plug-in.
+const EV_CHARGER_GUIDE_TREE = {
+  start: {
+    text: "Does it plug into a regular wall outlet (the kind you'd plug a toaster into), charging slowly overnight?",
+    yes: "level1",
+    no: "hardwire_check",
+  },
+  hardwire_check: {
+    text: "Is it wired directly into your electrical panel, with no plug or outlet at all?",
+    yes: "level2_hardwired",
+    no: "level2_plugin",
+  },
+};
+
 // Creates/updates the system entries for a chosen type's unit list — shared
 // by every guided walkthrough (HVAC, water heater, ...). Reuses a bare
 // (brand/model-less) existing system of the matching category when one is
@@ -1007,6 +1120,453 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
         {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your water heater?"}
       </Text>
       <TypePickerList types={WATER_HEATER_TYPES} suggestedKey={suggestedType} onSelect={applyWaterHeaterType} saving={saving} Icon={Icon} />
+    </OnboardingGuideScreen>
+  );
+}
+
+// A plain yes/no gate for an optional add-on step where there's no
+// meaningful "type" to guide the user toward (unlike HVAC, water heaters,
+// generators, solar, or EV chargers) — so no guided walkthrough, just one
+// question deciding whether to enter the follow-up step at all.
+function YesNoPrompt({ title, question, yesLabel = "Yes", noLabel = "No, skip this", onBack, onYes, onNo }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <ScrollView
+      className="flex-1 bg-[#F5F8F0] px-4"
+      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+        <ChevronLeft size={16} color="#78716c" />
+        <Text className="text-[13px] text-stone-500">Back</Text>
+      </Pressable>
+
+      <View style={{ flex: 1, justifyContent: "center" }}>
+        <Text className="text-[17px] font-semibold text-stone-900 mb-4 text-center">{title}</Text>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{question}</Text>
+        <Pressable onPress={onYes} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">{yesLabel}</Text>
+        </Pressable>
+        <Pressable onPress={onNo} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">{noLabel}</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
+  );
+}
+
+// List of common household appliances for the checklist below. Anything
+// not listed can still be added later from the Systems tab — this just
+// covers the common case faster than typing each one in by hand.
+const COMMON_APPLIANCES = [
+  "Refrigerator",
+  "Dishwasher",
+  "Washing Machine",
+  "Dryer",
+  "Microwave",
+  "Oven / Range",
+  "Freezer",
+  "Garbage Disposal",
+  "Range Hood",
+  "Water Softener",
+];
+
+// Multi-select checklist for common appliances — faster than the one-at-a-
+// time QuickAddStep flow used for other categories, since there's a known
+// common set to just tick off. Each checked item becomes its own system
+// (category "appliance", brand = the appliance name).
+function ApplianceChecklistStep({ onBack, onDone }) {
+  const insets = useSafeAreaInsets();
+  const { addSystem } = useAppData();
+  const [checked, setChecked] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  function toggle(name) {
+    setChecked((c) => ({ ...c, [name]: !c[name] }));
+  }
+
+  const selectedCount = Object.values(checked).filter(Boolean).length;
+
+  async function handleContinue() {
+    setSaving(true);
+    try {
+      for (const name of COMMON_APPLIANCES) {
+        if (checked[name]) await addSystem({ category: "appliance", brand: name, model: null, location: "" });
+      }
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ScrollView
+      className="flex-1 bg-[#F5F8F0] px-4"
+      contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+        <ChevronLeft size={16} color="#78716c" />
+        <Text className="text-[13px] text-stone-500">Back</Text>
+      </Pressable>
+
+      <Text className="text-[17px] font-semibold text-stone-900 mb-1">Which appliances do you have?</Text>
+      <Text className="text-[12.5px] text-stone-500 mb-4">
+        Check off anything you&apos;d like to add — you can fill in brand and details for each later.
+      </Text>
+
+      <View className="rounded-xl bg-white px-3 mb-6" style={fieldStyle}>
+        {COMMON_APPLIANCES.map((name, i) => {
+          const isChecked = !!checked[name];
+          return (
+            <Pressable
+              key={name}
+              onPress={() => toggle(name)}
+              className="flex-row items-center justify-between py-2.5"
+              style={{ borderBottomWidth: i < COMMON_APPLIANCES.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
+            >
+              <Text className="text-[13.5px] text-stone-800">{name}</Text>
+              <View
+                className="items-center justify-center rounded"
+                style={{ width: 20, height: 20, backgroundColor: isChecked ? PRIMARY : "white", borderWidth: isChecked ? 0 : 1, borderColor: "#D8D5CB" }}
+              >
+                {isChecked && <Check size={14} color="white" />}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Pressable
+        onPress={handleContinue}
+        disabled={saving}
+        className="w-full py-2.5 rounded-lg items-center"
+        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+      >
+        <Text className="text-[13.5px] font-semibold text-white">
+          {saving ? "Saving..." : selectedCount > 0 ? `Add ${selectedCount} and continue` : "Continue"}
+        </Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+// Same shape as HvacOnboardingStep/WaterHeaterOnboardingStep above, for
+// backup generators. Also a single unit, and there's nothing RentCast would
+// have pre-detected, so it always starts at "do you have one?".
+function GeneratorOnboardingStep({ onBack, onDone }) {
+  const { systems, addSystem, updateSystem } = useAppData();
+  const [subStep, setSubStep] = useState("ask");
+  const [guideNode, setGuideNode] = useState("start");
+  const [guideHistory, setGuideHistory] = useState([]);
+  const [suggestedType, setSuggestedType] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  async function applyGeneratorType(typeKey) {
+    setSaving(true);
+    try {
+      await applySystemUnits(GENERATOR_TYPES[typeKey].units, { systems, addSystem, updateSystem });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function answerGuide(yes) {
+    const node = GENERATOR_GUIDE_TREE[guideNode];
+    const next = yes ? node.yes : node.no;
+    if (GENERATOR_GUIDE_TREE[next]) {
+      setGuideHistory((h) => [...h, guideNode]);
+      setGuideNode(next);
+    } else {
+      setSuggestedType(next);
+      setSubStep("pick");
+    }
+  }
+
+  function backGuide() {
+    if (guideHistory.length === 0) {
+      setSubStep("know");
+      return;
+    }
+    setGuideNode(guideHistory[guideHistory.length - 1]);
+    setGuideHistory((h) => h.slice(0, -1));
+  }
+
+  const Icon = CATEGORY_META.generator.icon;
+  const guideScreenProps = { title: "Let's add your backup generator", skipSubject: "the generator" };
+
+  if (subStep === "ask") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have a backup power generator?</Text>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "know") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your generator type?</Text>
+        <Pressable
+          onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
+          className="w-full py-2.5 rounded-lg items-center mb-2"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
+          className="w-full py-2.5 rounded-lg items-center"
+          style={fieldStyle}
+        >
+          <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "guide") {
+    const node = GENERATOR_GUIDE_TREE[guideNode];
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
+        <GeneratorGuideIllustration guideKey={guideNode} />
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  // subStep === "pick"
+  return (
+    <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("know")} onSkip={onDone}>
+      <Text className="text-[12.5px] text-stone-500 mb-3 text-center">
+        {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your generator?"}
+      </Text>
+      <TypePickerList types={GENERATOR_TYPES} suggestedKey={suggestedType} onSelect={applyGeneratorType} saving={saving} Icon={Icon} />
+    </OnboardingGuideScreen>
+  );
+}
+
+// Same shape as GeneratorOnboardingStep above, for solar panels.
+function SolarOnboardingStep({ onBack, onDone }) {
+  const { systems, addSystem, updateSystem } = useAppData();
+  const [subStep, setSubStep] = useState("ask");
+  const [guideNode, setGuideNode] = useState("start");
+  const [guideHistory, setGuideHistory] = useState([]);
+  const [suggestedType, setSuggestedType] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  async function applySolarType(typeKey) {
+    setSaving(true);
+    try {
+      await applySystemUnits(SOLAR_TYPES[typeKey].units, { systems, addSystem, updateSystem });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function answerGuide(yes) {
+    const node = SOLAR_GUIDE_TREE[guideNode];
+    const next = yes ? node.yes : node.no;
+    if (SOLAR_GUIDE_TREE[next]) {
+      setGuideHistory((h) => [...h, guideNode]);
+      setGuideNode(next);
+    } else {
+      setSuggestedType(next);
+      setSubStep("pick");
+    }
+  }
+
+  function backGuide() {
+    if (guideHistory.length === 0) {
+      setSubStep("know");
+      return;
+    }
+    setGuideNode(guideHistory[guideHistory.length - 1]);
+    setGuideHistory((h) => h.slice(0, -1));
+  }
+
+  const Icon = CATEGORY_META.solar.icon;
+  const guideScreenProps = { title: "Let's add your solar panels", skipSubject: "solar panels" };
+
+  if (subStep === "ask") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have solar panels?</Text>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have any</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "know") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know how they&apos;re installed?</Text>
+        <Pressable
+          onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
+          className="w-full py-2.5 rounded-lg items-center mb-2"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
+          className="w-full py-2.5 rounded-lg items-center"
+          style={fieldStyle}
+        >
+          <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "guide") {
+    const node = SOLAR_GUIDE_TREE[guideNode];
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
+        <SolarGuideIllustration guideKey={guideNode} />
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  // subStep === "pick"
+  return (
+    <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("know")} onSkip={onDone}>
+      <Text className="text-[12.5px] text-stone-500 mb-3 text-center">
+        {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your installation?"}
+      </Text>
+      <TypePickerList types={SOLAR_TYPES} suggestedKey={suggestedType} onSelect={applySolarType} saving={saving} Icon={Icon} />
+    </OnboardingGuideScreen>
+  );
+}
+
+// Same shape as SolarOnboardingStep above, for EV chargers.
+function EvChargerOnboardingStep({ onBack, onDone }) {
+  const { systems, addSystem, updateSystem } = useAppData();
+  const [subStep, setSubStep] = useState("ask");
+  const [guideNode, setGuideNode] = useState("start");
+  const [guideHistory, setGuideHistory] = useState([]);
+  const [suggestedType, setSuggestedType] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  async function applyEvChargerType(typeKey) {
+    setSaving(true);
+    try {
+      await applySystemUnits(EV_CHARGER_TYPES[typeKey].units, { systems, addSystem, updateSystem });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function answerGuide(yes) {
+    const node = EV_CHARGER_GUIDE_TREE[guideNode];
+    const next = yes ? node.yes : node.no;
+    if (EV_CHARGER_GUIDE_TREE[next]) {
+      setGuideHistory((h) => [...h, guideNode]);
+      setGuideNode(next);
+    } else {
+      setSuggestedType(next);
+      setSubStep("pick");
+    }
+  }
+
+  function backGuide() {
+    if (guideHistory.length === 0) {
+      setSubStep("know");
+      return;
+    }
+    setGuideNode(guideHistory[guideHistory.length - 1]);
+    setGuideHistory((h) => h.slice(0, -1));
+  }
+
+  const Icon = CATEGORY_META.ev_charger.icon;
+  const guideScreenProps = { title: "Let's add your EV charger", skipSubject: "the EV charger" };
+
+  if (subStep === "ask") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have an EV charger?</Text>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "know") {
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know if it&apos;s Level 1 or Level 2?</Text>
+        <Pressable
+          onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
+          className="w-full py-2.5 rounded-lg items-center mb-2"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
+          className="w-full py-2.5 rounded-lg items-center"
+          style={fieldStyle}
+        >
+          <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  if (subStep === "guide") {
+    const node = EV_CHARGER_GUIDE_TREE[guideNode];
+    return (
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
+        <EvChargerGuideIllustration guideKey={guideNode} />
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  // subStep === "pick"
+  return (
+    <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("know")} onSkip={onDone}>
+      <Text className="text-[12.5px] text-stone-500 mb-3 text-center">
+        {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your charger?"}
+      </Text>
+      <TypePickerList types={EV_CHARGER_TYPES} suggestedKey={suggestedType} onSelect={applyEvChargerType} saving={saving} Icon={Icon} />
     </OnboardingGuideScreen>
   );
 }
@@ -1357,6 +1917,60 @@ export default function OnboardingScreen() {
       <WaterHeaterOnboardingStep
         hasExisting={hasExistingWaterHeater}
         onBack={() => setStep("hvac")}
+        onDone={() => setStep("plumbing-fixtures-ask")}
+      />
+    );
+  }
+
+  if (step === "plumbing-fixtures-ask") {
+    return (
+      <YesNoPrompt
+        title="Add plumbing fixtures?"
+        question="Would you like to add toilets, faucets, or sinks?"
+        onBack={() => setStep("water-heater")}
+        onYes={() => setStep("plumbing-fixtures-add")}
+        onNo={() => setStep("generator")}
+      />
+    );
+  }
+
+  if (step === "plumbing-fixtures-add") {
+    return (
+      <QuickAddStep
+        key="plumbing-fixtures-add"
+        title="Add your fixtures"
+        subtitle="Toilets, faucets, sinks — add as many as you have, one at a time."
+        categories={ONBOARDING_FIXTURE_CATEGORIES}
+        doneLabel="Done with fixtures"
+        onDone={() => setStep("generator")}
+        onBack={() => setStep("plumbing-fixtures-ask")}
+        backLabel="Back"
+      />
+    );
+  }
+
+  if (step === "generator") {
+    return (
+      <GeneratorOnboardingStep
+        onBack={() => setStep("plumbing-fixtures-ask")}
+        onDone={() => setStep("solar")}
+      />
+    );
+  }
+
+  if (step === "solar") {
+    return (
+      <SolarOnboardingStep
+        onBack={() => setStep("generator")}
+        onDone={() => setStep("ev-charger")}
+      />
+    );
+  }
+
+  if (step === "ev-charger") {
+    return (
+      <EvChargerOnboardingStep
+        onBack={() => setStep("solar")}
         onDone={() => setStep("add-systems")}
       />
     );
@@ -1370,24 +1984,30 @@ export default function OnboardingScreen() {
         subtitle="Plumbing, electrical — add anything else you'd like to track. You can skip this and add them later from the Systems tab."
         categories={ONBOARDING_SYSTEM_CATEGORIES.filter((c) => c !== "hvac_indoor" && c !== "hvac_outdoor" && c !== "water_heater")}
         doneLabel="Done with systems"
-        onDone={() => setStep("add-appliances")}
-        onBack={() => setStep("water-heater")}
+        onDone={() => setStep("appliances-ask")}
+        onBack={() => setStep("ev-charger")}
         backLabel="Back"
       />
     );
   }
 
-  if (step === "add-appliances") {
+  if (step === "appliances-ask") {
     return (
-      <QuickAddStep
-        key="add-appliances"
-        title="Add your appliances"
-        subtitle="Refrigerator, dishwasher, washer, dryer — add them one by one, or skip and add them later."
-        fixedCategory="appliance"
-        doneLabel="Done with appliances"
-        onDone={() => setStep("add-structure")}
+      <YesNoPrompt
+        title="Add appliances?"
+        question="Would you like to add your appliances?"
         onBack={() => setStep("add-systems")}
-        backLabel="Back to systems"
+        onYes={() => setStep("appliances-checklist")}
+        onNo={() => setStep("add-structure")}
+      />
+    );
+  }
+
+  if (step === "appliances-checklist") {
+    return (
+      <ApplianceChecklistStep
+        onBack={() => setStep("appliances-ask")}
+        onDone={() => setStep("add-structure")}
       />
     );
   }
@@ -1401,7 +2021,7 @@ export default function OnboardingScreen() {
         categories={ONBOARDING_STRUCTURE_CATEGORIES}
         doneLabel="Continue"
         onDone={beginDetailsWalkthrough}
-        onBack={() => setStep("add-appliances")}
+        onBack={() => setStep("appliances-ask")}
         backLabel="Back to appliances"
       />
     );
