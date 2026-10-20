@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Image,
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-import { MapPin, Sparkles, ChevronLeft, ChevronRight, Check, Search, X, Plus, Minus, List } from "lucide-react-native";
+import { MapPin, Sparkles, ChevronLeft, ChevronRight, Check, Search, X, Plus, Minus } from "lucide-react-native";
 import {
   PRIMARY,
   HERO_BG_TOP,
@@ -12,7 +12,6 @@ import {
   STATUS_COLOR,
   STATUS_BG,
   CATEGORY_META,
-  ONBOARDING_SYSTEM_CATEGORIES,
   ONBOARDING_STRUCTURE_CATEGORIES,
   ONBOARDING_FIXTURE_CATEGORIES,
 } from "../lib/constants.js";
@@ -214,45 +213,40 @@ function systemHasDetails(s) {
   return !!(s.model || s.photoUrl || s.purchaseDate || s.warrantyExpiration || s.replacementCost || s.expectedLifeYears || s.purchasePrice || s.filterSize);
 }
 
-// Full-screen list of every system in the current details-walkthrough queue,
-// so the user can jump to any of them — forward or backward — instead of
-// only ever moving to the next one.
-function SystemsListModal({ queue, systems, currentIndex, onSelect, onClose }) {
+// Full-screen hub listing every added system with its completion status —
+// tap a completed one to review/edit it, or a not-started one to fill it in.
+// Every exit from SystemDetailsStep (Save or Skip) returns here, rather than
+// auto-advancing through a fixed queue, so the user can work through them in
+// any order and stop whenever they're satisfied.
+function SystemsOverviewStep({ systems, onSelect, onFinish }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
-      <Pressable
-        onPress={onClose}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)" }}
-      />
-      <View
-        className="absolute left-0 right-0 bottom-0 bg-white rounded-t-2xl px-4"
-        style={{ maxHeight: "75%", paddingTop: 16, paddingBottom: insets.bottom + 16 }}
-      >
-        <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-[15px] font-semibold text-stone-900">Your systems</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <X size={18} color="#78716c" />
-          </Pressable>
+    <ScrollView
+      className="flex-1 bg-[#F5F8F0] px-4"
+      contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text className="text-[17px] font-semibold text-stone-900 mb-1">Your systems</Text>
+      <Text className="text-[12.5px] text-stone-500 mb-4">
+        Tap a completed system to review it, or a not-started one to fill it in. Finish whenever you&apos;re ready — you can always add more later.
+      </Text>
+
+      {systems.length === 0 ? (
+        <View className="rounded-xl bg-white p-4 mb-6" style={fieldStyle}>
+          <Text className="text-[13px] text-stone-500">You haven&apos;t added any systems yet.</Text>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {queue.map((id, i) => {
-            const sys = systems.find((s) => s.id === id);
-            if (!sys) return null;
+      ) : (
+        <View className="rounded-xl bg-white px-3 mb-6" style={fieldStyle}>
+          {systems.map((sys, i) => {
             const meta = CATEGORY_META[sys.category];
             const Icon = meta.icon;
             const done = systemHasDetails(sys);
-            const isCurrent = i === currentIndex;
             return (
               <Pressable
-                key={id}
-                onPress={() => onSelect(i)}
-                className="flex-row items-center justify-between py-2.5 px-2 rounded-lg"
-                style={{
-                  borderBottomWidth: i < queue.length - 1 ? 1 : 0,
-                  borderBottomColor: "#E7EEDB",
-                  backgroundColor: isCurrent ? "#F5F8F0" : "transparent",
-                }}
+                key={sys.id}
+                onPress={() => onSelect(sys)}
+                className="flex-row items-center justify-between py-2.5"
+                style={{ borderBottomWidth: i < systems.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
               >
                 <View className="flex-row items-center gap-2 flex-1">
                   <Icon size={16} color="#5F5B50" />
@@ -268,18 +262,22 @@ function SystemsListModal({ queue, systems, currentIndex, onSelect, onClose }) {
               </Pressable>
             );
           })}
-        </ScrollView>
-      </View>
-    </View>
+        </View>
+      )}
+
+      <Pressable onPress={onFinish} className="w-full py-2.5 rounded-lg items-center" style={{ backgroundColor: PRIMARY }}>
+        <Text className="text-[13.5px] font-semibold text-white">Finish setup</Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
-// Walks the user through one just-added item at a time: take a photo (AI
-// auto-fill, same scanSystemLabel flow as the regular Add/Edit System form)
-// or fill it in manually, then move on. Nothing here is required — Save
-// keeps whatever was filled in (even partial), and Skip moves on with no
-// changes at all, so this never blocks finishing onboarding.
-function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
+// Fills in one system's details: a photo (AI auto-fill, same scanSystemLabel
+// flow as the regular Add/Edit System form) or manual entry, then returns to
+// the systems overview. Nothing here is required — Save keeps whatever was
+// filled in (even partial), and Skip returns with no changes at all, so this
+// never blocks finishing onboarding.
+function SystemDetailsStep({ system, onDone }) {
   const insets = useSafeAreaInsets();
   const { updateSystem, attachManualDocument, addDocument } = useAppData();
   const isStructure = ONBOARDING_STRUCTURE_CATEGORIES.includes(system.category);
@@ -313,7 +311,6 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
   const [error, setError] = useState("");
 
   const meta = CATEGORY_META[system.category];
-  const isLast = index + 1 === total;
 
   async function runScan() {
     setScanning(true);
@@ -371,7 +368,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
       if (receiptPhotoUrl && updated) {
         await addDocument(`${updated.brand || meta.label} ${receiptType}`, receiptType, updated.id, receiptPhotoUrl);
       }
-      onNext();
+      onDone();
     } catch {
       setError("Couldn't save. You can try again or skip for now.");
     } finally {
@@ -379,14 +376,11 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
     }
   }
 
-  const topBar = (
-    <View className="flex-row items-center justify-between mb-1">
-      <Text className="text-[12px] text-stone-400">Item {index + 1} of {total}</Text>
-      <Pressable onPress={onShowList} className="flex-row items-center gap-1" hitSlop={8}>
-        <List size={14} color={PRIMARY} />
-        <Text className="text-[12px] font-semibold" style={{ color: PRIMARY }}>Systems list</Text>
-      </Pressable>
-    </View>
+  const backToList = (
+    <Pressable onPress={onDone} className="flex-row items-center gap-1 mb-1">
+      <ChevronLeft size={16} color="#78716c" />
+      <Text className="text-[13px] text-stone-500">Back to list</Text>
+    </Pressable>
   );
 
   if (subStep === "photo") {
@@ -397,7 +391,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
           contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {topBar}
+          {backToList}
           <Text className="text-[17px] font-semibold text-stone-900 mb-1">
             {isStructure ? `Add a picture of its condition (${meta.label})` : `Take a picture of the ${meta.label} label`}
           </Text>
@@ -441,7 +435,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
           contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {topBar}
+          {backToList}
           <Pressable onPress={() => setSubStep("photo")} className="flex-row items-center gap-1 mb-3">
             <ChevronLeft size={16} color="#78716c" />
             <Text className="text-[13px] text-stone-500">Back</Text>
@@ -500,7 +494,7 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {topBar}
+        {backToList}
         <Pressable onPress={() => setSubStep("receipt")} className="flex-row items-center gap-1 mb-3">
           <ChevronLeft size={16} color="#78716c" />
           <Text className="text-[13px] text-stone-500">Back</Text>
@@ -546,14 +540,12 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
           style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
         >
           <Text className="text-[13.5px] font-semibold text-white">
-            {saving ? "Saving..." : isLast ? "Save & finish" : "Save & next"}
+            {saving ? "Saving..." : "Save"}
           </Text>
         </Pressable>
 
-        <Pressable onPress={onNext} disabled={saving} className="w-full py-2.5 rounded-lg items-center">
-          <Text className="text-[13.5px] font-semibold text-stone-500">
-            {isLast ? "Skip, I'll add this later" : "Skip, add this later"}
-          </Text>
+        <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center">
+          <Text className="text-[13.5px] font-semibold text-stone-500">Skip for now</Text>
         </Pressable>
       </ScrollView>
       <KeyboardDoneBar />
@@ -563,39 +555,42 @@ function SystemDetailsStep({ system, index, total, onNext, onShowList }) {
 
 // The five HVAC configurations we can recognize. Each maps to one or two
 // actual system entries (most configurations split into an indoor and an
-// outdoor unit) — brand/model are left for the user to fill in later via the
-// regular details walkthrough, but the model field gets a descriptive
-// placeholder so indoor/outdoor entries stay distinguishable in the list.
+// outdoor unit) — the real brand/model are left for the user to fill in
+// later via the regular details walkthrough, but `brand` gets a descriptive
+// placeholder (e.g. "Gas furnace") so indoor/outdoor entries stay
+// distinguishable in the list. Deliberately not `model`: that field is what
+// systemHasDetails() checks to mark a system "Completed", so a placeholder
+// there would make picking a type alone look like a finished walkthrough.
 const HVAC_TYPES = {
   furnace_ac: {
     label: "Gas Furnace + Central AC",
     hint: "Most common",
     units: [
-      { category: "hvac_indoor", model: "Gas furnace" },
-      { category: "hvac_outdoor", model: "Central AC condenser" },
+      { category: "hvac_indoor", brand: "Gas furnace" },
+      { category: "hvac_outdoor", brand: "Central AC condenser" },
     ],
   },
   heat_pump: {
     label: "Central heat pump system",
     units: [
-      { category: "hvac_indoor", model: "Heat pump air handler" },
-      { category: "hvac_outdoor", model: "Heat pump outdoor unit" },
+      { category: "hvac_indoor", brand: "Heat pump air handler" },
+      { category: "hvac_outdoor", brand: "Heat pump outdoor unit" },
     ],
   },
   mini_split: {
     label: "Ductless mini split",
     units: [
-      { category: "hvac_indoor", model: "Mini split indoor head" },
-      { category: "hvac_outdoor", model: "Mini split outdoor compressor" },
+      { category: "hvac_indoor", brand: "Mini split indoor head" },
+      { category: "hvac_outdoor", brand: "Mini split outdoor compressor" },
     ],
   },
   packaged: {
     label: "Packaged HVAC system",
-    units: [{ category: "hvac_outdoor", model: "Packaged HVAC unit" }],
+    units: [{ category: "hvac_outdoor", brand: "Packaged HVAC unit" }],
   },
   through_wall: {
     label: "Through-wall AC",
-    units: [{ category: "hvac_indoor", model: "Through-wall AC unit" }],
+    units: [{ category: "hvac_indoor", brand: "Through-wall AC unit" }],
   },
 };
 
@@ -626,29 +621,30 @@ const HVAC_GUIDE_TREE = {
 };
 
 // The five water heater types we can recognize. Unlike HVAC these are
-// always a single unit — brand/model are left for later, but the model
-// field gets a descriptive placeholder.
+// always a single unit — the real brand/model are left for later, but
+// `brand` gets a descriptive placeholder (see the note on HVAC_TYPES above
+// for why it's `brand` and not `model`).
 const WATER_HEATER_TYPES = {
   tank: {
     label: "Conventional Tank Water Heater",
     hint: "Most common",
-    units: [{ category: "water_heater", model: "Conventional tank water heater" }],
+    units: [{ category: "water_heater", brand: "Conventional tank water heater" }],
   },
   tankless: {
     label: "Tankless (On-Demand) Water Heater",
-    units: [{ category: "water_heater", model: "Tankless water heater" }],
+    units: [{ category: "water_heater", brand: "Tankless water heater" }],
   },
   heat_pump_wh: {
     label: "Heat Pump (Hybrid) Water Heater",
-    units: [{ category: "water_heater", model: "Heat pump (hybrid) water heater" }],
+    units: [{ category: "water_heater", brand: "Heat pump (hybrid) water heater" }],
   },
   solar: {
     label: "Solar Water Heater",
-    units: [{ category: "water_heater", model: "Solar water heater" }],
+    units: [{ category: "water_heater", brand: "Solar water heater" }],
   },
   point_of_use: {
     label: "Point-of-Use Water Heater",
-    units: [{ category: "water_heater", model: "Point-of-use water heater" }],
+    units: [{ category: "water_heater", brand: "Point-of-use water heater" }],
   },
 };
 
@@ -682,19 +678,19 @@ const GENERATOR_TYPES = {
   standby: {
     label: "Standby Generator",
     hint: "Most common",
-    units: [{ category: "generator", model: "Standby generator" }],
+    units: [{ category: "generator", brand: "Standby generator" }],
   },
   portable: {
     label: "Portable Generator",
-    units: [{ category: "generator", model: "Portable generator" }],
+    units: [{ category: "generator", brand: "Portable generator" }],
   },
   inverter: {
     label: "Inverter Generator",
-    units: [{ category: "generator", model: "Inverter generator" }],
+    units: [{ category: "generator", brand: "Inverter generator" }],
   },
   diesel: {
     label: "Diesel Generator",
-    units: [{ category: "generator", model: "Diesel generator" }],
+    units: [{ category: "generator", brand: "Diesel generator" }],
   },
 };
 
@@ -724,15 +720,15 @@ const SOLAR_TYPES = {
   roof_mounted: {
     label: "Roof-Mounted Solar Panels",
     hint: "Most common",
-    units: [{ category: "solar", model: "Roof-mounted solar panels" }],
+    units: [{ category: "solar", brand: "Roof-mounted solar panels" }],
   },
   ground_mounted: {
     label: "Ground-Mounted Solar Panels",
-    units: [{ category: "solar", model: "Ground-mounted solar panels" }],
+    units: [{ category: "solar", brand: "Ground-mounted solar panels" }],
   },
   roof_tiles: {
     label: "Solar Roof Tiles / Shingles",
-    units: [{ category: "solar", model: "Solar roof tiles / shingles" }],
+    units: [{ category: "solar", brand: "Solar roof tiles / shingles" }],
   },
 };
 
@@ -757,17 +753,17 @@ const EV_CHARGER_TYPES = {
   level1: {
     label: "Level 1 Charger",
     hint: "Plugs into a standard outlet",
-    units: [{ category: "ev_charger", model: "Level 1 EV charger" }],
+    units: [{ category: "ev_charger", brand: "Level 1 EV charger" }],
   },
   level2_hardwired: {
     label: "Level 2 Charger — Hardwired",
     hint: "Wired directly, no plug",
-    units: [{ category: "ev_charger", model: "Level 2 EV charger (hardwired)" }],
+    units: [{ category: "ev_charger", brand: "Level 2 EV charger (hardwired)" }],
   },
   level2_plugin: {
     label: "Level 2 Charger — Plug-in",
     hint: "Plugs into a dedicated outlet",
-    units: [{ category: "ev_charger", model: "Level 2 EV charger (plug-in)" }],
+    units: [{ category: "ev_charger", brand: "Level 2 EV charger (plug-in)" }],
   },
 };
 
@@ -787,18 +783,20 @@ const EV_CHARGER_GUIDE_TREE = {
 };
 
 // Creates/updates the system entries for a chosen type's unit list — shared
-// by every guided walkthrough (HVAC, water heater, ...). Reuses a bare
-// (brand/model-less) existing system of the matching category when one is
-// already there (e.g. from RentCast detection) instead of duplicating it.
+// by every guided walkthrough (HVAC, water heater, ...). Reuses any existing
+// system of the matching category (whether bare from RentCast detection, or
+// already fully configured from a previous pass through onboarding) instead
+// of duplicating it — re-running onboarding (e.g. after restarting the app
+// partway through) re-confirms a type, it doesn't add a second unit.
 async function applySystemUnits(units, { systems, addSystem, updateSystem }) {
   const claimed = new Set();
   for (const unit of units) {
-    const existing = systems.find((s) => s.category === unit.category && !s.model && !claimed.has(s.id));
+    const existing = systems.find((s) => s.category === unit.category && !claimed.has(s.id));
     if (existing) {
       claimed.add(existing.id);
-      await updateSystem(existing.id, { model: unit.model });
+      await updateSystem(existing.id, { brand: unit.brand });
     } else {
-      await addSystem({ category: unit.category, brand: null, model: unit.model, location: "" });
+      await addSystem({ category: unit.category, brand: unit.brand, model: null, location: "" });
     }
   }
 }
@@ -1175,23 +1173,52 @@ const COMMON_APPLIANCES = [
 // time QuickAddStep flow used for other categories, since there's a known
 // common set to just tick off. Each checked item becomes its own system
 // (category "appliance", brand = the appliance name).
+// How many existing appliance systems already match this common name (the
+// bare name itself, or "<name> <n>" for multiples) — used to pre-check the
+// box and skip re-adding duplicates if onboarding is restarted partway
+// through.
+function existingApplianceCount(systems, name) {
+  const pattern = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}( \\d+)?$`);
+  return systems.filter((s) => s.category === "appliance" && pattern.test(s.brand || "")).length;
+}
+
 function ApplianceChecklistStep({ onBack, onDone }) {
   const insets = useSafeAreaInsets();
-  const { addSystem } = useAppData();
-  const [checked, setChecked] = useState({});
+  const { systems, addSystem } = useAppData();
+  // Presence with a value > 0 means checked; the value is the quantity.
+  // Pre-filled from anything already added (e.g. a previous, restarted pass
+  // through onboarding) so re-opening this screen doesn't look like a blank
+  // slate, and so Continue below doesn't re-add what's already there.
+  const [quantities, setQuantities] = useState(() => {
+    const initial = {};
+    for (const name of COMMON_APPLIANCES) {
+      const count = existingApplianceCount(systems, name);
+      if (count > 0) initial[name] = count;
+    }
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
 
   function toggle(name) {
-    setChecked((c) => ({ ...c, [name]: !c[name] }));
+    setQuantities((q) => ({ ...q, [name]: q[name] ? 0 : 1 }));
   }
 
-  const selectedCount = Object.values(checked).filter(Boolean).length;
+  function adjustQuantity(name, delta) {
+    setQuantities((q) => ({ ...q, [name]: Math.max(0, Math.min(20, (q[name] || 1) + delta)) }));
+  }
+
+  const totalCount = Object.values(quantities).reduce((sum, q) => sum + (q || 0), 0);
 
   async function handleContinue() {
     setSaving(true);
     try {
       for (const name of COMMON_APPLIANCES) {
-        if (checked[name]) await addSystem({ category: "appliance", brand: name, model: null, location: "" });
+        const qty = quantities[name] || 0;
+        for (let i = 0; i < qty; i++) {
+          const brand = qty > 1 ? `${name} ${i + 1}` : name;
+          if (systems.some((s) => s.category === "appliance" && s.brand === brand)) continue;
+          await addSystem({ category: "appliance", brand, model: null, location: "" });
+        }
       }
       onDone();
     } finally {
@@ -1212,27 +1239,41 @@ function ApplianceChecklistStep({ onBack, onDone }) {
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Which appliances do you have?</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">
-        Check off anything you&apos;d like to add — you can fill in brand and details for each later.
+        Check off anything you&apos;d like to add, and bump the quantity if you have more than one — you can fill in brand and details for each later.
       </Text>
 
       <View className="rounded-xl bg-white px-3 mb-6" style={fieldStyle}>
         {COMMON_APPLIANCES.map((name, i) => {
-          const isChecked = !!checked[name];
+          const qty = quantities[name] || 0;
+          const isChecked = qty > 0;
           return (
-            <Pressable
+            <View
               key={name}
-              onPress={() => toggle(name)}
               className="flex-row items-center justify-between py-2.5"
               style={{ borderBottomWidth: i < COMMON_APPLIANCES.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
             >
-              <Text className="text-[13.5px] text-stone-800">{name}</Text>
-              <View
-                className="items-center justify-center rounded"
-                style={{ width: 20, height: 20, backgroundColor: isChecked ? PRIMARY : "white", borderWidth: isChecked ? 0 : 1, borderColor: "#D8D5CB" }}
-              >
-                {isChecked && <Check size={14} color="white" />}
-              </View>
-            </Pressable>
+              <Pressable onPress={() => toggle(name)} className="flex-row items-center gap-2 flex-1 py-1" hitSlop={4}>
+                <View
+                  className="items-center justify-center rounded"
+                  style={{ width: 20, height: 20, backgroundColor: isChecked ? PRIMARY : "white", borderWidth: isChecked ? 0 : 1, borderColor: "#D8D5CB" }}
+                >
+                  {isChecked && <Check size={14} color="white" />}
+                </View>
+                <Text className="text-[13.5px] text-stone-800">{name}</Text>
+              </Pressable>
+
+              {isChecked && (
+                <View className="flex-row items-center rounded-lg" style={fieldStyle}>
+                  <Pressable onPress={() => adjustQuantity(name, -1)} className="items-center justify-center" style={{ width: 28, height: 30 }} hitSlop={6}>
+                    <Minus size={13} color={PRIMARY} />
+                  </Pressable>
+                  <Text className="text-[13px] font-semibold text-center" style={{ width: 18 }}>{qty}</Text>
+                  <Pressable onPress={() => adjustQuantity(name, 1)} className="items-center justify-center" style={{ width: 28, height: 30 }} hitSlop={6}>
+                    <Plus size={13} color={PRIMARY} />
+                  </Pressable>
+                </View>
+              )}
+            </View>
           );
         })}
       </View>
@@ -1244,7 +1285,7 @@ function ApplianceChecklistStep({ onBack, onDone }) {
         style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
       >
         <Text className="text-[13.5px] font-semibold text-white">
-          {saving ? "Saving..." : selectedCount > 0 ? `Add ${selectedCount} and continue` : "Continue"}
+          {saving ? "Saving..." : totalCount > 0 ? `Add ${totalCount} and continue` : "Continue"}
         </Text>
       </Pressable>
     </ScrollView>
@@ -1252,11 +1293,13 @@ function ApplianceChecklistStep({ onBack, onDone }) {
 }
 
 // Same shape as HvacOnboardingStep/WaterHeaterOnboardingStep above, for
-// backup generators. Also a single unit, and there's nothing RentCast would
-// have pre-detected, so it always starts at "do you have one?".
+// backup generators. Nothing RentCast would have pre-detected, but if a
+// generator already exists (e.g. onboarding was restarted after this step
+// was already completed once), skip straight past "do you have one?".
 function GeneratorOnboardingStep({ onBack, onDone }) {
   const { systems, addSystem, updateSystem } = useAppData();
-  const [subStep, setSubStep] = useState("ask");
+  const hasExisting = systems.some((s) => s.category === "generator");
+  const [subStep, setSubStep] = useState(hasExisting ? "know" : "ask");
   const [guideNode, setGuideNode] = useState("start");
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
@@ -1312,7 +1355,7 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
 
   if (subStep === "know") {
     return (
-      <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={hasExisting ? onBack : () => setSubStep("ask")} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your generator type?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
@@ -1362,7 +1405,8 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
 // Same shape as GeneratorOnboardingStep above, for solar panels.
 function SolarOnboardingStep({ onBack, onDone }) {
   const { systems, addSystem, updateSystem } = useAppData();
-  const [subStep, setSubStep] = useState("ask");
+  const hasExisting = systems.some((s) => s.category === "solar");
+  const [subStep, setSubStep] = useState(hasExisting ? "know" : "ask");
   const [guideNode, setGuideNode] = useState("start");
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
@@ -1418,7 +1462,7 @@ function SolarOnboardingStep({ onBack, onDone }) {
 
   if (subStep === "know") {
     return (
-      <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={hasExisting ? onBack : () => setSubStep("ask")} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know how they&apos;re installed?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
@@ -1468,7 +1512,8 @@ function SolarOnboardingStep({ onBack, onDone }) {
 // Same shape as SolarOnboardingStep above, for EV chargers.
 function EvChargerOnboardingStep({ onBack, onDone }) {
   const { systems, addSystem, updateSystem } = useAppData();
-  const [subStep, setSubStep] = useState("ask");
+  const hasExisting = systems.some((s) => s.category === "ev_charger");
+  const [subStep, setSubStep] = useState(hasExisting ? "know" : "ask");
   const [guideNode, setGuideNode] = useState("start");
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
@@ -1524,7 +1569,7 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
 
   if (subStep === "know") {
     return (
-      <OnboardingGuideScreen {...guideScreenProps} onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+      <OnboardingGuideScreen {...guideScreenProps} onBackPress={hasExisting ? onBack : () => setSubStep("ask")} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know if it&apos;s Level 1 or Level 2?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
@@ -1608,9 +1653,7 @@ export default function OnboardingScreen() {
   const [detectedSystems, setDetectedSystems] = useState([]);
   const [confirmedSystems, setConfirmedSystems] = useState({});
 
-  const [detailQueue, setDetailQueue] = useState([]);
-  const [detailIndex, setDetailIndex] = useState(0);
-  const [showSystemsList, setShowSystemsList] = useState(false);
+  const [activeSystemId, setActiveSystemId] = useState(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -1623,35 +1666,17 @@ export default function OnboardingScreen() {
     return () => clearTimeout(timer);
   }, [step]);
 
-  // Defensive: if the current queued item somehow no longer exists (it
-  // shouldn't during normal use), just skip past it instead of getting
-  // stuck on a missing system.
-  useEffect(() => {
-    if (step !== "fill-details") return;
-    const currentId = detailQueue[detailIndex];
-    if (currentId && !systems.find((s) => s.id === currentId)) {
-      advanceDetails();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, detailIndex, systems]);
-
-  function beginDetailsWalkthrough() {
-    const queue = systems.map((s) => s.id);
-    if (queue.length === 0) {
-      finishOnboarding();
-      return;
-    }
-    setDetailQueue(queue);
-    setDetailIndex(0);
+  function openSystemDetails(sys) {
+    setActiveSystemId(sys.id);
     setStep("fill-details");
   }
 
-  function advanceDetails() {
-    if (detailIndex + 1 >= detailQueue.length) {
+  function goToSystemsOverview() {
+    if (systems.length === 0) {
       finishOnboarding();
-    } else {
-      setDetailIndex((i) => i + 1);
+      return;
     }
+    setStep("systems-overview");
   }
 
   function handleAddressChange(text) {
@@ -1767,6 +1792,9 @@ export default function OnboardingScreen() {
       });
       for (const sys of detectedSystems) {
         if (!confirmedSystems[sys.key]) continue;
+        // Skip if a system in this category already exists — e.g. the user
+        // restarted onboarding after already confirming this one earlier.
+        if (systems.some((s) => s.category === sys.category)) continue;
         await addSystem({ category: sys.category, brand: null, model: null, location: "" });
       }
       // Clear these so navigating back to this step and tapping Continue
@@ -1971,22 +1999,7 @@ export default function OnboardingScreen() {
     return (
       <EvChargerOnboardingStep
         onBack={() => setStep("solar")}
-        onDone={() => setStep("add-systems")}
-      />
-    );
-  }
-
-  if (step === "add-systems") {
-    return (
-      <QuickAddStep
-        key="add-systems"
-        title="Add your other systems"
-        subtitle="Plumbing, electrical — add anything else you'd like to track. You can skip this and add them later from the Systems tab."
-        categories={ONBOARDING_SYSTEM_CATEGORIES.filter((c) => c !== "hvac_indoor" && c !== "hvac_outdoor" && c !== "water_heater")}
-        doneLabel="Done with systems"
         onDone={() => setStep("appliances-ask")}
-        onBack={() => setStep("ev-charger")}
-        backLabel="Back"
       />
     );
   }
@@ -1996,9 +2009,9 @@ export default function OnboardingScreen() {
       <YesNoPrompt
         title="Add appliances?"
         question="Would you like to add your appliances?"
-        onBack={() => setStep("add-systems")}
+        onBack={() => setStep("ev-charger")}
         onYes={() => setStep("appliances-checklist")}
-        onNo={() => setStep("add-structure")}
+        onNo={goToSystemsOverview}
       />
     );
   }
@@ -2007,53 +2020,29 @@ export default function OnboardingScreen() {
     return (
       <ApplianceChecklistStep
         onBack={() => setStep("appliances-ask")}
-        onDone={() => setStep("add-structure")}
+        onDone={goToSystemsOverview}
       />
     );
   }
 
-  if (step === "add-structure") {
-    return (
-      <QuickAddStep
-        key="add-structure"
-        title="Add your house structure"
-        subtitle="Roof, windows, exterior/paint, balcony, deck, garden — anything about the structure itself worth tracking."
-        categories={ONBOARDING_STRUCTURE_CATEGORIES}
-        doneLabel="Continue"
-        onDone={beginDetailsWalkthrough}
-        onBack={() => setStep("appliances-ask")}
-        backLabel="Back to appliances"
-      />
-    );
+  if (step === "systems-overview") {
+    return <SystemsOverviewStep systems={systems} onSelect={openSystemDetails} onFinish={finishOnboarding} />;
   }
 
   if (step === "fill-details") {
-    const currentId = detailQueue[detailIndex];
-    const currentSystem = systems.find((s) => s.id === currentId);
-    if (!currentSystem) return null;
+    const currentSystem = systems.find((s) => s.id === activeSystemId);
+    // Defensive: the active system shouldn't be able to disappear mid-step
+    // during normal use, but if it somehow did, just show the overview
+    // again instead of getting stuck on a missing system.
+    if (!currentSystem) {
+      return <SystemsOverviewStep systems={systems} onSelect={openSystemDetails} onFinish={finishOnboarding} />;
+    }
     return (
-      <View style={{ flex: 1 }}>
-        <SystemDetailsStep
-          key={currentSystem.id}
-          system={currentSystem}
-          index={detailIndex}
-          total={detailQueue.length}
-          onNext={advanceDetails}
-          onShowList={() => setShowSystemsList(true)}
-        />
-        {showSystemsList && (
-          <SystemsListModal
-            queue={detailQueue}
-            systems={systems}
-            currentIndex={detailIndex}
-            onSelect={(i) => {
-              setDetailIndex(i);
-              setShowSystemsList(false);
-            }}
-            onClose={() => setShowSystemsList(false)}
-          />
-        )}
-      </View>
+      <SystemDetailsStep
+        key={currentSystem.id}
+        system={currentSystem}
+        onDone={() => setStep("systems-overview")}
+      />
     );
   }
 

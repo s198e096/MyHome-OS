@@ -74,7 +74,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
 
       <View className="items-center mb-4">
         <Pressable onPress={onOpenAssistant} className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
-          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Ask Anything</Text>
+          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Ask Anything / Report a problem</Text>
           <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
         </Pressable>
       </View>
