@@ -2,7 +2,7 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Clock, Home } from "lucide-react-native";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, systemName } from "../lib/constants.js";
+import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, systemName, systemIcon } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import { missingSystemInfo } from "../lib/system-info.js";
 import StatusDot from "../components/StatusDot.js";
@@ -258,7 +258,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
             {systems.map((s, i) => {
               const status = systemStatus(s, tasks);
               const meta = CATEGORY_META[s.category];
-              const Icon = meta.icon;
+              const Icon = systemIcon(s);
               return (
                 <Pressable
                   key={s.id}

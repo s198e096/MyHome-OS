@@ -4,7 +4,7 @@ import ItemFormScreen from "../../../screens/ItemFormScreen.js";
 
 export default function NewSystem() {
   const router = useRouter();
-  const { systems, addSystem, attachManualDocument } = useAppData();
+  const { systems, addSystem, attachManualDocument, addDocument, addWarranty } = useAppData();
 
   return (
     <ItemFormScreen
@@ -14,6 +14,9 @@ export default function NewSystem() {
       onBack={() => router.back()}
       onAddSystem={addSystem}
       onAttachManual={attachManualDocument}
+      onAddDocument={addDocument}
+      warranties={[]}
+      onAddWarranty={addWarranty}
     />
   );
 }

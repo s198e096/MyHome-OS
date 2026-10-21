@@ -1,4 +1,7 @@
-import { Home, Wind, Droplet, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Grid2x2, Trees, Toilet, Faucet, PlugZap, Sun, EvCharger } from "lucide-react-native";
+import {
+  Home, Wind, Droplet, Droplets, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Grid2x2, Trees, Toilet, Faucet, PlugZap, Sun, EvCharger,
+  Refrigerator, WashingMachine, Microwave, Flame, Snowflake, Trash2, Fan, UtensilsCrossed,
+} from "lucide-react-native";
 
 export const PRIMARY = "#16240F";
 export const HERO_BG_TOP = "#D3ECBC";
@@ -38,6 +41,36 @@ export const CATEGORY_META = {
 export function systemName(sys) {
   const name = [sys.brand, sys.model].filter(Boolean).join(" ");
   return name || CATEGORY_META[sys.category]?.label || "System";
+}
+
+// Every "appliance" system shares one generic category, so CATEGORY_META
+// alone can't tell a fridge from a dryer — match on the name instead
+// (brand holds the appliance name for this category, e.g. "Refrigerator",
+// "Dishwasher 2"). Most specific patterns first, since "Range Hood" would
+// otherwise also match the bare "range" rule for Oven/Range.
+const APPLIANCE_ICON_RULES = [
+  [/range hood/i, Fan],
+  [/garbage disposal|disposal/i, Trash2],
+  [/refrigerator|fridge/i, Refrigerator],
+  [/dishwasher/i, UtensilsCrossed],
+  [/washing machine|washer/i, WashingMachine],
+  [/dryer/i, Wind],
+  [/microwave/i, Microwave],
+  [/oven|\brange\b/i, Flame],
+  [/freezer/i, Snowflake],
+  [/water softener|softener/i, Droplets],
+];
+
+function applianceIcon(name) {
+  if (!name) return Wrench;
+  return APPLIANCE_ICON_RULES.find(([pattern]) => pattern.test(name))?.[1] || Wrench;
+}
+
+// Icon for a system row — same as its category icon, except "appliance"
+// systems get a name-specific icon so a fridge doesn't look like a dryer.
+export function systemIcon(sys) {
+  if (sys.category === "appliance") return applianceIcon(sys.brand);
+  return CATEGORY_META[sys.category]?.icon || Wrench;
 }
 
 // Which categories each onboarding step offers, and in which order they're

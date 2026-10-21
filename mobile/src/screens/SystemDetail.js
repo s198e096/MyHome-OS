@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, createElement } from "react";
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Pencil } from "lucide-react-native";
-import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName } from "../lib/constants.js";
+import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName, systemIcon } from "../lib/constants.js";
 import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, yearsFromToday } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
 
@@ -11,9 +11,9 @@ const PLAN_YEARS = [5, 10, 15, 20];
 const monthYear = (year, month) =>
   new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
-export default function SystemDetail({ sys, tasks, documents, onBack, onEdit, onSetPlan }) {
+export default function SystemDetail({ sys, tasks, documents, warranties, onBack, onEdit, onSetPlan }) {
   const meta = CATEGORY_META[sys.category];
-  const Icon = meta.icon;
+  const Icon = systemIcon(sys);
   const hasEstimate = !!sys.purchaseDate && sys.expectedLifeYears != null && sys.replacementCost != null;
   const plan = replacementPlan(sys);
   const planPassed =
@@ -55,7 +55,7 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit, on
 
       <View className="flex-row items-center gap-3 mb-4">
         <View className="rounded-lg p-2.5 bg-[#F5F8F0]">
-          <Icon size={20} color="#5F5B50" />
+          {createElement(Icon, { size: 20, color: "#5F5B50" })}
         </View>
         <View>
           <Text className="text-[17px] font-semibold text-stone-900">{systemName(sys)}</Text>
@@ -147,6 +147,23 @@ export default function SystemDetail({ sys, tasks, documents, onBack, onEdit, on
         )}
         {!!planError && <Text className="text-[12px] mt-2.5" style={{ color: STATUS_COLOR.red }}>{planError}</Text>}
       </View>
+
+      {warranties.length > 0 && (
+        <>
+          <Text className="text-[12px] font-semibold text-stone-500 mb-1">Warranty details</Text>
+          <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+            {warranties.map((w) => (
+              <LedgerRow
+                key={w.id}
+                label={w.type}
+                sub={w.estimated ? "Estimated" : undefined}
+                value={w.expirationDate ? `Expires ${new Date(w.expirationDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : "Not set"}
+                valueColor={w.expirationDate && new Date(w.expirationDate) > TODAY ? STATUS_COLOR.green : STATUS_COLOR.red}
+              />
+            ))}
+          </View>
+        </>
+      )}
 
       <Text className="text-[12px] font-semibold text-stone-500 mb-1">Upcoming tasks</Text>
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>

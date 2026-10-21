@@ -92,6 +92,21 @@ const documentToRow = (d) => ({
   photo_url: d.photoUrl || null,
 });
 
+const rowToWarranty = (r) => ({
+  id: r.id,
+  systemId: r.system_id,
+  type: r.warranty_type,
+  expirationDate: r.expiration_date || "",
+  estimated: r.estimated,
+});
+
+const warrantyToRow = (w) => ({
+  system_id: w.systemId,
+  warranty_type: w.type,
+  expiration_date: w.expirationDate || null,
+  estimated: !!w.estimated,
+});
+
 const rowToFurniture = (r) => ({
   id: r.id,
   name: r.name,
@@ -266,6 +281,25 @@ export async function scanSystemLabel(photoUrl) {
   return data;
 }
 
+// Extracts purchase date and every distinct warranty coverage (e.g. Parts
+// vs. Labor) from a receipt and/or warranty certificate — each can be
+// multiple page photos, passed as arrays. Returns
+// { purchaseDate, warranties: [{ type, expirationDate, estimated }] } — an
+// empty `warranties` array means nothing was found (and no web-search
+// fallback was possible). `brand`/`model`/`category`/`purchaseDate` are
+// optional context that lets the function (a) fall back to a web-searched
+// warranty estimate when no document states one, and (b) compute an
+// expiration date from a stated duration even when the purchase date comes
+// from somewhere other than this receipt (e.g. already typed in by the
+// user).
+export async function scanWarrantyDocs({ receiptPhotoUrls, warrantyPhotoUrls, brand, model, category, purchaseDate }) {
+  const { data, error } = await supabase.functions.invoke("scan-warranty-docs", {
+    body: { receiptPhotoUrls, warrantyPhotoUrls, brand, model, category, purchaseDate },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchPropertyDetails(address) {
   const { data, error } = await supabase.functions.invoke("property-lookup", {
     body: { address },
@@ -325,14 +359,15 @@ export async function updateEnergyCheckStatus(id, status) {
 }
 
 export async function loadAllData() {
-  const [systems, tasks, expenses, documents, furniture] = await Promise.all([
+  const [systems, tasks, expenses, documents, furniture, warranties] = await Promise.all([
     loadTable("systems", rowToSystem),
     loadTable("tasks", rowToTask),
     loadTable("expenses", rowToExpense),
     loadTable("documents", rowToDocument),
     loadTable("furniture", rowToFurniture),
+    loadTable("warranties", rowToWarranty).catch(() => []),
   ]);
-  return { systems, tasks, expenses, documents, furniture };
+  return { systems, tasks, expenses, documents, furniture, warranties };
 }
 
 export const db = {
@@ -364,6 +399,11 @@ export const db = {
     add: (d) => insertRow("documents", documentToRow(d), rowToDocument),
     update: (id, patch) => updateRow("documents", id, documentToRow(patch), rowToDocument),
     remove: (id) => deleteRow("documents", id),
+  },
+  warranties: {
+    add: (w) => insertRow("warranties", warrantyToRow(w), rowToWarranty),
+    update: (id, patch) => updateRow("warranties", id, warrantyToRow(patch), rowToWarranty),
+    remove: (id) => deleteRow("warranties", id),
   },
   furniture: {
     add: (f) => insertRow("furniture", furnitureToRow(f), rowToFurniture),
