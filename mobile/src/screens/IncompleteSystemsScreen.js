@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
-import { CATEGORY_META, systemName } from "../lib/constants.js";
+import { systemName, systemIcon } from "../lib/constants.js";
 import { missingSystemInfo } from "../lib/system-info.js";
 
 export default function IncompleteSystemsScreen({ systems, onSelect, onBack }) {
@@ -29,8 +29,7 @@ export default function IncompleteSystemsScreen({ systems, onSelect, onBack }) {
       ) : (
         <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
           {incomplete.map(({ sys, missing }, i) => {
-            const meta = CATEGORY_META[sys.category];
-            const Icon = meta.icon;
+            const Icon = systemIcon(sys);
             const shown = missing.slice(0, 3).join(", ");
             const more = missing.length > 3 ? ` +${missing.length - 3} more` : "";
             return (

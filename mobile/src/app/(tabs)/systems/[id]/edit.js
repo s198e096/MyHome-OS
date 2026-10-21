@@ -6,7 +6,7 @@ import ItemFormScreen from "../../../../screens/ItemFormScreen.js";
 export default function EditSystem() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { systems, systemById, updateSystem, deleteSystem, attachManualDocument } = useAppData();
+  const { systems, systemById, updateSystem, deleteSystem, attachManualDocument, addDocument, warranties, addWarranty, deleteWarranty } = useAppData();
   const sys = systemById(id);
 
   if (!sys) {
@@ -29,6 +29,10 @@ export default function EditSystem() {
         router.back();
       }}
       onAttachManual={attachManualDocument}
+      onAddDocument={addDocument}
+      warranties={warranties.filter((w) => w.systemId === sys.id)}
+      onAddWarranty={addWarranty}
+      onDeleteWarranty={deleteWarranty}
     />
   );
 }

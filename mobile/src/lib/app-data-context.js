@@ -29,6 +29,7 @@ export function AppDataProvider({ children }) {
   const [tasks, setTasks] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [warranties, setWarranties] = useState([]);
   const [furniture, setFurniture] = useState([]);
   const [energyChecks, setEnergyChecks] = useState([]);
   const [profile, setProfile] = useState(null);
@@ -40,6 +41,7 @@ export function AppDataProvider({ children }) {
       setTasks([]);
       setExpenses([]);
       setDocuments([]);
+      setWarranties([]);
       setFurniture([]);
       setEnergyChecks([]);
       setProfile(null);
@@ -62,6 +64,7 @@ export function AppDataProvider({ children }) {
       setTasks(all.tasks);
       setExpenses(all.expenses);
       setDocuments(all.documents);
+      setWarranties(all.warranties);
       setFurniture(all.furniture);
       setEnergyChecks(checksResult);
       setProfile({ ...profileRow, email: session.user.email });
@@ -171,6 +174,24 @@ export function AppDataProvider({ children }) {
     setDocuments((ds) => ds.filter((d) => d.id !== id));
   }
 
+  async function addWarranty(systemId, type, expirationDate, estimated) {
+    const created = await db.warranties.add({ systemId, type, expirationDate, estimated });
+    setWarranties((ws) => [...ws, created]);
+    return created;
+  }
+
+  async function updateWarranty(id, patch) {
+    const current = warranties.find((w) => w.id === id);
+    const updated = await db.warranties.update(id, { ...current, ...patch });
+    setWarranties((ws) => ws.map((w) => (w.id === id ? updated : w)));
+    return updated;
+  }
+
+  async function deleteWarranty(id) {
+    await db.warranties.remove(id);
+    setWarranties((ws) => ws.filter((w) => w.id !== id));
+  }
+
   async function addFurniture(item) {
     const created = await db.furniture.add(item);
     setFurniture((fs) => [...fs, created]);
@@ -240,6 +261,9 @@ export function AppDataProvider({ children }) {
     setTasks((ts) => ts.map(unlink));
     setExpenses((es) => es.map(unlink));
     setDocuments((ds) => ds.map(unlink));
+    // Warranties require a system (no "general" warranty), so the database
+    // cascade-deletes them — mirror that locally instead of unlinking.
+    setWarranties((ws) => ws.filter((w) => w.systemId !== id));
   }
 
   async function saveProfile(next) {
@@ -267,6 +291,7 @@ export function AppDataProvider({ children }) {
     tasks,
     expenses,
     documents,
+    warranties,
     furniture,
     energyChecks,
     profile,
@@ -289,6 +314,9 @@ export function AppDataProvider({ children }) {
     addDocument,
     updateDocument,
     deleteDocument,
+    addWarranty,
+    updateWarranty,
+    deleteWarranty,
     addFurniture,
     updateFurniture,
     deleteFurniture,

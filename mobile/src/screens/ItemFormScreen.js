@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Imag
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, systemName } from "../lib/constants.js";
-import ItemFields from "../components/ItemFields.js";
+import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
@@ -14,6 +14,7 @@ export default function ItemFormScreen({
   onAddExpense, onUpdateExpense, onDeleteExpense,
   onAddDocument, onUpdateDocument, onDeleteDocument,
   onAddSystem, onUpdateSystem, onDeleteSystem, onAttachManual,
+  warranties: existingWarranties, onAddWarranty, onDeleteWarranty,
   onAddFurniture, onUpdateFurniture, onDeleteFurniture,
 }) {
   const isEdit = !!item;
@@ -39,7 +40,7 @@ export default function ItemFormScreen({
   const [sysSerial, setSysSerial] = useState(item?.serialNumber || "");
   const [sysCategory, setSysCategory] = useState(item?.category || "hvac_indoor");
   const [sysLocation, setSysLocation] = useState(item?.location || "");
-  const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "2026-01-01");
+  const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "");
   const [sysPurchasePrice, setSysPurchasePrice] = useState(item?.purchasePrice != null ? String(item.purchasePrice) : "");
   const [sysLifeYears, setSysLifeYears] = useState(item?.expectedLifeYears != null ? String(item.expectedLifeYears) : "10");
   const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
@@ -47,6 +48,11 @@ export default function ItemFormScreen({
   const [sysFilterSize, setSysFilterSize] = useState(item?.filterSize || "");
   const [sysPlanned, setSysPlanned] = useState(item?.plannedReplacementDate || "");
   const [sysManualUrl, setSysManualUrl] = useState("");
+  const [receiptPhotoUrls, setReceiptPhotoUrls] = useState([]);
+  const [warrantyPhotoUrls, setWarrantyPhotoUrls] = useState([]);
+  const [warrantyList, setWarrantyList] = useState(() =>
+    (existingWarranties || []).map((w) => initWarrantyRow(w, item?.purchaseDate || ""))
+  );
 
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -93,27 +99,21 @@ export default function ItemFormScreen({
         if (isEdit) await onUpdateFurniture(item.id, payload);
         else await onAddFurniture(payload);
       } else if (kind === "system") {
-        if (!sysBrand.trim()) return setError("Enter a brand.");
-        if (!sysModel.trim()) return setError("Enter a model.");
-        if (!sysLocation.trim()) return setError("Enter a location.");
-        const price = parseFloat(sysPurchasePrice);
-        if (!sysPurchasePrice || isNaN(price) || price < 0) return setError("Enter a valid purchase price.");
-        const life = parseInt(sysLifeYears, 10);
-        if (!sysLifeYears || isNaN(life) || life <= 0) return setError("Enter a valid expected life, in years.");
-        const replCost = parseFloat(sysReplacementCost);
-        if (!sysReplacementCost || isNaN(replCost) || replCost < 0) return setError("Enter a valid replacement cost.");
-
+        // Nothing here is required — partial saves are expected (e.g. just
+        // adding a receipt photo to a system that isn't fully filled in yet).
+        const num = (s) => (s.trim() ? parseFloat(s) : null);
+        const int = (s) => (s.trim() ? parseInt(s, 10) : null);
         const payload = {
-          brand: sysBrand.trim(),
-          model: sysModel.trim(),
+          brand: sysBrand.trim() || null,
+          model: sysModel.trim() || null,
           serialNumber: sysSerial.trim() || null,
           category: sysCategory,
           location: sysLocation.trim(),
-          purchaseDate: sysPurchaseDate,
-          purchasePrice: price,
-          expectedLifeYears: life,
-          replacementCost: replCost,
-          warrantyExpiration: sysWarranty,
+          purchaseDate: sysPurchaseDate || null,
+          purchasePrice: num(sysPurchasePrice),
+          expectedLifeYears: int(sysLifeYears),
+          replacementCost: num(sysReplacementCost),
+          warrantyExpiration: sysWarranty || null,
           photoUrl: photoUrl || null,
           filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
           // null clears a plan that was set; "" (never set) is left out of the save.
@@ -122,6 +122,27 @@ export default function ItemFormScreen({
         const savedSystem = isEdit ? await onUpdateSystem(item.id, payload) : await onAddSystem(payload);
         if (sysManualUrl && savedSystem) {
           await onAttachManual(savedSystem.id, savedSystem.brand, savedSystem.model, sysManualUrl);
+        }
+        if (savedSystem) {
+          const name = systemName(savedSystem);
+          for (const [i, url] of receiptPhotoUrls.entries()) {
+            const label = receiptPhotoUrls.length > 1 ? `${name} Receipt ${i + 1}` : `${name} Receipt`;
+            await onAddDocument(label, "Receipt", savedSystem.id, url);
+          }
+          for (const [i, url] of warrantyPhotoUrls.entries()) {
+            const label = warrantyPhotoUrls.length > 1 ? `${name} Warranty ${i + 1}` : `${name} Warranty`;
+            await onAddDocument(label, "Warranty", savedSystem.id, url);
+          }
+          // Replace this system's warranty rows wholesale with the current
+          // list — simpler than diffing, and warranty counts are small.
+          for (const w of existingWarranties || []) {
+            await onDeleteWarranty(w.id);
+          }
+          for (const w of warrantyList) {
+            if (w.type.trim() && w.expirationDate) {
+              await onAddWarranty(savedSystem.id, w.type.trim(), w.expirationDate, !!w.estimated);
+            }
+          }
         }
       }
       onBack();
@@ -193,9 +214,12 @@ export default function ItemFormScreen({
         sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
         sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
         sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
+        warranties={warrantyList} setWarranties={setWarrantyList}
         sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
         sysPlanned={sysPlanned} setSysPlanned={setSysPlanned}
         sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
+        receiptPhotoUrls={receiptPhotoUrls} setReceiptPhotoUrls={setReceiptPhotoUrls}
+        warrantyPhotoUrls={warrantyPhotoUrls} setWarrantyPhotoUrls={setWarrantyPhotoUrls}
       />
 
       {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}

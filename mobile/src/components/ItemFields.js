@@ -1,15 +1,66 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, Platform, Modal } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
-import { Sparkles, Calculator } from "lucide-react-native";
+import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, systemName } from "../lib/constants.js";
-import { scanSystemLabel } from "../lib/db.js";
+import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
+import MultiPhotoPicker from "./MultiPhotoPicker.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
+
+const WARRANTY_TYPES = ["General", "Parts", "Labor", "Replacement"];
+
+function formatDuration(months) {
+  return months % 12 === 0 ? `${months / 12}-year` : `${months}-month`;
+}
+
+function formatMonthYear(dateStr) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+// The single systems.warranty_expiration column (used elsewhere in the app
+// as a one-line "is this still covered" summary) is derived from whichever
+// of this system's warranty entries expires latest.
+function latestExpiration(list) {
+  const dates = list.map((w) => w.expirationDate).filter(Boolean);
+  return dates.length ? dates.reduce((max, d) => (d > max ? d : max)) : "";
+}
+
+function monthsBetween(purchaseDate, expirationDate) {
+  if (!purchaseDate || !expirationDate) return null;
+  const p = new Date(`${purchaseDate}T00:00:00`);
+  const e = new Date(`${expirationDate}T00:00:00`);
+  return (e.getFullYear() - p.getFullYear()) * 12 + (e.getMonth() - p.getMonth());
+}
+
+function monthsToUnit(months) {
+  if (!months || months <= 0) return { value: "", unit: "years" };
+  return months % 12 === 0 ? { value: String(months / 12), unit: "years" } : { value: String(months), unit: "months" };
+}
+
+// Warranty length is entered as a duration (years or months) rather than an exact
+// date — the expiration is derived from purchaseDate + duration, since that's how
+// warranties are actually specified ("5-year parts warranty"), not as a calendar date.
+function computeExpiration(purchaseDate, durationValue, durationUnit) {
+  const n = parseFloat(durationValue);
+  if (!purchaseDate || !durationValue || Number.isNaN(n) || n <= 0) return "";
+  const months = Math.round(durationUnit === "years" ? n * 12 : n);
+  const d = new Date(`${purchaseDate}T00:00:00`);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+// Reconstructs a duration (value+unit) for a persisted or AI-extracted warranty row
+// that only carries an absolute expirationDate, so the UI can always show a duration
+// input instead of a raw date.
+export function initWarrantyRow(w, purchaseDate) {
+  const { value, unit } = monthsToUnit(monthsBetween(purchaseDate, w.expirationDate));
+  return { id: w.id, type: w.type, expirationDate: w.expirationDate || "", estimated: w.estimated, durationValue: value, durationUnit: unit };
+}
 
 function DateField({ label, value, onChange, optional }) {
   const [active, setActive] = useState(!optional || !!value);
@@ -88,15 +139,23 @@ export default function ItemFields({
   sysPurchasePrice, setSysPurchasePrice,
   sysLifeYears, setSysLifeYears,
   sysReplacementCost, setSysReplacementCost,
-  sysWarranty, setSysWarranty,
+  setSysWarranty,
+  warranties, setWarranties,
   sysFilterSize, setSysFilterSize,
   sysPlanned, setSysPlanned,
   sysManualUrl, setSysManualUrl,
+  receiptPhotoUrls, setReceiptPhotoUrls,
+  warrantyPhotoUrls, setWarrantyPhotoUrls,
   hideCategoryPicker,
   hidePhotoSection,
 }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [scanningWarranty, setScanningWarranty] = useState(false);
+  const [warrantyScanError, setWarrantyScanError] = useState("");
+  const [warrantyEstimate, setWarrantyEstimate] = useState(null);
+  const [warrantyTypeDropdownIndex, setWarrantyTypeDropdownIndex] = useState(null);
+  const [warrantyBlockedMessage, setWarrantyBlockedMessage] = useState("");
 
   async function handleScan() {
     setScanning(true);
@@ -117,6 +176,91 @@ export default function ItemFields({
     } finally {
       setScanning(false);
     }
+  }
+
+  async function handleScanWarrantyDocs() {
+    setScanningWarranty(true);
+    setWarrantyScanError("");
+    setWarrantyEstimate(null);
+    try {
+      const result = await scanWarrantyDocs({
+        receiptPhotoUrls,
+        warrantyPhotoUrls,
+        brand: sysBrand || undefined,
+        model: sysModel || undefined,
+        category: sysCategory || undefined,
+        purchaseDate: sysPurchaseDate || undefined,
+      });
+      const purchaseDate = result.purchaseDate || sysPurchaseDate;
+      if (result.purchaseDate) setSysPurchaseDate(result.purchaseDate);
+      const found = result.warranties || [];
+      const confident = found.filter((w) => !w.estimated);
+      const estimate = found.find((w) => w.estimated);
+      if (confident.length > 0) {
+        const withDuration = confident.map((w) => initWarrantyRow(w, purchaseDate));
+        setWarranties(withDuration);
+        setSysWarranty(latestExpiration(withDuration));
+      }
+      if (estimate) setWarrantyEstimate(estimate);
+      if (!result.purchaseDate && confident.length === 0 && !estimate) {
+        setWarrantyScanError("Couldn't find a purchase date or warranty info there. You can fill them in manually.");
+      }
+    } catch {
+      setWarrantyScanError("AI scan failed. You can fill in the fields manually.");
+    } finally {
+      setScanningWarranty(false);
+    }
+  }
+
+  function acceptWarrantyEstimate() {
+    const { value, unit } = monthsToUnit(warrantyEstimate.durationMonths);
+    const next = [...warranties, {
+      type: warrantyEstimate.type,
+      expirationDate: warrantyEstimate.expirationDate,
+      estimated: true,
+      durationValue: value,
+      durationUnit: unit,
+    }];
+    setWarranties(next);
+    setSysWarranty(latestExpiration(next));
+    setWarrantyEstimate(null);
+  }
+
+  function addWarrantyRow() {
+    if (!sysPurchaseDate) {
+      setWarrantyBlockedMessage("Add the date installed above before adding a warranty — the expiration is calculated from it.");
+      return;
+    }
+    setWarrantyBlockedMessage("");
+    setWarranties([...warranties, { type: "General", durationValue: "", durationUnit: "years", expirationDate: "" }]);
+  }
+
+  function updateWarrantyRow(index, patch) {
+    const next = warranties.map((w, i) => {
+      if (i !== index) return w;
+      const merged = { ...w, ...patch };
+      merged.expirationDate = computeExpiration(sysPurchaseDate, merged.durationValue, merged.durationUnit);
+      return merged;
+    });
+    setWarranties(next);
+    setSysWarranty(latestExpiration(next));
+  }
+
+  function removeWarrantyRow(index) {
+    const next = warranties.filter((_, i) => i !== index);
+    setWarranties(next);
+    setSysWarranty(latestExpiration(next));
+  }
+
+  function handlePurchaseDateChange(date) {
+    setSysPurchaseDate(date);
+    setWarrantyBlockedMessage("");
+    if (!date) return;
+    const next = warranties.map((w) =>
+      w.durationValue ? { ...w, expirationDate: computeExpiration(date, w.durationValue, w.durationUnit) } : w
+    );
+    setWarranties(next);
+    setSysWarranty(latestExpiration(next));
   }
 
   return (
@@ -300,7 +444,45 @@ export default function ItemFields({
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
-          <DateField label="Date installed" value={sysPurchaseDate} onChange={setSysPurchaseDate} />
+          {!hidePhotoSection && (
+            <View className="mb-2">
+              <Text className="text-[13px] font-semibold text-stone-800 mb-2">Receipt & warranty (optional)</Text>
+              <MultiPhotoPicker label="Receipt" photoUrls={receiptPhotoUrls} onChange={setReceiptPhotoUrls} />
+              <MultiPhotoPicker label="Warranty certificate" photoUrls={warrantyPhotoUrls} onChange={setWarrantyPhotoUrls} />
+
+              {(receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) && (
+                <Pressable
+                  onPress={handleScanWarrantyDocs}
+                  disabled={scanningWarranty}
+                  className="w-full mb-2 flex-row items-center justify-center gap-1.5 py-2 rounded-lg"
+                  style={{ backgroundColor: ACCENT_YELLOW, opacity: scanningWarranty ? 0.6 : 1 }}
+                >
+                  <Sparkles size={15} color={PRIMARY} />
+                  <Text className="text-[12.5px] font-semibold" style={{ color: PRIMARY }}>
+                    {scanningWarranty ? "Reading documents..." : "Extract purchase date & warranty"}
+                  </Text>
+                </Pressable>
+              )}
+              {warrantyScanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{warrantyScanError}</Text>}
+              {warrantyEstimate && (
+                <View className="rounded-lg px-3 py-2.5 mb-2" style={{ backgroundColor: "#EAF1F8" }}>
+                  <Text className="text-[12px] mb-2" style={{ color: "#3B5169" }}>
+                    No warranty info found on your documents, but this product typically carries about a {formatDuration(warrantyEstimate.durationMonths)} warranty — estimated to expire {formatMonthYear(warrantyEstimate.expirationDate)}.
+                  </Text>
+                  <View className="flex-row gap-2">
+                    <Pressable onPress={acceptWarrantyEstimate} className="flex-1 py-1.5 rounded-lg items-center" style={{ backgroundColor: PRIMARY }}>
+                      <Text className="text-[12px] font-semibold text-white">Use this date</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setWarrantyEstimate(null)} className="flex-1 py-1.5 rounded-lg items-center" style={fieldStyle}>
+                      <Text className="text-[12px] font-semibold text-stone-700">Dismiss</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          <DateField label="Date installed" value={sysPurchaseDate} onChange={handlePurchaseDateChange} optional />
 
           <TextInput
             value={sysPurchasePrice}
@@ -330,7 +512,71 @@ export default function ItemFields({
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
-          <DateField label="Warranty expiration (optional)" value={sysWarranty} onChange={setSysWarranty} optional />
+          <View className="mb-2">
+            <Text className="text-[11px] text-stone-500 mb-1">Warranty (optional)</Text>
+            {warranties.length === 0 && (
+              <Text className="text-[12px] text-stone-400 mb-2">Nothing added yet.</Text>
+            )}
+            {warranties.map((w, i) => (
+              <View key={i} className="rounded-lg p-2 mb-2" style={fieldStyle}>
+                <View className="flex-row items-center justify-between mb-2">
+                  <Pressable
+                    onPress={() => setWarrantyTypeDropdownIndex(i)}
+                    className="flex-1 flex-row items-center justify-between px-3 py-2 rounded-lg"
+                    style={fieldStyle}
+                  >
+                    <Text className="text-[13px] text-stone-800">{w.type || "Select type"}</Text>
+                    <ChevronDown size={14} color="#78716c" />
+                  </Pressable>
+                  <Pressable onPress={() => removeWarrantyRow(i)} hitSlop={8} className="pl-2">
+                    <X size={16} color="#B8B4A8" />
+                  </Pressable>
+                </View>
+                <View className="flex-row items-center gap-2 mb-1.5">
+                  <TextInput
+                    value={w.durationValue}
+                    onChangeText={(v) => updateWarrantyRow(i, { durationValue: v })}
+                    placeholder="Length"
+                    inputMode="decimal"
+                    className="px-3 py-2 rounded-lg text-[13px]"
+                    style={[fieldStyle, { width: 72 }]}
+                    inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                  />
+                  <View className="flex-row gap-1.5">
+                    {["years", "months"].map((u) => {
+                      const selected = (w.durationUnit || "years") === u;
+                      return (
+                        <Pressable
+                          key={u}
+                          onPress={() => updateWarrantyRow(i, { durationUnit: u })}
+                          className="rounded-full px-2.5 py-1.5"
+                          style={{ backgroundColor: selected ? PRIMARY : "white", borderWidth: selected ? 0 : 1, borderColor: "#D8D5CB" }}
+                        >
+                          <Text className="text-[11.5px] font-semibold" style={{ color: selected ? "white" : "#5F5B50" }}>
+                            {u === "years" ? "Years" : "Months"}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+                <Text className="text-[12px]" style={{ color: w.expirationDate ? "#5F5B50" : "#9C978C" }}>
+                  {w.expirationDate
+                    ? `Expires ${formatMonthYear(w.expirationDate)}`
+                    : sysPurchaseDate
+                      ? "Enter a length to calculate the expiration"
+                      : "Add the date installed above to calculate the expiration"}
+                </Text>
+              </View>
+            ))}
+            <Pressable onPress={addWarrantyRow} className="flex-row items-center gap-1" hitSlop={6}>
+              <Plus size={13} color={PRIMARY} />
+              <Text className="text-[12px] font-semibold" style={{ color: PRIMARY }}>Add warranty</Text>
+            </Pressable>
+            {!!warrantyBlockedMessage && (
+              <Text className="text-[12px] mt-1.5" style={{ color: STATUS_COLOR.red }}>{warrantyBlockedMessage}</Text>
+            )}
+          </View>
 
           {setSysPlanned && (
             <>
@@ -364,6 +610,36 @@ export default function ItemFields({
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
+      )}
+
+      {warrantyTypeDropdownIndex !== null && (
+        <Modal transparent animationType="fade" visible onRequestClose={() => setWarrantyTypeDropdownIndex(null)}>
+          <Pressable
+            onPress={() => setWarrantyTypeDropdownIndex(null)}
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+          >
+            <Pressable onPress={() => {}} className="bg-white rounded-t-2xl px-4 pt-4 pb-6">
+              <Text className="text-[15px] font-semibold text-stone-900 mb-2">Warranty type</Text>
+              {(() => {
+                const current = warranties[warrantyTypeDropdownIndex]?.type;
+                const options = current && !WARRANTY_TYPES.includes(current) ? [...WARRANTY_TYPES, current] : WARRANTY_TYPES;
+                return options.map((opt, i) => (
+                  <Pressable
+                    key={opt}
+                    onPress={() => {
+                      updateWarrantyRow(warrantyTypeDropdownIndex, { type: opt });
+                      setWarrantyTypeDropdownIndex(null);
+                    }}
+                    className="py-3"
+                    style={{ borderBottomWidth: i < options.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
+                  >
+                    <Text className="text-[13.5px] text-stone-800">{opt}</Text>
+                  </Pressable>
+                ));
+              })()}
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
     </>
   );

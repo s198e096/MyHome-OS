@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Picker } from "@react-native-picker/picker";
 import { MapPin, Sparkles, ChevronLeft, ChevronRight, Check, Search, X, Plus, Minus } from "lucide-react-native";
 import {
   PRIMARY,
@@ -14,15 +13,17 @@ import {
   CATEGORY_META,
   ONBOARDING_STRUCTURE_CATEGORIES,
   ONBOARDING_FIXTURE_CATEGORIES,
+  systemIcon,
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
-import { fetchPropertyDetails, scanSystemLabel } from "../lib/db.js";
+import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
 import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
-import ItemFields from "../components/ItemFields.js";
+import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
+import MultiPhotoPicker from "../components/MultiPhotoPicker.js";
 import HvacGuideIllustration from "../components/HvacGuideIllustrations.js";
 import WaterHeaterGuideIllustration from "../components/WaterHeaterGuideIllustrations.js";
 import GeneratorGuideIllustration from "../components/GeneratorGuideIllustrations.js";
@@ -30,7 +31,22 @@ import SolarGuideIllustration from "../components/SolarGuideIllustrations.js";
 import EvChargerGuideIllustration from "../components/EvChargerGuideIllustrations.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
-const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
+
+function formatDuration(months) {
+  return months % 12 === 0 ? `${months / 12}-year` : `${months}-month`;
+}
+
+function formatMonthYear(dateStr) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+// The single systems.warranty_expiration column (used elsewhere in the app
+// as a one-line "is this still covered" summary) is derived from whichever
+// of this system's warranty entries expires latest.
+function latestExpiration(list) {
+  const dates = list.map((w) => w.expirationDate).filter(Boolean);
+  return dates.length ? dates.reduce((max, d) => (d > max ? d : max)) : "";
+}
 
 // Shared "add a few of these, one at a time" step used for systems,
 // appliances, and house-structure items after the property step. Each add
@@ -83,6 +99,9 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
     }
   }
 
+  const activeMeta = CATEGORY_META[fixedCategory || category];
+  const ActiveIcon = activeMeta.icon;
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <ScrollView
@@ -102,95 +121,126 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
         <Text className="text-[12.5px] text-stone-500 mb-4">{subtitle}</Text>
 
         {added.length > 0 && (
-          <View className="rounded-xl bg-white px-3 mb-4" style={fieldStyle}>
-            {added.map((sys, i) => {
-              const meta = CATEGORY_META[sys.category];
-              const Icon = meta.icon;
-              return (
-                <View
-                  key={sys.id}
-                  className="flex-row items-center justify-between py-2.5"
-                  style={{ borderBottomWidth: i < added.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
-                >
-                  <View className="flex-row items-center gap-2 flex-1">
-                    <Icon size={16} color="#5F5B50" />
-                    <Text className="text-[13.5px] text-stone-800 flex-1">
-                      {sys.brand ? sys.brand : meta.label}
-                    </Text>
-                  </View>
-                  <Pressable onPress={() => deleteSystem(sys.id)} hitSlop={8}>
-                    <X size={16} color="#B8B4A8" />
-                  </Pressable>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {!fixedCategory && (
           <>
-            <Text className="text-[11px] text-stone-500 mb-1">Category</Text>
-            <View className="w-full mb-2" style={pickerBoxStyle}>
-              <Picker selectedValue={category} onValueChange={setCategory}>
-                {categories.map((key) => (
-                  <Picker.Item key={key} label={CATEGORY_META[key].label} value={key} />
-                ))}
-              </Picker>
+            <Text className="text-[11px] font-semibold text-stone-500 mb-1.5">ADDED ({added.length})</Text>
+            <View className="rounded-xl bg-white px-3 mb-5" style={fieldStyle}>
+              {added.map((sys, i) => {
+                const meta = CATEGORY_META[sys.category];
+                const Icon = systemIcon(sys);
+                return (
+                  <View
+                    key={sys.id}
+                    className="flex-row items-center justify-between py-2.5"
+                    style={{ borderBottomWidth: i < added.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
+                  >
+                    <View className="flex-row items-center gap-2.5 flex-1">
+                      <View className="items-center justify-center rounded-lg" style={{ width: 28, height: 28, backgroundColor: "#F5F8F0" }}>
+                        <Icon size={14} color="#5F5B50" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-[13.5px] text-stone-800">{sys.brand ? sys.brand : meta.label}</Text>
+                        {!!sys.brand && <Text className="text-[11px] text-stone-400">{meta.label}</Text>}
+                      </View>
+                    </View>
+                    <Pressable onPress={() => deleteSystem(sys.id)} hitSlop={8}>
+                      <X size={16} color="#B8B4A8" />
+                    </Pressable>
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
 
-        <View className="flex-row gap-2 mb-3">
-          <View className="flex-1">
-            <Text className="text-[11px] text-stone-500 mb-1">Name (optional)</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder={fixedCategory ? "e.g. Refrigerator, Dishwasher" : "e.g. Carrier, Front windows"}
-              className="w-full px-3 py-2 rounded-lg text-[13.5px]"
-              style={fieldStyle}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-              returnKeyType="done"
-              onSubmitEditing={handleAdd}
-            />
-          </View>
-          <View>
-            <Text className="text-[11px] text-stone-500 mb-1">Qty</Text>
-            <View className="flex-row items-center rounded-lg" style={fieldStyle}>
-              <Pressable
-                onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="items-center justify-center"
-                style={{ width: 32, height: 36 }}
-                hitSlop={6}
-              >
-                <Minus size={14} color={PRIMARY} />
-              </Pressable>
-              <Text className="text-[13.5px] font-semibold text-center" style={{ width: 22 }}>{quantity}</Text>
-              <Pressable
-                onPress={() => setQuantity((q) => Math.min(20, q + 1))}
-                className="items-center justify-center"
-                style={{ width: 32, height: 36 }}
-                hitSlop={6}
-              >
-                <Plus size={14} color={PRIMARY} />
-              </Pressable>
+        <View className="rounded-xl bg-white p-3 mb-5" style={fieldStyle}>
+          {!fixedCategory && (
+            <>
+              <Text className="text-[11px] text-stone-500 mb-1.5">What are you adding?</Text>
+              <View className="flex-row flex-wrap gap-2 mb-3">
+                {categories.map((key) => {
+                  const meta = CATEGORY_META[key];
+                  const Icon = meta.icon;
+                  const selected = category === key;
+                  return (
+                    <Pressable
+                      key={key}
+                      onPress={() => setCategory(key)}
+                      className="items-center rounded-lg py-2.5"
+                      style={{
+                        minWidth: 84,
+                        flexGrow: 1,
+                        backgroundColor: selected ? PRIMARY : "#F5F8F0",
+                        borderWidth: selected ? 0 : 1,
+                        borderColor: "#E0E8D3",
+                      }}
+                    >
+                      <Icon size={18} color={selected ? "white" : "#5F5B50"} />
+                      <Text className="text-[12px] font-semibold mt-1" style={{ color: selected ? "white" : "#5F5B50" }}>
+                        {meta.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+          <View className="flex-row gap-2">
+            <View className="flex-1">
+              <Text className="text-[11px] text-stone-500 mb-1">Name (optional)</Text>
+              <View className="flex-row items-center rounded-lg" style={fieldStyle}>
+                <View className="items-center justify-center" style={{ width: 32 }}>
+                  <ActiveIcon size={14} color="#9C978C" />
+                </View>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={fixedCategory ? "e.g. Refrigerator, Dishwasher" : `e.g. ${activeMeta.label}`}
+                  className="flex-1 py-2 pr-3 text-[13.5px]"
+                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                  returnKeyType="done"
+                  onSubmitEditing={handleAdd}
+                />
+              </View>
+            </View>
+            <View>
+              <Text className="text-[11px] text-stone-500 mb-1">Qty</Text>
+              <View className="flex-row items-center rounded-lg" style={fieldStyle}>
+                <Pressable
+                  onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="items-center justify-center"
+                  style={{ width: 32, height: 36 }}
+                  hitSlop={6}
+                >
+                  <Minus size={14} color={PRIMARY} />
+                </Pressable>
+                <Text className="text-[13.5px] font-semibold text-center" style={{ width: 22 }}>{quantity}</Text>
+                <Pressable
+                  onPress={() => setQuantity((q) => Math.min(20, q + 1))}
+                  className="items-center justify-center"
+                  style={{ width: 32, height: 36 }}
+                  hitSlop={6}
+                >
+                  <Plus size={14} color={PRIMARY} />
+                </Pressable>
+              </View>
             </View>
           </View>
+
+          {addError && <Text className="text-[12px] mt-2" style={{ color: STATUS_COLOR.red }}>{addError}</Text>}
+
+          <Pressable
+            onPress={handleAdd}
+            disabled={adding}
+            className="w-full py-2.5 rounded-lg items-center flex-row justify-center gap-1.5 mt-3"
+            style={{ backgroundColor: ACCENT_YELLOW, opacity: adding ? 0.6 : 1 }}
+          >
+            <Plus size={15} color={PRIMARY} />
+            <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>
+              {quantity > 1 ? `Add ${quantity} ${activeMeta.label.toLowerCase()}s` : `Add ${activeMeta.label.toLowerCase()}`}
+            </Text>
+          </Pressable>
         </View>
-
-        {addError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{addError}</Text>}
-
-        <Pressable
-          onPress={handleAdd}
-          disabled={adding}
-          className="w-full py-2.5 rounded-lg items-center flex-row justify-center gap-1.5 mb-6"
-          style={{ borderWidth: 1, borderColor: PRIMARY, opacity: adding ? 0.6 : 1 }}
-        >
-          <Plus size={15} color={PRIMARY} />
-          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>
-            {quantity > 1 ? `Add ${quantity}` : "Add"}
-          </Text>
-        </Pressable>
 
         <Pressable
           onPress={handleDone}
@@ -239,7 +289,7 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
         <View className="rounded-xl bg-white px-3 mb-6" style={fieldStyle}>
           {systems.map((sys, i) => {
             const meta = CATEGORY_META[sys.category];
-            const Icon = meta.icon;
+            const Icon = systemIcon(sys);
             const done = systemHasDetails(sys);
             return (
               <Pressable
@@ -254,10 +304,16 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
                     {sys.brand ? sys.brand : meta.label}
                   </Text>
                 </View>
-                <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: done ? STATUS_BG.green : "#F2F0EA" }}>
-                  <Text className="text-[10.5px] font-semibold" style={{ color: done ? STATUS_COLOR.green : "#9C9890" }}>
-                    {done ? "Completed" : "Not started"}
-                  </Text>
+                <View className="flex-row items-center gap-2">
+                  <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: done ? STATUS_BG.green : "#F2F0EA" }}>
+                    <Text className="text-[10.5px] font-semibold" style={{ color: done ? STATUS_COLOR.green : "#9C9890" }}>
+                      {done ? "Completed" : "Not started"}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center gap-0.5">
+                    <Text className="text-[11.5px] font-semibold" style={{ color: PRIMARY }}>{done ? "Edit" : "Start"}</Text>
+                    <ChevronRight size={14} color={PRIMARY} />
+                  </View>
                 </View>
               </Pressable>
             );
@@ -279,7 +335,7 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
 // never blocks finishing onboarding.
 function SystemDetailsStep({ system, onDone }) {
   const insets = useSafeAreaInsets();
-  const { updateSystem, attachManualDocument, addDocument } = useAppData();
+  const { updateSystem, attachManualDocument, addDocument, warranties, addWarranty, deleteWarranty } = useAppData();
   const isStructure = ONBOARDING_STRUCTURE_CATEGORIES.includes(system.category);
 
   // Guides the user through: 1) a photo (label for systems/appliances, a
@@ -292,8 +348,14 @@ function SystemDetailsStep({ system, onDone }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
 
-  const [receiptPhotoUrl, setReceiptPhotoUrl] = useState("");
-  const [receiptType, setReceiptType] = useState("Receipt");
+  const [receiptPhotoUrls, setReceiptPhotoUrls] = useState([]);
+  const [warrantyPhotoUrls, setWarrantyPhotoUrls] = useState([]);
+  const [scanningWarranty, setScanningWarranty] = useState(false);
+  const [warrantyScanError, setWarrantyScanError] = useState("");
+  const [warrantyEstimate, setWarrantyEstimate] = useState(null);
+  const [warrantyList, setWarrantyList] = useState(() =>
+    warranties.filter((w) => w.systemId === system.id).map((w) => initWarrantyRow(w, system.purchaseDate || ""))
+  );
 
   const [sysBrand, setSysBrand] = useState(system.brand || "");
   const [sysModel, setSysModel] = useState(system.model || "");
@@ -334,12 +396,68 @@ function SystemDetailsStep({ system, onDone }) {
   }
 
   async function handlePhotoContinue() {
-    // Only auto-scan the first time — avoids re-scanning (and re-billing
-    // the API) when revisiting an already-filled-in system via the list.
-    if (photoUrl && !isStructure && !sysBrand && !sysModel) {
+    // Only auto-scan when there's no real brand/model yet — avoids
+    // re-scanning (and re-billing the API) when revisiting an already-
+    // filled-in system via the list. A guided walkthrough's generic
+    // placeholder (e.g. "Gas furnace") doesn't count as "real" here, so
+    // scanning still runs the first time a label photo is added for it.
+    const hasRealBrand = sysBrand && !GENERIC_UNIT_LABELS.has(sysBrand);
+    if (photoUrl && !isStructure && !hasRealBrand && !sysModel) {
       await runScan();
     }
     setSubStep("receipt");
+  }
+
+  async function runWarrantyScan() {
+    setScanningWarranty(true);
+    setWarrantyScanError("");
+    setWarrantyEstimate(null);
+    try {
+      const result = await scanWarrantyDocs({
+        receiptPhotoUrls,
+        warrantyPhotoUrls,
+        brand: sysBrand || undefined,
+        model: sysModel || undefined,
+        category: sysCategory || undefined,
+        purchaseDate: sysPurchaseDate || undefined,
+      });
+      const purchaseDate = result.purchaseDate || sysPurchaseDate;
+      if (result.purchaseDate) setSysPurchaseDate(result.purchaseDate);
+      const found = result.warranties || [];
+      const confident = found.filter((w) => !w.estimated);
+      const estimate = found.find((w) => w.estimated);
+      if (confident.length > 0) {
+        const withDuration = confident.map((w) => initWarrantyRow(w, purchaseDate));
+        setWarrantyList(withDuration);
+        setSysWarranty(latestExpiration(withDuration));
+      }
+      if (estimate) setWarrantyEstimate(estimate);
+      if (!result.purchaseDate && confident.length === 0 && !estimate) {
+        setWarrantyScanError("Couldn't find a purchase date or warranty info there. You can fill them in manually.");
+      }
+    } catch {
+      setWarrantyScanError("Couldn't read those documents. You can fill in purchase date and warranty manually.");
+    } finally {
+      setScanningWarranty(false);
+    }
+  }
+
+  async function handleDocumentsContinue() {
+    if (receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) {
+      await runWarrantyScan();
+    }
+    setSubStep("fields");
+  }
+
+  function acceptWarrantyEstimate() {
+    const row = initWarrantyRow(
+      { type: warrantyEstimate.type, expirationDate: warrantyEstimate.expirationDate, estimated: true },
+      sysPurchaseDate
+    );
+    const next = [...warrantyList, row];
+    setWarrantyList(next);
+    setSysWarranty(latestExpiration(next));
+    setWarrantyEstimate(null);
   }
 
   async function handleSaveNext() {
@@ -365,8 +483,26 @@ function SystemDetailsStep({ system, onDone }) {
       if (sysManualUrl && updated) {
         await attachManualDocument(updated.id, updated.brand, updated.model, sysManualUrl);
       }
-      if (receiptPhotoUrl && updated) {
-        await addDocument(`${updated.brand || meta.label} ${receiptType}`, receiptType, updated.id, receiptPhotoUrl);
+      if (updated) {
+        const name = updated.brand || meta.label;
+        for (const [i, url] of receiptPhotoUrls.entries()) {
+          const label = receiptPhotoUrls.length > 1 ? `${name} Receipt ${i + 1}` : `${name} Receipt`;
+          await addDocument(label, "Receipt", updated.id, url);
+        }
+        for (const [i, url] of warrantyPhotoUrls.entries()) {
+          const label = warrantyPhotoUrls.length > 1 ? `${name} Warranty ${i + 1}` : `${name} Warranty`;
+          await addDocument(label, "Warranty", updated.id, url);
+        }
+        // Replace this system's warranty rows wholesale with the current
+        // list — simpler than diffing, and warranty counts are small.
+        for (const w of warranties.filter((existing) => existing.systemId === updated.id)) {
+          await deleteWarranty(w.id);
+        }
+        for (const w of warrantyList) {
+          if (w.type.trim() && w.expirationDate) {
+            await addWarranty(updated.id, w.type.trim(), w.expirationDate, !!w.estimated);
+          }
+        }
       }
       onDone();
     } catch {
@@ -414,12 +550,15 @@ function SystemDetailsStep({ system, onDone }) {
           <Pressable
             onPress={handlePhotoContinue}
             disabled={scanning}
-            className="w-full py-2.5 rounded-lg items-center"
+            className="w-full py-2.5 rounded-lg items-center mb-2"
             style={{ backgroundColor: PRIMARY, opacity: scanning ? 0.6 : 1 }}
           >
             <Text className="text-[13.5px] font-semibold text-white">
-              {photoUrl ? "Continue" : "Skip, I don't have a picture"}
+              {scanning ? "Reading label..." : "Continue"}
             </Text>
+          </Pressable>
+          <Pressable onPress={handlePhotoContinue} disabled={scanning} className="py-2.5 items-center">
+            <Text className="text-[13px] font-semibold text-stone-500">Skip, I don&apos;t have a picture</Text>
           </Pressable>
         </ScrollView>
         <KeyboardDoneBar />
@@ -436,48 +575,57 @@ function SystemDetailsStep({ system, onDone }) {
           showsVerticalScrollIndicator={false}
         >
           {backToList}
-          <Pressable onPress={() => setSubStep("photo")} className="flex-row items-center gap-1 mb-3">
-            <ChevronLeft size={16} color="#78716c" />
-            <Text className="text-[13px] text-stone-500">Back</Text>
-          </Pressable>
 
           <Text className="text-[17px] font-semibold text-stone-900 mb-1">
-            {isStructure ? "Add a receipt photo?" : "Add a receipt or warranty photo?"}
+            {isStructure ? "Add a receipt photo?" : "Add your receipt & warranty"}
           </Text>
           <Text className="text-[12.5px] text-stone-500 mb-4">
             {isStructure
               ? "If you have a receipt from a repair or installation, add it here. Optional, if applicable."
-              : "If you have one, we'll save it with this system's documents. Optional."}
+              : "We'll read the purchase date and warranty details from these automatically. Optional — add either, both, or skip."}
           </Text>
 
-          <PhotoPicker photoUrl={receiptPhotoUrl} onChange={setReceiptPhotoUrl} />
-
-          {receiptPhotoUrl && !isStructure && (
-            <View className="flex-row gap-2 mb-4">
-              {["Receipt", "Warranty"].map((t) => {
-                const selected = receiptType === t;
-                return (
-                  <Pressable
-                    key={t}
-                    onPress={() => setReceiptType(t)}
-                    className="rounded-full px-3 py-1.5"
-                    style={{ backgroundColor: selected ? PRIMARY : "white", borderWidth: selected ? 0 : 1, borderColor: "#D8D5CB" }}
-                  >
-                    <Text className="text-[12.5px] font-semibold" style={{ color: selected ? "white" : "#5F5B50" }}>{t}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+          {isStructure ? (
+            <MultiPhotoPicker photoUrls={receiptPhotoUrls} onChange={setReceiptPhotoUrls} />
+          ) : (
+            <>
+              <MultiPhotoPicker label="Receipt" photoUrls={receiptPhotoUrls} onChange={setReceiptPhotoUrls} />
+              <MultiPhotoPicker label="Warranty certificate" photoUrls={warrantyPhotoUrls} onChange={setWarrantyPhotoUrls} />
+            </>
           )}
 
-          <Pressable
-            onPress={() => setSubStep("fields")}
-            className="w-full py-2.5 rounded-lg items-center"
-            style={{ backgroundColor: PRIMARY }}
-          >
-            <Text className="text-[13.5px] font-semibold text-white">
-              {receiptPhotoUrl ? "Continue" : "Skip, I don't have one"}
-            </Text>
+          {scanningWarranty && (
+            <View className="flex-row items-center gap-2 mb-3 mt-1">
+              <ActivityIndicator size="small" color={PRIMARY} />
+              <Text className="text-[12.5px] text-stone-500">Reading documents...</Text>
+            </View>
+          )}
+          {warrantyScanError && <Text className="text-[12px] mb-2 mt-1" style={{ color: STATUS_COLOR.red }}>{warrantyScanError}</Text>}
+
+          <View className="flex-row gap-2 mt-2">
+            <Pressable
+              onPress={() => setSubStep("photo")}
+              disabled={scanningWarranty}
+              className="flex-row items-center justify-center gap-1 px-4 py-2.5 rounded-lg"
+              style={{ borderWidth: 1, borderColor: "#D8D5CB" }}
+            >
+              <ChevronLeft size={16} color="#78716c" />
+              <Text className="text-[13px] text-stone-500">Back</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleDocumentsContinue}
+              disabled={scanningWarranty}
+              className="flex-1 py-2.5 rounded-lg items-center"
+              style={{ backgroundColor: PRIMARY, opacity: scanningWarranty ? 0.6 : 1 }}
+            >
+              <Text className="text-[13.5px] font-semibold text-white">
+                {scanningWarranty ? "Reading documents..." : "Continue"}
+              </Text>
+            </Pressable>
+          </View>
+
+          <Pressable onPress={handleDocumentsContinue} disabled={scanningWarranty} className="py-2.5 items-center">
+            <Text className="text-[13px] font-semibold text-stone-500">Skip, I don&apos;t have any</Text>
           </Pressable>
         </ScrollView>
         <KeyboardDoneBar />
@@ -495,10 +643,6 @@ function SystemDetailsStep({ system, onDone }) {
         keyboardShouldPersistTaps="handled"
       >
         {backToList}
-        <Pressable onPress={() => setSubStep("receipt")} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Back</Text>
-        </Pressable>
 
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Fill in the rest</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">
@@ -509,6 +653,22 @@ function SystemDetailsStep({ system, onDone }) {
           <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
             Found the owner&apos;s manual — it&apos;ll be attached to this system&apos;s Documents when you save.
           </Text>
+        )}
+
+        {warrantyEstimate && (
+          <View className="rounded-lg px-3 py-2.5 mb-3" style={{ backgroundColor: "#EAF1F8" }}>
+            <Text className="text-[12px] mb-2" style={{ color: "#3B5169" }}>
+              No warranty info found on your documents, but this product typically carries about a {formatDuration(warrantyEstimate.durationMonths)} warranty — estimated to expire {formatMonthYear(warrantyEstimate.expirationDate)}.
+            </Text>
+            <View className="flex-row gap-2">
+              <Pressable onPress={acceptWarrantyEstimate} className="flex-1 py-1.5 rounded-lg items-center" style={{ backgroundColor: PRIMARY }}>
+                <Text className="text-[12px] font-semibold text-white">Use this date</Text>
+              </Pressable>
+              <Pressable onPress={() => setWarrantyEstimate(null)} className="flex-1 py-1.5 rounded-lg items-center" style={fieldStyle}>
+                <Text className="text-[12px] font-semibold text-stone-700">Dismiss</Text>
+              </Pressable>
+            </View>
+          </View>
         )}
 
         <ItemFields
@@ -525,6 +685,7 @@ function SystemDetailsStep({ system, onDone }) {
           sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
           sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
           sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
+          warranties={warrantyList} setWarranties={setWarrantyList}
           sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
           sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
           hideCategoryPicker
@@ -533,16 +694,27 @@ function SystemDetailsStep({ system, onDone }) {
 
         {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 
-        <Pressable
-          onPress={handleSaveNext}
-          disabled={saving}
-          className="w-full py-2.5 rounded-lg items-center mb-2"
-          style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
-        >
-          <Text className="text-[13.5px] font-semibold text-white">
-            {saving ? "Saving..." : "Save"}
-          </Text>
-        </Pressable>
+        <View className="flex-row gap-2 mb-2">
+          <Pressable
+            onPress={() => setSubStep("receipt")}
+            disabled={saving}
+            className="flex-row items-center justify-center gap-1 px-4 py-2.5 rounded-lg"
+            style={{ borderWidth: 1, borderColor: "#D8D5CB" }}
+          >
+            <ChevronLeft size={16} color="#78716c" />
+            <Text className="text-[13px] text-stone-500">Back</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleSaveNext}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-lg items-center"
+            style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+          >
+            <Text className="text-[13.5px] font-semibold text-white">
+              {saving ? "Saving..." : "Save"}
+            </Text>
+          </Pressable>
+        </View>
 
         <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center">
           <Text className="text-[13.5px] font-semibold text-stone-500">Skip for now</Text>
@@ -782,9 +954,19 @@ const EV_CHARGER_GUIDE_TREE = {
   },
 };
 
+// Every placeholder label a guided walkthrough can write into `brand` (see
+// HVAC_TYPES above for why it's `brand` and not `model`). SystemDetailsStep
+// uses this to tell a real, user/scan-provided brand apart from one of these
+// placeholders, so it knows whether a label photo still needs auto-scanning.
+const GENERIC_UNIT_LABELS = new Set(
+  [HVAC_TYPES, WATER_HEATER_TYPES, GENERATOR_TYPES, SOLAR_TYPES, EV_CHARGER_TYPES].flatMap((types) =>
+    Object.values(types).flatMap((t) => t.units.map((u) => u.brand))
+  )
+);
+
 // Creates/updates the system entries for a chosen type's unit list — shared
 // by every guided walkthrough (HVAC, water heater, ...). Reuses any existing
-// system of the matching category (whether bare from RentCast detection, or
+// system of the matching category (whether a bare one with no brand set, or
 // already fully configured from a previous pass through onboarding) instead
 // of duplicating it — re-running onboarding (e.g. after restarting the app
 // partway through) re-confirms a type, it doesn't add a second unit.
@@ -794,10 +976,16 @@ async function applySystemUnits(units, { systems, addSystem, updateSystem }) {
     const existing = systems.find((s) => s.category === unit.category && !claimed.has(s.id));
     if (existing) {
       claimed.add(existing.id);
-      await updateSystem(existing.id, { brand: unit.brand });
-    } else {
-      await addSystem({ category: unit.category, brand: unit.brand, model: null, location: "" });
+      try {
+        await updateSystem(existing.id, { brand: unit.brand });
+        continue;
+      } catch {
+        // The matched system no longer exists server-side (e.g. deleted
+        // outside the app since this screen last loaded its system list) —
+        // fall through and create a fresh one instead of failing outright.
+      }
     }
+    await addSystem({ category: unit.category, brand: unit.brand, model: null, location: "" });
   }
 }
 
@@ -905,10 +1093,11 @@ function TypePickerList({ types, suggestedKey, onSelect, saving, Icon }) {
 }
 
 // Dedicated HVAC walkthrough, run right after the property step and before
-// the rest of the systems. If RentCast already detected an HVAC system,
-// skips straight to "do you know your type?"; otherwise asks first whether
-// there's an HVAC system at all. Every screen can be skipped (with a
-// confirmation), since nothing here is required to finish onboarding.
+// the rest of the systems. If an HVAC system already exists (e.g. added
+// manually, or this step was already completed once), skips straight to "do
+// you know your type?"; otherwise asks first whether there's an HVAC system
+// at all. Every screen can be skipped (with a confirmation), since nothing
+// here is required to finish onboarding.
 function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
   const { systems, addSystem, updateSystem } = useAppData();
   const [subStep, setSubStep] = useState(hasExisting ? "know" : "ask");
@@ -916,12 +1105,16 @@ function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function applyHvacType(typeKey) {
     setSaving(true);
+    setError("");
     try {
       await applySystemUnits(HVAC_TYPES[typeKey].units, { systems, addSystem, updateSystem });
       onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -1011,6 +1204,7 @@ function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
         {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your system?"}
       </Text>
       <TypePickerList types={HVAC_TYPES} suggestedKey={suggestedType} onSelect={applyHvacType} saving={saving} Icon={Icon} />
+      {error && <Text className="text-[12px] text-center" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
     </OnboardingGuideScreen>
   );
 }
@@ -1024,12 +1218,16 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function applyWaterHeaterType(typeKey) {
     setSaving(true);
+    setError("");
     try {
       await applySystemUnits(WATER_HEATER_TYPES[typeKey].units, { systems, addSystem, updateSystem });
       onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -1118,6 +1316,7 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
         {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your water heater?"}
       </Text>
       <TypePickerList types={WATER_HEATER_TYPES} suggestedKey={suggestedType} onSelect={applyWaterHeaterType} saving={saving} Icon={Icon} />
+      {error && <Text className="text-[12px] text-center" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
     </OnboardingGuideScreen>
   );
 }
@@ -1304,12 +1503,16 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function applyGeneratorType(typeKey) {
     setSaving(true);
+    setError("");
     try {
       await applySystemUnits(GENERATOR_TYPES[typeKey].units, { systems, addSystem, updateSystem });
       onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -1398,6 +1601,7 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
         {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your generator?"}
       </Text>
       <TypePickerList types={GENERATOR_TYPES} suggestedKey={suggestedType} onSelect={applyGeneratorType} saving={saving} Icon={Icon} />
+      {error && <Text className="text-[12px] text-center" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
     </OnboardingGuideScreen>
   );
 }
@@ -1411,12 +1615,16 @@ function SolarOnboardingStep({ onBack, onDone }) {
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function applySolarType(typeKey) {
     setSaving(true);
+    setError("");
     try {
       await applySystemUnits(SOLAR_TYPES[typeKey].units, { systems, addSystem, updateSystem });
       onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -1505,6 +1713,7 @@ function SolarOnboardingStep({ onBack, onDone }) {
         {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your installation?"}
       </Text>
       <TypePickerList types={SOLAR_TYPES} suggestedKey={suggestedType} onSelect={applySolarType} saving={saving} Icon={Icon} />
+      {error && <Text className="text-[12px] text-center" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
     </OnboardingGuideScreen>
   );
 }
@@ -1518,12 +1727,16 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
   const [guideHistory, setGuideHistory] = useState([]);
   const [suggestedType, setSuggestedType] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function applyEvChargerType(typeKey) {
     setSaving(true);
+    setError("");
     try {
       await applySystemUnits(EV_CHARGER_TYPES[typeKey].units, { systems, addSystem, updateSystem });
       onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -1612,31 +1825,13 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
         {suggestedType ? "Based on your answers, this looks like your setup — tap to confirm, or pick a different one." : "Which best describes your charger?"}
       </Text>
       <TypePickerList types={EV_CHARGER_TYPES} suggestedKey={suggestedType} onSelect={applyEvChargerType} saving={saving} Icon={Icon} />
+      {error && <Text className="text-[12px] text-center" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
     </OnboardingGuideScreen>
   );
 }
 
-// What we can confidently turn into an actual System entry from RentCast's
-// construction/feature data. Only category + a short detected-from label are
-// set — brand, model, install date, etc. are left for the user to fill in
-// afterward (RentCast has no visibility into which brand's equipment it is).
-function buildDetectedSystems(d) {
-  const suggestions = [];
-  if (d.heatingType || d.coolingType) {
-    suggestions.push({
-      key: "hvac",
-      category: "hvac_indoor",
-      description: [d.heatingType && `${d.heatingType} heating`, d.coolingType && `${d.coolingType} cooling`].filter(Boolean).join(", "),
-    });
-  }
-  if (d.roofType) {
-    suggestions.push({ key: "roof", category: "roof", description: `${d.roofType} roof` });
-  }
-  return suggestions;
-}
-
 export default function OnboardingScreen() {
-  const { saveProfile, addSystem, systems } = useAppData();
+  const { saveProfile, systems } = useAppData();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState("welcome");
   const [propertyName, setPropertyName] = useState("");
@@ -1650,8 +1845,6 @@ export default function OnboardingScreen() {
   const [marketValue, setMarketValue] = useState("");
   const [extraDetails, setExtraDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [detectedSystems, setDetectedSystems] = useState([]);
-  const [confirmedSystems, setConfirmedSystems] = useState({});
 
   const [activeSystemId, setActiveSystemId] = useState(null);
 
@@ -1736,23 +1929,15 @@ export default function OnboardingScreen() {
     if (fetchError) {
       setError("Couldn't look up that address. You can still continue and fill in details manually.");
       setExtraDetails({});
-      setDetectedSystems([]);
     } else {
       if (details.bedrooms != null) setBedrooms(String(details.bedrooms));
       if (details.yearBuilt != null) setYearBuilt(String(details.yearBuilt));
       if (details.purchasePrice != null) setPurchasePrice(String(details.purchasePrice));
       if (details.marketValue != null) setMarketValue(String(Math.round(details.marketValue)));
       setExtraDetails(details);
-      const detected = buildDetectedSystems(details);
-      setDetectedSystems(detected);
-      setConfirmedSystems(Object.fromEntries(detected.map((s) => [s.key, true])));
     }
     setStep("review");
     setDetailsLoading(false);
-  }
-
-  function toggleDetectedSystem(key) {
-    setConfirmedSystems((c) => ({ ...c, [key]: !c[key] }));
   }
 
   async function handleSave() {
@@ -1790,17 +1975,6 @@ export default function OnboardingScreen() {
         fireplaceType: extraDetails?.fireplaceType ?? null,
         hoaFee: extraDetails?.hoaFee ?? null,
       });
-      for (const sys of detectedSystems) {
-        if (!confirmedSystems[sys.key]) continue;
-        // Skip if a system in this category already exists — e.g. the user
-        // restarted onboarding after already confirming this one earlier.
-        if (systems.some((s) => s.category === sys.category)) continue;
-        await addSystem({ category: sys.category, brand: null, model: null, location: "" });
-      }
-      // Clear these so navigating back to this step and tapping Continue
-      // again (now possible via the add-steps' back buttons) doesn't
-      // re-create the same detected systems a second time.
-      setDetectedSystems([]);
       setStep("hvac");
     } catch {
       setError("Couldn't save. Try again.");
@@ -2125,44 +2299,6 @@ export default function OnboardingScreen() {
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         style={fieldStyle}
       />
-
-      {detectedSystems.length > 0 && (
-        <>
-          <Text className="text-[12px] font-semibold text-stone-500 mb-1">Detected systems</Text>
-          <Text className="text-[11.5px] text-stone-500 mb-2">
-            We&apos;ll add these to your Systems tab. You can fill in brand, model, and the rest afterward.
-          </Text>
-          <View className="rounded-xl bg-white px-3 mb-4" style={fieldStyle}>
-            {detectedSystems.map((sys, i) => {
-              const meta = CATEGORY_META[sys.category];
-              const Icon = meta.icon;
-              const checked = !!confirmedSystems[sys.key];
-              return (
-                <Pressable
-                  key={sys.key}
-                  onPress={() => toggleDetectedSystem(sys.key)}
-                  className="flex-row items-center justify-between py-2.5"
-                  style={{ borderBottomWidth: i < detectedSystems.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
-                >
-                  <View className="flex-row items-center gap-2 flex-1">
-                    <Icon size={16} color="#5F5B50" />
-                    <View className="flex-1">
-                      <Text className="text-[13.5px] text-stone-800">{meta.label}</Text>
-                      {!!sys.description && <Text className="text-[11.5px] text-stone-400">{sys.description}</Text>}
-                    </View>
-                  </View>
-                  <View
-                    className="items-center justify-center rounded"
-                    style={{ width: 20, height: 20, backgroundColor: checked ? PRIMARY : "white", borderWidth: checked ? 0 : 1, borderColor: "#D8D5CB" }}
-                  >
-                    {checked && <Check size={14} color="white" />}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        </>
-      )}
 
       {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 
