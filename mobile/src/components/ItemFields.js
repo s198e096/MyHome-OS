@@ -163,12 +163,24 @@ export default function ItemFields({
     setSysManualUrl("");
     try {
       const result = await scanSystemLabel(photoUrl);
-      if (result.brand) setSysBrand(result.brand);
-      if (result.model) setSysModel(result.model);
+      if (sysCategory === "appliance") {
+        // `brand` holds the appliance's generic name here (e.g.
+        // "Refrigerator") rather than a real manufacturer — keep that in
+        // place (it's what the appliance icon and list label key off) and
+        // fold the scanned manufacturer/model into the model field instead.
+        const manufacturerModel = [result.brand, result.model].filter(Boolean).join(" ");
+        if (manufacturerModel) setSysModel(manufacturerModel);
+      } else {
+        if (result.brand) setSysBrand(result.brand);
+        if (result.model) setSysModel(result.model);
+      }
       if (result.serialNumber) setSysSerial(result.serialNumber);
       if (result.category) setSysCategory(result.category);
       if (result.manualUrl) setSysManualUrl(result.manualUrl);
-      if (!result.brand && !result.model && !result.category) {
+      // Category alone (e.g. confirming "appliance", which rarely changes
+      // anything visible) isn't a useful fill — only count brand/model,
+      // since those are what the user is actually waiting to see appear.
+      if (!result.brand && !result.model) {
         setScanError("Couldn't read the label clearly. Try a closer, well-lit photo, or fill it in manually.");
       }
     } catch {

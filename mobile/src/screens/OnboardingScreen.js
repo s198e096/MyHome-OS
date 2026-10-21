@@ -380,12 +380,25 @@ function SystemDetailsStep({ system, onDone }) {
     setSysManualUrl("");
     try {
       const result = await scanSystemLabel(photoUrl);
-      if (result.brand) setSysBrand(result.brand);
-      if (result.model) setSysModel(result.model);
+      if (system.category === "appliance") {
+        // `brand` holds the appliance's generic name here (e.g.
+        // "Refrigerator", from the checklist step) rather than a real
+        // manufacturer — keep that in place (it's what the appliance icon
+        // and list label key off) and fold the scanned manufacturer/model
+        // into the model field instead.
+        const manufacturerModel = [result.brand, result.model].filter(Boolean).join(" ");
+        if (manufacturerModel) setSysModel(manufacturerModel);
+      } else {
+        if (result.brand) setSysBrand(result.brand);
+        if (result.model) setSysModel(result.model);
+      }
       if (result.serialNumber) setSysSerial(result.serialNumber);
       if (result.category) setSysCategory(result.category);
       if (result.manualUrl) setSysManualUrl(result.manualUrl);
-      if (!result.brand && !result.model && !result.category) {
+      // Category alone (e.g. confirming "appliance", which rarely changes
+      // anything visible) isn't a useful fill — only count brand/model,
+      // since those are what the user is actually waiting to see appear.
+      if (!result.brand && !result.model) {
         setScanError("Couldn't read the label clearly. You can fill in the fields manually.");
       }
     } catch {
@@ -400,8 +413,12 @@ function SystemDetailsStep({ system, onDone }) {
     // re-scanning (and re-billing the API) when revisiting an already-
     // filled-in system via the list. A guided walkthrough's generic
     // placeholder (e.g. "Gas furnace") doesn't count as "real" here, so
-    // scanning still runs the first time a label photo is added for it.
-    const hasRealBrand = sysBrand && !GENERIC_UNIT_LABELS.has(sysBrand);
+    // scanning still runs the first time a label photo is added for it —
+    // same for the appliance checklist, which writes the appliance's own
+    // name (e.g. "Refrigerator") into `brand` as a placeholder, not an
+    // actual manufacturer brand.
+    const isGenericApplianceLabel = system.category === "appliance" && COMMON_APPLIANCES.includes(sysBrand.replace(/ \d+$/, ""));
+    const hasRealBrand = sysBrand && !GENERIC_UNIT_LABELS.has(sysBrand) && !isGenericApplianceLabel;
     if (photoUrl && !isStructure && !hasRealBrand && !sysModel) {
       await runScan();
     }
