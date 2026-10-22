@@ -5,14 +5,15 @@ import DocsScreen from "../../../screens/DocsScreen.js";
 
 export default function Docs() {
   const router = useRouter();
-  const { documents, systemById } = useAppData();
+  const { documents, systems } = useAppData();
 
   return (
     <AnimatedTabScreen tabKey="docs">
       <DocsScreen
         documents={documents}
-        systemById={systemById}
-        onEdit={(d) => router.push(`/docs/${d.id}/edit`)}
+        systems={systems}
+        onSelectSystem={(sys) => router.push(`/docs/system/${sys.id}`)}
+        onSelectGeneral={() => router.push("/docs/general")}
         onAdd={() => router.push("/docs/new")}
       />
     </AnimatedTabScreen>
