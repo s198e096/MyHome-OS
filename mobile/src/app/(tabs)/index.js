@@ -22,6 +22,7 @@ export default function Home() {
       onOpenAccount={() => router.push("/account")}
       onOpenAssistant={(prefill) => router.push(prefill ? { pathname: "/ask", params: { prefill } } : "/ask")}
       onNavigate={(path) => router.push(path)}
+      onToggleTask={data.toggleTask}
     />
     </AnimatedTabScreen>
   );

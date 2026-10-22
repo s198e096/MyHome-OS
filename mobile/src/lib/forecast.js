@@ -1,4 +1,9 @@
-export const TODAY = new Date("2026-09-14");
+// Today's local calendar date, parsed the same way every other date string
+// in this app is (new Date("YYYY-MM-DD"), which JS treats as UTC midnight)
+// so day-based comparisons against dueDate/purchaseDate/etc. line up
+// without a timezone-offset skew at day boundaries.
+const now = new Date();
+export const TODAY = new Date(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10));
 
 export function daysUntil(dateStr) {
   const d = new Date(dateStr);

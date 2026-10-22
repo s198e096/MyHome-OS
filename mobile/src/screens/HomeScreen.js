@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Clock, Home } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, systemName } from "../lib/constants.js";
-import { daysUntil, money } from "../lib/forecast.js";
+import { TODAY, daysUntil, money } from "../lib/forecast.js";
 import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
 import SelectModal from "../components/SelectModal.js";
 
@@ -140,16 +140,16 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
   );
 }
 
-function TodayList({ tasks, systemById }) {
+function UpcomingTasksList({ tasks, systemById, onToggle }) {
   return (
     <View className="mb-5">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-[15px] font-bold text-stone-900">Today</Text>
+        <Text className="text-[15px] font-bold text-stone-900">Upcoming tasks</Text>
         <Text className="text-[13px] text-stone-400">{tasks.length}</Text>
       </View>
       {tasks.length === 0 && (
         <View className="rounded-xl bg-white px-3 py-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-          <Text className="text-[13px] text-stone-400">Nothing needs attention right now.</Text>
+          <Text className="text-[13px] text-stone-400">No tasks require your attention this month.</Text>
         </View>
       )}
       <View className="gap-2">
@@ -161,7 +161,10 @@ function TodayList({ tasks, systemById }) {
             <View key={t.id} className="rounded-xl bg-white flex-row overflow-hidden" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
               <View style={{ width: 4, backgroundColor: barColor }} />
               <View className="flex-1 px-3 py-2.5">
-                <View className="flex-row items-center justify-between gap-2">
+                <View className="flex-row items-center gap-2.5">
+                  <Pressable onPress={() => onToggle(t.id)} hitSlop={8}>
+                    <View className="rounded-full" style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: "#C9C5B8" }} />
+                  </Pressable>
                   <View className="flex-1 min-w-0">
                     <Text className="text-[14px] font-semibold text-stone-900" numberOfLines={1}>{t.title}</Text>
                     {sys && <Text className="text-[12px] text-stone-400">{systemName(sys)}</Text>}
@@ -229,8 +232,12 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate, onToggleTask }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
+  const thisMonthTasks = upcomingTasks.filter((t) => {
+    const d = new Date(`${t.dueDate}T00:00:00`);
+    return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth();
+  });
   const recommendations = [
     completeSystemsRecommendation(systems, onViewIncompleteSystems),
     filterReminderRecommendation(systems, onNavigate),
@@ -273,7 +280,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
           </View>
         )}
 
-        <TodayList tasks={upcomingTasks.slice(0, 3)} systemById={systemById} />
+        <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onToggle={onToggleTask} />
 
         <RecommendedList items={recommendations} />
 
