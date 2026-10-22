@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Image, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight } from "lucide-react-native";
-import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT, systemName, systemIcon } from "../lib/constants.js";
+import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT, systemShortName, systemIcon } from "../lib/constants.js";
 import { systemStatus } from "../lib/forecast.js";
 import StatusDot from "../components/StatusDot.js";
 
@@ -24,7 +24,7 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit
         </View>
       )}
 
-      <View className="rounded-xl bg-white px-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+      <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         {systems.map((s, i) => {
           const meta = CATEGORY_META[s.category];
           const Icon = systemIcon(s);
@@ -36,7 +36,7 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit
               className="flex-row items-center justify-between py-3"
               style={{ borderBottomWidth: i < systems.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
             >
-              <View className="flex-row items-center gap-3">
+              <View className="flex-row items-center gap-3 flex-1 min-w-0">
                 {s.photoUrl ? (
                   <Image source={{ uri: s.photoUrl }} style={{ width: 34, height: 34, borderRadius: 8, borderWidth: 1, borderColor: "#E0E8D3" }} />
                 ) : (
@@ -44,31 +44,18 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit
                     <Icon size={17} color="#5F5B50" />
                   </View>
                 )}
-                <View>
-                  <Text className="text-[13.5px] text-stone-800">{systemName(s)}</Text>
-                  <Text className="text-[11.5px] text-stone-400">{meta.label} · {s.location}</Text>
+                <View className="flex-1 min-w-0">
+                  <Text className="text-[13.5px] text-stone-800" numberOfLines={1}>{systemShortName(s)}</Text>
+                  <Text className="text-[11.5px] text-stone-400" numberOfLines={1}>{meta.label} · {s.location}</Text>
                 </View>
               </View>
-              <View className="flex-row items-center gap-2">
+              <View className="flex-row items-center gap-2 pl-2">
                 <StatusDot status={status} />
                 <ChevronRight size={15} color="#B8B4A8" />
               </View>
             </Pressable>
           );
         })}
-      </View>
-
-      <View className="rounded-xl bg-white p-3 mt-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-        <Text className="text-[11px] text-stone-500 leading-relaxed">
-          <Text className="font-semibold text-stone-600">Tip: </Text>
-          Many home systems are actually made of multiple separate parts, each with its own age, price, and warranty. Log each part as its own system rather than combining them into one entry.
-        </Text>
-        <View className="mt-2 pt-2" style={{ borderTopWidth: 1, borderTopColor: "#E7EEDB", borderStyle: "dashed" }}>
-          <Text className="text-[11px] text-stone-500 leading-relaxed">
-            <Text className="font-semibold text-stone-600">Example: </Text>
-            Your HVAC isn't one system — the outdoor unit (the fan on your patio) and the indoor unit (coil and air handler, usually in a closet or attic) are two separate pieces, often installed at different times, with different warranties, and replaced independently.
-          </Text>
-        </View>
       </View>
     </ScrollView>
   );

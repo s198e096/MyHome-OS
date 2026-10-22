@@ -2,11 +2,10 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Clock, Home } from "lucide-react-native";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, systemName, systemIcon } from "../lib/constants.js";
-import { daysUntil, money, systemStatus } from "../lib/forecast.js";
+import { Clock, Home } from "lucide-react-native";
+import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, systemName } from "../lib/constants.js";
+import { daysUntil, money } from "../lib/forecast.js";
 import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
-import StatusDot from "../components/StatusDot.js";
 import SelectModal from "../components/SelectModal.js";
 
 const HOME_ACTIONS = [
@@ -230,7 +229,7 @@ function RecommendedList({ items }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const recommendations = [
     completeSystemsRecommendation(systems, onViewIncompleteSystems),
@@ -296,33 +295,6 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
           </View>
         </View>
 
-        <View>
-          <Text className="text-[12px] font-semibold text-stone-500 mb-1">Home health</Text>
-          <View className="rounded-xl bg-white px-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-            {systems.map((s, i) => {
-              const status = systemStatus(s, tasks);
-              const meta = CATEGORY_META[s.category];
-              const Icon = systemIcon(s);
-              return (
-                <Pressable
-                  key={s.id}
-                  onPress={() => onOpenSystem(s)}
-                  className="flex-row items-center justify-between py-2.5"
-                  style={{ borderBottomWidth: i < systems.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
-                >
-                  <View className="flex-row items-center gap-2">
-                    <Icon size={16} color="#5F5B50" />
-                    <Text className="text-[13.5px] text-stone-800">{meta.label}</Text>
-                  </View>
-                  <View className="flex-row items-center gap-2">
-                    <StatusDot status={status} />
-                    <ChevronRight size={15} color="#B8B4A8" />
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
       </View>
     </ScrollView>
   );

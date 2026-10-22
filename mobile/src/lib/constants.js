@@ -43,6 +43,13 @@ export function systemName(sys) {
   return name || CATEGORY_META[sys.category]?.label || "System";
 }
 
+// Short label for list rows — brand (or the category label if there's no
+// brand) without the model, since brand+model can run long enough to wrap
+// and clutter a list. The full name still shows on the system's own page.
+export function systemShortName(sys) {
+  return sys.brand || CATEGORY_META[sys.category]?.label || "System";
+}
+
 // Every "appliance" system shares one generic category, so CATEGORY_META
 // alone can't tell a fridge from a dryer — match on the name instead
 // (brand holds the appliance name for this category, e.g. "Refrigerator",
