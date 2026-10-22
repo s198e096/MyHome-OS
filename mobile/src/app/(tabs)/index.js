@@ -21,7 +21,7 @@ export default function Home() {
       onOpenSystem={(s) => router.push(`/systems/${s.id}`)}
       onViewIncompleteSystems={() => router.push("/systems/incomplete")}
       onOpenAccount={() => router.push("/account")}
-      onOpenAssistant={() => router.push("/ask")}
+      onOpenAssistant={(prefill) => router.push(prefill ? { pathname: "/ask", params: { prefill } } : "/ask")}
       onNavigate={(path) => router.push(path)}
     />
     </AnimatedTabScreen>

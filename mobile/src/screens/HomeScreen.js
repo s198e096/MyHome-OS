@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,6 +7,13 @@ import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATE
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
 import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
 import StatusDot from "../components/StatusDot.js";
+import SelectModal from "../components/SelectModal.js";
+
+const HOME_ACTIONS = [
+  { value: "chat", label: "Chat with an AI agent about your home" },
+  { value: "problem", label: "Report a problem" },
+  { value: "expense", label: "Report an expense" },
+];
 
 const seedRecommendations = [
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
@@ -39,6 +47,15 @@ function completeSystemsRecommendation(systems, onViewIncompleteSystems) {
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   const insets = useSafeAreaInsets();
+  const [actionsOpen, setActionsOpen] = useState(false);
+
+  function handleAction(value) {
+    setActionsOpen(false);
+    if (value === "problem") onOpenAssistant("I'd like to report a problem: ");
+    else if (value === "expense") onNavigate("/costs/new");
+    else onOpenAssistant();
+  }
+
   return (
     <LinearGradient
       colors={[HERO_BG_TOP, HERO_BG_BOTTOM]}
@@ -74,10 +91,18 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
       )}
 
       <View className="items-center mb-4">
-        <Pressable onPress={onOpenAssistant} className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
-          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Ask Anything / Report a problem</Text>
+        <Pressable onPress={() => setActionsOpen(true)} className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
+          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Actions</Text>
           <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
         </Pressable>
+        <SelectModal
+          visible={actionsOpen}
+          title="Actions"
+          options={HOME_ACTIONS}
+          selectedValue={null}
+          onSelect={handleAction}
+          onClose={() => setActionsOpen(false)}
+        />
       </View>
 
       <View className="rounded-2xl bg-white flex-row overflow-hidden">

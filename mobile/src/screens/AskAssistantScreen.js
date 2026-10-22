@@ -27,10 +27,10 @@ function Bubble({ role, content }) {
   );
 }
 
-export default function AskAssistantScreen({ onBack }) {
+export default function AskAssistantScreen({ onBack, initialInput }) {
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialInput || "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef(null);
