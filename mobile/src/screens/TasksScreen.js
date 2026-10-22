@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Plus, Check } from "lucide-react-native";
+import { Plus, Check, Repeat } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
 
@@ -30,7 +30,10 @@ export default function TasksScreen({ tasks, completed, systemById, onToggle, on
                   <View className="rounded-full" style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: "#C9C5B8" }} />
                 </Pressable>
                 <Pressable onPress={() => onEdit(t)} className="flex-1 min-w-0">
-                  <Text className="text-[13.5px] text-stone-800" numberOfLines={1}>{t.title}</Text>
+                  <View className="flex-row items-center gap-1">
+                    <Text className="text-[13.5px] text-stone-800 flex-1 min-w-0" numberOfLines={1}>{t.title}</Text>
+                    {!!t.recurrence && <Repeat size={11} color="#9C978C" />}
+                  </View>
                   <Text className="text-[11.5px] text-stone-400">{sys ? systemName(sys) : "General"}</Text>
                 </Pressable>
               </View>

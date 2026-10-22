@@ -23,6 +23,7 @@ export default function ItemFormScreen({
     kind === "expense" ? item?.note || "" : kind === "furniture" ? item?.name || "" : item?.title || item?.label || ""
   );
   const [dueDate, setDueDate] = useState(item?.dueDate || "2026-10-01");
+  const [recurrence, setRecurrence] = useState(item?.recurrence || "");
   const [amount, setAmount] = useState(
     kind === "furniture"
       ? item?.value != null ? String(item.value) : ""
@@ -80,8 +81,8 @@ export default function ItemFormScreen({
     try {
       if (kind === "task") {
         if (!title.trim()) return setError("Enter a task name.");
-        if (isEdit) await onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId });
-        else await onAddTask(title.trim(), dueDate, finalSystemId);
+        if (isEdit) await onUpdateTask(item.id, { title: title.trim(), dueDate, systemId: finalSystemId, recurrence: recurrence || null });
+        else await onAddTask(title.trim(), dueDate, finalSystemId, recurrence || null);
       } else if (kind === "expense") {
         const num = parseFloat(amount);
         if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
@@ -201,6 +202,7 @@ export default function ItemFormScreen({
         kind={kind} systems={systems}
         title={title} setTitle={setTitle}
         dueDate={dueDate} setDueDate={setDueDate}
+        recurrence={recurrence} setRecurrence={setRecurrence}
         amount={amount} setAmount={setAmount}
         category={category} setCategory={setCategory}
         systemId={systemId} setSystemId={setSystemId}

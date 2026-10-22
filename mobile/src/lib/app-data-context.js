@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName } from "./constants.js";
-import { TODAY, daysUntil, computeForecast } from "./forecast.js";
+import { TODAY, daysUntil, computeForecast, advanceDueDate } from "./forecast.js";
 import {
   db,
   loadAllData,
@@ -123,10 +123,26 @@ export function AppDataProvider({ children }) {
     const completed = !t.completed;
     const updated = await db.tasks.setCompleted(id, completed, completed ? null : Date.now());
     setTasks((ts) => ts.map((t) => (t.id === id ? updated : t)));
+    // Completing a recurring task schedules its next occurrence as a new
+    // row, rather than just pushing this one's due date forward, so it
+    // still shows up under Completed as something that was actually done.
+    if (completed && t.recurrence) {
+      const nextDueDate = advanceDueDate(t.dueDate, t.recurrence);
+      if (nextDueDate) {
+        const created = await db.tasks.add({
+          title: t.title,
+          dueDate: nextDueDate,
+          systemId: t.systemId,
+          completed: false,
+          recurrence: t.recurrence,
+        });
+        setTasks((ts) => [...ts, created]);
+      }
+    }
   }
 
-  async function addTask(title, dueDate, systemId) {
-    const created = await db.tasks.add({ title, dueDate, systemId, completed: false });
+  async function addTask(title, dueDate, systemId, recurrence) {
+    const created = await db.tasks.add({ title, dueDate, systemId, completed: false, recurrence: recurrence || null });
     setTasks((ts) => [...ts, created]);
     return created;
   }

@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown, Check } from "lucide-react-native";
-import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, systemName } from "../lib/constants.js";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, systemName } from "../lib/constants.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
@@ -126,6 +126,7 @@ export default function ItemFields({
   kind, systems,
   title, setTitle,
   dueDate, setDueDate,
+  recurrence, setRecurrence,
   amount, setAmount,
   category, setCategory,
   systemId, setSystemId,
@@ -159,6 +160,7 @@ export default function ItemFields({
   const [warrantyTypeDropdownIndex, setWarrantyTypeDropdownIndex] = useState(null);
   const [warrantyBlockedMessage, setWarrantyBlockedMessage] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [recurrenceDropdownOpen, setRecurrenceDropdownOpen] = useState(false);
 
   async function handleScan() {
     setScanning(true);
@@ -296,7 +298,33 @@ export default function ItemFields({
         />
       )}
 
-      {kind === "task" && <DateField value={dueDate} onChange={setDueDate} />}
+      {kind === "task" && (
+        <>
+          <DateField label="Start date" value={dueDate} onChange={setDueDate} />
+          <Text className="text-[11px] text-stone-500 mb-1">Repeat</Text>
+          <Pressable
+            onPress={() => setRecurrenceDropdownOpen(true)}
+            className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
+            style={fieldStyle}
+          >
+            <Text className="text-[13.5px] text-stone-800">
+              {RECURRENCE_OPTIONS.find((r) => r.key === recurrence)?.label || "Does not repeat"}
+            </Text>
+            <ChevronDown size={14} color="#78716c" />
+          </Pressable>
+          <SelectModal
+            visible={recurrenceDropdownOpen}
+            title="Repeat"
+            options={[{ value: "", label: "Does not repeat" }, ...RECURRENCE_OPTIONS.map((r) => ({ value: r.key, label: r.label }))]}
+            selectedValue={recurrence || ""}
+            onSelect={(value) => {
+              setRecurrence(value);
+              setRecurrenceDropdownOpen(false);
+            }}
+            onClose={() => setRecurrenceDropdownOpen(false)}
+          />
+        </>
+      )}
 
       {kind === "expense" && (
         <>

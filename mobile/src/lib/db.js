@@ -50,6 +50,7 @@ const rowToTask = (r) => ({
   duration: r.duration,
   difficulty: r.difficulty,
   reopenedAt: r.reopened_at ? new Date(r.reopened_at).getTime() : null,
+  recurrence: r.recurrence || "",
 });
 
 const taskToRow = (t) => ({
@@ -60,6 +61,7 @@ const taskToRow = (t) => ({
   duration: t.duration,
   difficulty: t.difficulty,
   reopened_at: t.reopenedAt ? new Date(t.reopenedAt).toISOString() : null,
+  recurrence: t.recurrence || null,
 });
 
 const rowToExpense = (r) => ({

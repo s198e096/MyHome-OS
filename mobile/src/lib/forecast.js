@@ -5,6 +5,33 @@ export function daysUntil(dateStr) {
   return Math.round((d - TODAY) / 86400000);
 }
 
+// Next due date for a recurring task, from its current due date. Calendar-
+// based (not a fixed day count) for anything monthly or longer, so e.g. a
+// Jan 31 due date lands on Feb 28 rather than drifting mid-month.
+export function advanceDueDate(dateStr, recurrence) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  switch (recurrence) {
+    case "weekly":
+      d.setDate(d.getDate() + 7);
+      break;
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      break;
+    case "quarterly":
+      d.setMonth(d.getMonth() + 3);
+      break;
+    case "semiannually":
+      d.setMonth(d.getMonth() + 6);
+      break;
+    case "annually":
+      d.setFullYear(d.getFullYear() + 1);
+      break;
+    default:
+      return null;
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 export function money(n) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }

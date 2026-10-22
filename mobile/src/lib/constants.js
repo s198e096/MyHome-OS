@@ -73,6 +73,14 @@ export function systemIcon(sys) {
   return CATEGORY_META[sys.category]?.icon || Wrench;
 }
 
+export const RECURRENCE_OPTIONS = [
+  { key: "weekly", label: "Weekly" },
+  { key: "monthly", label: "Monthly" },
+  { key: "quarterly", label: "Quarterly" },
+  { key: "semiannually", label: "Semi-annually" },
+  { key: "annually", label: "Annually" },
+];
+
 // Which categories each onboarding step offers, and in which order they're
 // walked through after the property step.
 export const ONBOARDING_SYSTEM_CATEGORIES = ["hvac_indoor", "hvac_outdoor", "water_heater", "plumbing", "electrical"];

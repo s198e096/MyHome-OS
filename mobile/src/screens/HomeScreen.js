@@ -15,9 +15,24 @@ const HOME_ACTIONS = [
   { value: "expense", label: "Report an expense" },
 ];
 
-const seedRecommendations = [
-  { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
-];
+// Nudges the user to set an HVAC filter size, which is what actually creates
+// the recurring "Replace HVAC air filter" task — hides itself once that's
+// already set up, same as the other recommendation below.
+function filterReminderRecommendation(systems, onNavigate) {
+  const indoor = systems.find((s) => s.category === "hvac_indoor");
+  if (indoor && indoor.filterSize) return null;
+
+  return {
+    id: "filter-reminder",
+    title: "Filter reminder",
+    subtitle: indoor
+      ? "Set your HVAC filter size and we'll remind you automatically when it's due."
+      : "Add your HVAC system and filter size to get automatic replacement reminders.",
+    cta: indoor ? "Set it up" : "Add system",
+    highlight: false,
+    onClick: () => onNavigate(indoor ? `/systems/${indoor.id}/edit` : "/systems/new"),
+  };
+}
 
 // Nudges the user to fill in systems that have nothing entered at all yet —
 // most systems will always be missing a few optional details, so flagging
@@ -217,7 +232,10 @@ function RecommendedList({ items }) {
 
 export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenSystem, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
-  const recommendations = [completeSystemsRecommendation(systems, onViewIncompleteSystems), ...seedRecommendations].filter(Boolean);
+  const recommendations = [
+    completeSystemsRecommendation(systems, onViewIncompleteSystems),
+    filterReminderRecommendation(systems, onNavigate),
+  ].filter(Boolean);
 
   const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
