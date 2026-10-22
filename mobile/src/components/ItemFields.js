@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, Platform, Modal } from "react-native";
+import { View, Text, TextInput, Pressable, Platform, Modal, Animated } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
-import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
+import { Sparkles, Calculator, X, Plus, ChevronDown, Check } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, systemName } from "../lib/constants.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
@@ -141,6 +141,7 @@ export default function ItemFields({
   sysReplacementCost, setSysReplacementCost,
   setSysWarranty,
   warranties, setWarranties,
+  sysWarrantyRegistered, setSysWarrantyRegistered,
   sysFilterSize, setSysFilterSize,
   sysPlanned, setSysPlanned,
   sysManualUrl, setSysManualUrl,
@@ -155,7 +156,9 @@ export default function ItemFields({
   const [warrantyScanError, setWarrantyScanError] = useState("");
   const [warrantyEstimate, setWarrantyEstimate] = useState(null);
   const [warrantyTypeDropdownIndex, setWarrantyTypeDropdownIndex] = useState(null);
+  const [customTypeDraft, setCustomTypeDraft] = useState(null);
   const [warrantyBlockedMessage, setWarrantyBlockedMessage] = useState("");
+  const [dropdownAnim] = useState(() => new Animated.Value(0));
 
   async function handleScan() {
     setScanning(true);
@@ -205,6 +208,7 @@ export default function ItemFields({
       });
       const purchaseDate = result.purchaseDate || sysPurchaseDate;
       if (result.purchaseDate) setSysPurchaseDate(result.purchaseDate);
+      if (result.purchasePrice != null) setSysPurchasePrice(String(result.purchasePrice));
       const found = result.warranties || [];
       const confident = found.filter((w) => !w.estimated);
       const estimate = found.find((w) => w.estimated);
@@ -214,8 +218,8 @@ export default function ItemFields({
         setSysWarranty(latestExpiration(withDuration));
       }
       if (estimate) setWarrantyEstimate(estimate);
-      if (!result.purchaseDate && confident.length === 0 && !estimate) {
-        setWarrantyScanError("Couldn't find a purchase date or warranty info there. You can fill them in manually.");
+      if (!result.purchaseDate && result.purchasePrice == null && confident.length === 0 && !estimate) {
+        setWarrantyScanError("Couldn't find a purchase date, price, or warranty info there. You can fill them in manually.");
       }
     } catch {
       setWarrantyScanError("AI scan failed. You can fill in the fields manually.");
@@ -262,6 +266,25 @@ export default function ItemFields({
     const next = warranties.filter((_, i) => i !== index);
     setWarranties(next);
     setSysWarranty(latestExpiration(next));
+  }
+
+  function openWarrantyTypeDropdown(index) {
+    setCustomTypeDraft(null);
+    setWarrantyTypeDropdownIndex(index);
+    dropdownAnim.setValue(0);
+    Animated.spring(dropdownAnim, { toValue: 1, useNativeDriver: true, friction: 9, tension: 80 }).start();
+  }
+
+  function closeWarrantyTypeDropdown() {
+    setWarrantyTypeDropdownIndex(null);
+    setCustomTypeDraft(null);
+  }
+
+  function confirmCustomType() {
+    const trimmed = customTypeDraft.trim();
+    if (!trimmed) return;
+    updateWarrantyRow(warrantyTypeDropdownIndex, { type: trimmed });
+    closeWarrantyTypeDropdown();
   }
 
   function handlePurchaseDateChange(date) {
@@ -471,7 +494,7 @@ export default function ItemFields({
                 >
                   <Sparkles size={15} color={PRIMARY} />
                   <Text className="text-[12.5px] font-semibold" style={{ color: PRIMARY }}>
-                    {scanningWarranty ? "Reading documents..." : "Extract purchase date & warranty"}
+                    {scanningWarranty ? "Reading documents..." : "Extract purchase date, price & warranty"}
                   </Text>
                 </Pressable>
               )}
@@ -533,7 +556,7 @@ export default function ItemFields({
               <View key={i} className="rounded-lg p-2 mb-2" style={fieldStyle}>
                 <View className="flex-row items-center justify-between mb-2">
                   <Pressable
-                    onPress={() => setWarrantyTypeDropdownIndex(i)}
+                    onPress={() => openWarrantyTypeDropdown(i)}
                     className="flex-1 flex-row items-center justify-between px-3 py-2 rounded-lg"
                     style={fieldStyle}
                   >
@@ -588,6 +611,27 @@ export default function ItemFields({
             {!!warrantyBlockedMessage && (
               <Text className="text-[12px] mt-1.5" style={{ color: STATUS_COLOR.red }}>{warrantyBlockedMessage}</Text>
             )}
+            {setSysWarrantyRegistered && (
+              <Pressable
+                onPress={() => setSysWarrantyRegistered(!sysWarrantyRegistered)}
+                className="flex-row items-center gap-2 mt-3"
+                hitSlop={4}
+              >
+                <View
+                  className="items-center justify-center rounded"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    backgroundColor: sysWarrantyRegistered ? PRIMARY : "white",
+                    borderWidth: sysWarrantyRegistered ? 0 : 1,
+                    borderColor: "#D8D5CB",
+                  }}
+                >
+                  {sysWarrantyRegistered && <Check size={14} color="white" />}
+                </View>
+                <Text className="text-[13px] text-stone-700">Registered with vendor</Text>
+              </Pressable>
+            )}
           </View>
 
           {setSysPlanned && (
@@ -625,31 +669,87 @@ export default function ItemFields({
       )}
 
       {warrantyTypeDropdownIndex !== null && (
-        <Modal transparent animationType="fade" visible onRequestClose={() => setWarrantyTypeDropdownIndex(null)}>
+        <Modal transparent animationType="fade" visible onRequestClose={closeWarrantyTypeDropdown}>
           <Pressable
-            onPress={() => setWarrantyTypeDropdownIndex(null)}
-            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+            onPress={closeWarrantyTypeDropdown}
+            style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)", alignItems: "center", justifyContent: "center", padding: 28 }}
           >
-            <Pressable onPress={() => {}} className="bg-white rounded-t-2xl px-4 pt-4 pb-6">
-              <Text className="text-[15px] font-semibold text-stone-900 mb-2">Warranty type</Text>
-              {(() => {
-                const current = warranties[warrantyTypeDropdownIndex]?.type;
-                const options = current && !WARRANTY_TYPES.includes(current) ? [...WARRANTY_TYPES, current] : WARRANTY_TYPES;
-                return options.map((opt, i) => (
-                  <Pressable
-                    key={opt}
-                    onPress={() => {
-                      updateWarrantyRow(warrantyTypeDropdownIndex, { type: opt });
-                      setWarrantyTypeDropdownIndex(null);
-                    }}
-                    className="py-3"
-                    style={{ borderBottomWidth: i < options.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
-                  >
-                    <Text className="text-[13.5px] text-stone-800">{opt}</Text>
-                  </Pressable>
-                ));
-              })()}
-            </Pressable>
+            <Animated.View
+              style={{
+                width: "100%",
+                maxWidth: 340,
+                opacity: dropdownAnim,
+                transform: [{ scale: dropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+              }}
+            >
+              <Pressable
+                onPress={() => {}}
+                className="bg-white rounded-2xl p-4"
+                style={{ shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
+              >
+                <Text className="text-[15px] font-semibold text-stone-900 mb-3">
+                  {customTypeDraft !== null ? "Custom warranty type" : "Warranty type"}
+                </Text>
+                {customTypeDraft !== null ? (
+                  <View>
+                    <TextInput
+                      value={customTypeDraft}
+                      onChangeText={setCustomTypeDraft}
+                      placeholder="e.g. Compressor, Sealed system"
+                      autoFocus
+                      className="w-full px-3 py-2.5 rounded-lg text-[13.5px] mb-3"
+                      style={fieldStyle}
+                      inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                      returnKeyType="done"
+                      onSubmitEditing={confirmCustomType}
+                    />
+                    <View className="flex-row gap-2">
+                      <Pressable onPress={() => setCustomTypeDraft(null)} className="flex-1 py-2.5 rounded-lg items-center" style={fieldStyle}>
+                        <Text className="text-[13px] font-semibold text-stone-600">Back</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={confirmCustomType}
+                        disabled={!customTypeDraft.trim()}
+                        className="flex-1 py-2.5 rounded-lg items-center"
+                        style={{ backgroundColor: PRIMARY, opacity: customTypeDraft.trim() ? 1 : 0.5 }}
+                      >
+                        <Text className="text-[13px] font-semibold text-white">Use this type</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <>
+                    {(() => {
+                      const current = warranties[warrantyTypeDropdownIndex]?.type;
+                      const options = current && !WARRANTY_TYPES.includes(current) ? [...WARRANTY_TYPES, current] : WARRANTY_TYPES;
+                      return options.map((opt) => {
+                        const selected = opt === current;
+                        return (
+                          <Pressable
+                            key={opt}
+                            onPress={() => {
+                              updateWarrantyRow(warrantyTypeDropdownIndex, { type: opt });
+                              closeWarrantyTypeDropdown();
+                            }}
+                            className="flex-row items-center justify-between py-2.5 px-3 rounded-lg mb-1"
+                            style={{ backgroundColor: selected ? "#F0F5E8" : "transparent" }}
+                          >
+                            <Text className="text-[13.5px]" style={{ color: selected ? PRIMARY : "#44403c", fontWeight: selected ? "600" : "400" }}>
+                              {opt}
+                            </Text>
+                            {selected && <Check size={16} color={PRIMARY} />}
+                          </Pressable>
+                        );
+                      });
+                    })()}
+                    <Pressable onPress={() => setCustomTypeDraft("")} className="flex-row items-center gap-1.5 py-2.5 px-3 mt-1">
+                      <Plus size={14} color={PRIMARY} />
+                      <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Custom type...</Text>
+                    </Pressable>
+                  </>
+                )}
+              </Pressable>
+            </Animated.View>
           </Pressable>
         </Modal>
       )}

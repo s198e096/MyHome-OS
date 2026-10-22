@@ -81,6 +81,11 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
           valueColor={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? STATUS_COLOR.green : STATUS_COLOR.red}
         />
         <LedgerRow
+          label="Registered with vendor"
+          value={sys.warrantyRegistered ? "Yes" : "No"}
+          valueColor={sys.warrantyRegistered ? STATUS_COLOR.green : "#9C978C"}
+        />
+        <LedgerRow
           label="Planned replacement"
           value={
             sys.plannedReplacementDate

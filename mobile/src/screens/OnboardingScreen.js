@@ -367,6 +367,7 @@ function SystemDetailsStep({ system, onDone }) {
   const [sysLifeYears, setSysLifeYears] = useState(system.expectedLifeYears != null ? String(system.expectedLifeYears) : "");
   const [sysReplacementCost, setSysReplacementCost] = useState(system.replacementCost != null ? String(system.replacementCost) : "");
   const [sysWarranty, setSysWarranty] = useState(system.warrantyExpiration || "");
+  const [sysWarrantyRegistered, setSysWarrantyRegistered] = useState(!!system.warrantyRegistered);
   const [sysFilterSize, setSysFilterSize] = useState(system.filterSize || "");
   const [sysManualUrl, setSysManualUrl] = useState("");
   const [saving, setSaving] = useState(false);
@@ -440,6 +441,7 @@ function SystemDetailsStep({ system, onDone }) {
       });
       const purchaseDate = result.purchaseDate || sysPurchaseDate;
       if (result.purchaseDate) setSysPurchaseDate(result.purchaseDate);
+      if (result.purchasePrice != null) setSysPurchasePrice(String(result.purchasePrice));
       const found = result.warranties || [];
       const confident = found.filter((w) => !w.estimated);
       const estimate = found.find((w) => w.estimated);
@@ -449,8 +451,8 @@ function SystemDetailsStep({ system, onDone }) {
         setSysWarranty(latestExpiration(withDuration));
       }
       if (estimate) setWarrantyEstimate(estimate);
-      if (!result.purchaseDate && confident.length === 0 && !estimate) {
-        setWarrantyScanError("Couldn't find a purchase date or warranty info there. You can fill them in manually.");
+      if (!result.purchaseDate && result.purchasePrice == null && confident.length === 0 && !estimate) {
+        setWarrantyScanError("Couldn't find a purchase date, price, or warranty info there. You can fill them in manually.");
       }
     } catch {
       setWarrantyScanError("Couldn't read those documents. You can fill in purchase date and warranty manually.");
@@ -494,6 +496,7 @@ function SystemDetailsStep({ system, onDone }) {
         expectedLifeYears: int(sysLifeYears),
         replacementCost: num(sysReplacementCost),
         warrantyExpiration: sysWarranty || null,
+        warrantyRegistered: sysWarrantyRegistered,
         photoUrl: photoUrl || null,
         filterSize: sysCategory === "hvac_indoor" ? sysFilterSize || null : null,
       });
@@ -599,7 +602,7 @@ function SystemDetailsStep({ system, onDone }) {
           <Text className="text-[12.5px] text-stone-500 mb-4">
             {isStructure
               ? "If you have a receipt from a repair or installation, add it here. Optional, if applicable."
-              : "We'll read the purchase date and warranty details from these automatically. Optional — add either, both, or skip."}
+              : "We'll read the purchase date, price, and warranty details from these automatically. Optional — add either, both, or skip."}
           </Text>
 
           {isStructure ? (
@@ -703,6 +706,7 @@ function SystemDetailsStep({ system, onDone }) {
           sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
           sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
           warranties={warrantyList} setWarranties={setWarrantyList}
+          sysWarrantyRegistered={sysWarrantyRegistered} setSysWarrantyRegistered={setSysWarrantyRegistered}
           sysFilterSize={sysFilterSize} setSysFilterSize={setSysFilterSize}
           sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
           hideCategoryPicker
@@ -711,7 +715,7 @@ function SystemDetailsStep({ system, onDone }) {
 
         {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 
-        <View className="flex-row gap-2 mb-2">
+        <View className="flex-row gap-2 mb-2 mt-4">
           <Pressable
             onPress={() => setSubStep("receipt")}
             disabled={saving}

@@ -156,10 +156,11 @@ Deno.serve(async (req) => {
           : `a warranty certificate (${warrantyUrls.length} ${pageWord(warrantyUrls.length)})`;
 
     const prompt = `You are reading photo(s) of ${docsDescription} for a home system or appliance. Extract only what is actually legible. Respond with ONLY a JSON object, no other text, in this exact shape:
-{"purchaseDate": string or null, "warranties": [{"type": string, "expirationDate": string or null, "durationMonths": number or null, "startDate": string or null}]}
+{"purchaseDate": string or null, "purchasePrice": number or null, "warranties": [{"type": string, "expirationDate": string or null, "durationMonths": number or null, "startDate": string or null}]}
 
 Rules:
 - "purchaseDate": the date of purchase/sale shown on the receipt, as YYYY-MM-DD. Null if not visible.
+- "purchasePrice": the final total amount paid shown on the receipt (including tax, if itemized separately from the subtotal) — a plain number, no currency symbol or commas (e.g. 429.99). Use the overall receipt total, not an individual line item, unless the receipt is only for this single item. Null if not visible.
 - "warranties": one array entry per DISTINCT warranty coverage mentioned anywhere in the document(s) — e.g. a card listing "5 Year Parts / 1 Year Labor" is TWO entries, not one. If only one undifferentiated warranty is stated, that's a single entry. If no warranty is mentioned at all, use an empty array.
 - Each entry's "type" is a short label for that specific coverage (e.g. "Parts", "Labor", "Compressor", "Manufacturer", "Extended", or "Standard" if the document doesn't name it).
 - Each entry's "expirationDate": an absolute date that coverage expires, as YYYY-MM-DD, ONLY if explicitly printed. Null otherwise.
@@ -178,6 +179,8 @@ Rules:
     const parsed = parseJsonObject(textBlock.text);
 
     const purchaseDate = typeof parsed.purchaseDate === "string" ? parsed.purchaseDate : null;
+    const purchasePriceNum = Number(parsed.purchasePrice);
+    const purchasePrice = Number.isFinite(purchasePriceNum) && purchasePriceNum > 0 ? purchasePriceNum : null;
     const rawWarranties = Array.isArray(parsed.warranties) ? parsed.warranties : [];
 
     type WarrantyEntry = { type: string; expirationDate: string; estimated: boolean; durationMonths?: number };
@@ -207,7 +210,7 @@ Rules:
       }
     }
 
-    return new Response(JSON.stringify({ purchaseDate, warranties }), {
+    return new Response(JSON.stringify({ purchaseDate, purchasePrice, warranties }), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {

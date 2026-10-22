@@ -17,6 +17,7 @@ const rowToSystem = (r) => ({
   photoUrl: r.photo_url,
   filterSize: r.filter_size || "",
   plannedReplacementDate: r.planned_replacement_date || "",
+  warrantyRegistered: r.warranty_registered ?? false,
 });
 
 const systemToRow = (s) => ({
@@ -37,6 +38,7 @@ const systemToRow = (s) => ({
   ...(s.plannedReplacementDate === undefined || s.plannedReplacementDate === ""
     ? {}
     : { planned_replacement_date: s.plannedReplacementDate || null }),
+  warranty_registered: !!s.warrantyRegistered,
 });
 
 const rowToTask = (r) => ({
