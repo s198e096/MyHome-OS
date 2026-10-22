@@ -3,9 +3,8 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Clock, Home } from "lucide-react-native";
-import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, systemName } from "../lib/constants.js";
+import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { TODAY, daysUntil, money } from "../lib/forecast.js";
-import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
 import SelectModal from "../components/SelectModal.js";
 
 const HOME_ACTIONS = [
@@ -13,50 +12,6 @@ const HOME_ACTIONS = [
   { value: "problem", label: "Report a problem" },
   { value: "expense", label: "Report an expense" },
 ];
-
-// Nudges the user to set an HVAC filter size, which is what actually creates
-// the recurring "Replace HVAC air filter" task — hides itself once that's
-// already set up, same as the other recommendation below.
-function filterReminderRecommendation(systems, onNavigate) {
-  const indoor = systems.find((s) => s.category === "hvac_indoor");
-  if (indoor && indoor.filterSize) return null;
-
-  return {
-    id: "filter-reminder",
-    title: "Filter reminder",
-    subtitle: indoor
-      ? "Set your HVAC filter size and we'll remind you automatically when it's due."
-      : "Add your HVAC system and filter size to get automatic replacement reminders.",
-    cta: indoor ? "Set it up" : "Add system",
-    highlight: false,
-    onClick: () => onNavigate(indoor ? `/systems/${indoor.id}/edit` : "/systems/new"),
-  };
-}
-
-// Nudges the user to fill in systems that have nothing entered at all yet —
-// most systems will always be missing a few optional details, so flagging
-// every partial one would make this show up almost constantly.
-function completeSystemsRecommendation(systems, onViewIncompleteSystems) {
-  const incomplete = systems
-    .filter(isSystemEmpty)
-    .map((sys) => ({ sys, missing: missingSystemInfo(sys) }));
-  if (incomplete.length === 0) return null;
-
-  const labels = [...new Set(incomplete.flatMap((x) => x.missing))];
-  const shown = labels.slice(0, 4).join(", ");
-  const more = labels.length > 4 ? ` +${labels.length - 4} more` : "";
-  const single = incomplete.length === 1;
-  const who = single ? systemName(incomplete[0].sys) : `${incomplete.length} systems`;
-
-  return {
-    id: "complete-systems",
-    title: "Complete your systems",
-    subtitle: `${who} ${single ? "is" : "are"} missing: ${shown}${more}.`,
-    cta: "Add details",
-    highlight: true,
-    onClick: onViewIncompleteSystems,
-  };
-}
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
@@ -191,57 +146,12 @@ function UpcomingTasksList({ tasks, systemById, onToggle }) {
   );
 }
 
-function RecommendedList({ items }) {
-  return (
-    <View className="mb-5">
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-[15px] font-bold text-stone-900">Recommended for you</Text>
-        <Text className="text-[13px] text-stone-400">{items.length}</Text>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-        {items.map((r) => {
-          const Icon = r.icon;
-          const Wrapper = r.onClick ? Pressable : View;
-          return (
-            <Wrapper
-              key={r.id}
-              onPress={r.onClick}
-              className="rounded-xl p-3"
-              style={{
-                width: 190,
-                backgroundColor: r.highlight ? ACCENT_YELLOW : "white",
-                borderWidth: r.highlight ? 0 : 1,
-                borderColor: "#E0E8D3",
-              }}
-            >
-              <View className="flex-row items-center justify-between gap-2 mb-1">
-                <Text className="text-[13.5px] font-bold text-stone-900">{r.title}</Text>
-                {Icon && <Icon size={15} color={PRIMARY} />}
-              </View>
-              <Text className="text-[12px] text-stone-600 mb-2">{r.subtitle}</Text>
-              {r.cta && (
-                <View className="rounded-full px-3 py-1 self-start bg-white">
-                  <Text className="text-[11.5px] font-semibold" style={{ color: PRIMARY }}>{r.cta}</Text>
-                </View>
-              )}
-            </Wrapper>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
-
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onViewIncompleteSystems, onOpenAccount, onOpenAssistant, onNavigate, onToggleTask }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenAccount, onOpenAssistant, onNavigate, onToggleTask }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const thisMonthTasks = upcomingTasks.filter((t) => {
     const d = new Date(`${t.dueDate}T00:00:00`);
     return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth();
   });
-  const recommendations = [
-    completeSystemsRecommendation(systems, onViewIncompleteSystems),
-    filterReminderRecommendation(systems, onNavigate),
-  ].filter(Boolean);
 
   const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
@@ -281,8 +191,6 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
         )}
 
         <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onToggle={onToggleTask} />
-
-        <RecommendedList items={recommendations} />
 
         <View className="mb-5">
           <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>

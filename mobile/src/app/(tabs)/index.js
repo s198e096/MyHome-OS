@@ -18,7 +18,6 @@ export default function Home() {
       next12mo={data.next12mo}
       monthlyReserve={data.monthlyReserve}
       profile={data.profile}
-      onViewIncompleteSystems={() => router.push("/systems/incomplete")}
       onOpenAccount={() => router.push("/account")}
       onOpenAssistant={(prefill) => router.push(prefill ? { pathname: "/ask", params: { prefill } } : "/ask")}
       onNavigate={(path) => router.push(path)}
