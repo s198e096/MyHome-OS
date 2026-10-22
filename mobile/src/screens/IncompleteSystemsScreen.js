@@ -2,13 +2,13 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { systemName, systemIcon } from "../lib/constants.js";
-import { missingSystemInfo } from "../lib/system-info.js";
+import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
 
 export default function IncompleteSystemsScreen({ systems, onSelect, onBack }) {
   const insets = useSafeAreaInsets();
   const incomplete = systems
-    .map((sys) => ({ sys, missing: missingSystemInfo(sys) }))
-    .filter((x) => x.missing.length > 0);
+    .filter(isSystemEmpty)
+    .map((sys) => ({ sys, missing: missingSystemInfo(sys) }));
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>

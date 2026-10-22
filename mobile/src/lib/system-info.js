@@ -16,3 +16,10 @@ const REQUIRED_FIELDS = [
 export function missingSystemInfo(sys) {
   return REQUIRED_FIELDS.filter((f) => blank(sys[f.key])).map((f) => f.label);
 }
+
+// True only when every required field is still blank — most systems will
+// always be missing a few optional details, so "completely unfilled" is a
+// more useful threshold for nudging the user than "missing anything at all".
+export function isSystemEmpty(sys) {
+  return missingSystemInfo(sys).length === REQUIRED_FIELDS.length;
+}

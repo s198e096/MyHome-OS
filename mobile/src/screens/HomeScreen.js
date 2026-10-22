@@ -4,19 +4,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Clock, Home } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, systemName, systemIcon } from "../lib/constants.js";
 import { daysUntil, money, systemStatus } from "../lib/forecast.js";
-import { missingSystemInfo } from "../lib/system-info.js";
+import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
 import StatusDot from "../components/StatusDot.js";
 
 const seedRecommendations = [
   { id: "r3", title: "Filter Reminder", subtitle: "Set auto-reminders for HVAC filters", cta: null, highlight: false },
 ];
 
-// Nudges the user to fill in details missing from the systems they've logged.
-// Tapping opens the list of incomplete systems so the user picks which to complete.
+// Nudges the user to fill in systems that have nothing entered at all yet —
+// most systems will always be missing a few optional details, so flagging
+// every partial one would make this show up almost constantly.
 function completeSystemsRecommendation(systems, onViewIncompleteSystems) {
   const incomplete = systems
-    .map((sys) => ({ sys, missing: missingSystemInfo(sys) }))
-    .filter((x) => x.missing.length > 0);
+    .filter(isSystemEmpty)
+    .map((sys) => ({ sys, missing: missingSystemInfo(sys) }));
   if (incomplete.length === 0) return null;
 
   const labels = [...new Set(incomplete.flatMap((x) => x.missing))];
