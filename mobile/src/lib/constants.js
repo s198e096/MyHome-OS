@@ -88,6 +88,69 @@ export const RECURRENCE_OPTIONS = [
   { key: "annually", label: "Annually" },
 ];
 
+const RECURRENCE_LABEL = Object.fromEntries(RECURRENCE_OPTIONS.map((r) => [r.key, r.label]));
+
+// Suggested maintenance tasks per system category, with how often each
+// typically needs doing — offered when importing tasks for a system rather
+// than typing them in one at a time.
+export const COMMON_SYSTEM_TASKS = {
+  hvac_indoor: [
+    { title: "Replace air filter", recurrence: "quarterly" },
+    { title: "Professional HVAC tune-up", recurrence: "annually" },
+    { title: "Clean indoor coil", recurrence: "annually" },
+  ],
+  hvac_outdoor: [
+    { title: "Clean outdoor condenser coil", recurrence: "semiannually" },
+    { title: "Clear debris around unit", recurrence: "quarterly" },
+    { title: "Check refrigerant lines", recurrence: "annually" },
+  ],
+  water_heater: [
+    { title: "Flush water heater tank", recurrence: "annually" },
+    { title: "Test temperature & pressure relief valve", recurrence: "annually" },
+  ],
+  roof: [
+    { title: "Inspect roof for damage", recurrence: "annually" },
+    { title: "Clean gutters", recurrence: "semiannually" },
+  ],
+  plumbing: [
+    { title: "Inspect for leaks", recurrence: "semiannually" },
+    { title: "Check water pressure", recurrence: "annually" },
+  ],
+  toilet: [{ title: "Check for leaks & running water", recurrence: "semiannually" }],
+  faucet: [{ title: "Check for drips & clean aerator", recurrence: "semiannually" }],
+  sink: [{ title: "Check for leaks under sink", recurrence: "semiannually" }],
+  electrical: [
+    { title: "Test smoke & CO detectors", recurrence: "monthly" },
+    { title: "Test GFCI outlets", recurrence: "semiannually" },
+    { title: "Inspect electrical panel", recurrence: "annually" },
+  ],
+  generator: [
+    { title: "Run generator self-test", recurrence: "monthly" },
+    { title: "Change oil & filter", recurrence: "annually" },
+  ],
+  solar: [
+    { title: "Clean solar panels", recurrence: "semiannually" },
+    { title: "Inspect panels & wiring", recurrence: "annually" },
+  ],
+  ev_charger: [{ title: "Inspect charging cable & connector", recurrence: "semiannually" }],
+  appliance: [
+    { title: "Clean filter/coils", recurrence: "quarterly" },
+    { title: "Deep clean", recurrence: "semiannually" },
+  ],
+  windows: [{ title: "Inspect seals & caulking", recurrence: "annually" }],
+  exterior: [{ title: "Inspect exterior paint/siding", recurrence: "annually" }],
+  balcony: [{ title: "Inspect structure & railing", recurrence: "annually" }],
+  deck: [
+    { title: "Inspect boards & railing", recurrence: "semiannually" },
+    { title: "Reseal/stain deck", recurrence: "annually" },
+  ],
+  garden: [{ title: "Trim trees & shrubs away from house", recurrence: "semiannually" }],
+};
+
+export function recurrenceLabel(key) {
+  return RECURRENCE_LABEL[key] || key;
+}
+
 // Which categories each onboarding step offers, and in which order they're
 // walked through after the property step.
 export const ONBOARDING_SYSTEM_CATEGORIES = ["hvac_indoor", "hvac_outdoor", "water_heater", "plumbing", "electrical"];

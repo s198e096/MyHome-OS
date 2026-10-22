@@ -1,8 +1,15 @@
+import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, Check, Repeat } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, systemShortName } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
+import SelectModal from "../components/SelectModal.js";
+
+const ADD_OPTIONS = [
+  { value: "manual", label: "Add task manually" },
+  { value: "import", label: "Import common tasks for a system" },
+];
 
 // Groups by system (in whatever order each system's first task appears in
 // the already due-date-sorted `tasks` list, so the most urgent system's
@@ -22,17 +29,34 @@ function groupBySystem(tasks, systemById) {
   return [...groups.values()];
 }
 
-export default function TasksScreen({ tasks, completed, systemById, onToggle, onEdit, onAdd }) {
+export default function TasksScreen({ tasks, completed, systemById, onToggle, onEdit, onAddManual, onImportTasks }) {
   const insets = useSafeAreaInsets();
   const groups = groupBySystem(tasks, systemById);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+
+  function handleAddOption(value) {
+    setAddMenuOpen(false);
+    if (value === "import") onImportTasks();
+    else onAddManual();
+  }
+
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-[17px] font-semibold text-stone-900">Tasks</Text>
-        <Pressable onPress={onAdd} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => setAddMenuOpen(true)} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
           <Plus size={16} color="white" />
         </Pressable>
       </View>
+
+      <SelectModal
+        visible={addMenuOpen}
+        title="Add task"
+        options={ADD_OPTIONS}
+        selectedValue={null}
+        onSelect={handleAddOption}
+        onClose={() => setAddMenuOpen(false)}
+      />
 
       {tasks.length === 0 && (
         <View className="rounded-xl bg-white px-3 py-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>

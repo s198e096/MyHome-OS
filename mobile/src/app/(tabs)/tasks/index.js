@@ -15,7 +15,8 @@ export default function Tasks() {
         systemById={systemById}
         onToggle={toggleTask}
         onEdit={(t) => router.push(`/tasks/${t.id}/edit`)}
-        onAdd={() => router.push("/tasks/new")}
+        onAddManual={() => router.push("/tasks/new")}
+        onImportTasks={() => router.push("/tasks/import")}
       />
     </AnimatedTabScreen>
   );

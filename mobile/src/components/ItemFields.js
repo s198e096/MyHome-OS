@@ -63,7 +63,7 @@ export function initWarrantyRow(w, purchaseDate) {
   return { id: w.id, type: w.type, expirationDate: w.expirationDate || "", estimated: w.estimated, durationValue: value, durationUnit: unit };
 }
 
-function DateField({ label, value, onChange, optional }) {
+export function DateField({ label, value, onChange, optional }) {
   const [active, setActive] = useState(!optional || !!value);
   const [androidOpen, setAndroidOpen] = useState(false);
   const dateObj = value ? new Date(`${value}T00:00:00`) : new Date();
