@@ -337,6 +337,11 @@ function SystemDetailsStep({ system, onDone }) {
   const insets = useSafeAreaInsets();
   const { updateSystem, attachManualDocument, addDocument, warranties, addWarranty, deleteWarranty } = useAppData();
   const isStructure = ONBOARDING_STRUCTURE_CATEGORIES.includes(system.category);
+  // Toilets rarely have an easy-to-photograph label (it's often inside the
+  // tank, if printed at all) — still try to read one if the photo happens
+  // to include it, but frame the prompt around condition instead, and don't
+  // treat a missing label as a scan failure.
+  const labelOptional = system.category === "toilet";
 
   // Guides the user through: 1) a photo (label for systems/appliances, a
   // condition photo for structure items) which auto-fills from the label
@@ -399,7 +404,9 @@ function SystemDetailsStep({ system, onDone }) {
       // Category alone (e.g. confirming "appliance", which rarely changes
       // anything visible) isn't a useful fill — only count brand/model,
       // since those are what the user is actually waiting to see appear.
-      if (!result.brand && !result.model) {
+      // For toilets, no label found isn't a failure — it's the expected
+      // case when the photo is just of its condition.
+      if (!result.brand && !result.model && !labelOptional) {
         setScanError("Couldn't read the label clearly. You can fill in the fields manually.");
       }
     } catch {
@@ -549,12 +556,18 @@ function SystemDetailsStep({ system, onDone }) {
         >
           {backToList}
           <Text className="text-[17px] font-semibold text-stone-900 mb-1">
-            {isStructure ? `Add a picture of its condition (${meta.label})` : `Take a picture of the ${meta.label} label`}
+            {isStructure
+              ? `Add a picture of its condition (${meta.label})`
+              : labelOptional
+                ? `Add a picture of the ${meta.label}`
+                : `Take a picture of the ${meta.label} label`}
           </Text>
           <Text className="text-[12.5px] text-stone-500 mb-4">
             {isStructure
               ? "This helps you track its condition over time. You can skip if you don't have one handy."
-              : "We'll automatically read the brand, model, and other details from it."}
+              : labelOptional
+                ? "A picture of its condition is useful on its own, and if there's a visible brand label (often inside the tank) we'll try to read it too."
+                : "We'll automatically read the brand, model, and other details from it."}
           </Text>
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />

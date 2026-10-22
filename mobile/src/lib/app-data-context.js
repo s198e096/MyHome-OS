@@ -16,6 +16,11 @@ import { useSession } from "./auth-context.js";
 
 const AppDataContext = createContext(null);
 
+// Serializes syncFilterReminder calls across the whole app (module-level,
+// not per-provider-instance) so two near-simultaneous calls for the same
+// system can't both read "no reminder yet" before either has written one.
+let filterReminderQueue = Promise.resolve();
+
 export function useAppData() {
   const value = useContext(AppDataContext);
   if (!value) throw new Error("useAppData must be used inside <AppDataProvider>");
@@ -215,14 +220,28 @@ export function AppDataProvider({ children }) {
     const days = FILTER_OPTIONS.find((f) => f.key === sys.filterSize)?.days;
     if (!days) return;
     const dueDate = new Date(TODAY.getTime() + days * 86400000).toISOString().slice(0, 10);
-    const existing = tasks.find((t) => t.systemId === sys.id && t.title === "Replace HVAC air filter" && !t.completed);
-    if (existing) {
-      const updated = await db.tasks.update(existing.id, { ...existing, dueDate });
-      setTasks((ts) => ts.map((t) => (t.id === existing.id ? updated : t)));
-    } else {
-      const created = await db.tasks.add({ title: "Replace HVAC air filter", dueDate, systemId: sys.id, completed: false });
-      setTasks((ts) => [...ts, created]);
+
+    async function run() {
+      const existing = await db.tasks.findIncompleteByTitle(sys.id, "Replace HVAC air filter");
+      if (existing) {
+        if (existing.dueDate === dueDate) return;
+        const updated = await db.tasks.update(existing.id, { ...existing, dueDate });
+        setTasks((ts) => (ts.some((t) => t.id === updated.id) ? ts.map((t) => (t.id === updated.id ? updated : t)) : [...ts, updated]));
+      } else {
+        const created = await db.tasks.add({ title: "Replace HVAC air filter", dueDate, systemId: sys.id, completed: false });
+        setTasks((ts) => [...ts, created]);
+      }
     }
+
+    // Checked straight against the database (not the local `tasks` cache,
+    // which could be stale) and serialized via a shared queue, so two
+    // near-simultaneous calls for the same system (e.g. a fast double-tap on
+    // Save) can't both read "no reminder yet" and both insert one. The
+    // queue is neutralized on each link so one failed sync doesn't
+    // permanently break it for unrelated later calls.
+    const turn = filterReminderQueue.catch(() => {}).then(run);
+    filterReminderQueue = turn.catch(() => {});
+    await turn;
   }
 
   async function addSystem(sys) {

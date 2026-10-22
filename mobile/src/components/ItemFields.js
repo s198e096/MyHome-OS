@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, Platform, Modal, Animated } from "react-native";
+import { View, Text, TextInput, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown, Check } from "lucide-react-native";
@@ -8,6 +8,7 @@ import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
+import SelectModal from "./SelectModal.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
@@ -156,9 +157,8 @@ export default function ItemFields({
   const [warrantyScanError, setWarrantyScanError] = useState("");
   const [warrantyEstimate, setWarrantyEstimate] = useState(null);
   const [warrantyTypeDropdownIndex, setWarrantyTypeDropdownIndex] = useState(null);
-  const [customTypeDraft, setCustomTypeDraft] = useState(null);
   const [warrantyBlockedMessage, setWarrantyBlockedMessage] = useState("");
-  const [dropdownAnim] = useState(() => new Animated.Value(0));
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
   async function handleScan() {
     setScanning(true);
@@ -266,25 +266,6 @@ export default function ItemFields({
     const next = warranties.filter((_, i) => i !== index);
     setWarranties(next);
     setSysWarranty(latestExpiration(next));
-  }
-
-  function openWarrantyTypeDropdown(index) {
-    setCustomTypeDraft(null);
-    setWarrantyTypeDropdownIndex(index);
-    dropdownAnim.setValue(0);
-    Animated.spring(dropdownAnim, { toValue: 1, useNativeDriver: true, friction: 9, tension: 80 }).start();
-  }
-
-  function closeWarrantyTypeDropdown() {
-    setWarrantyTypeDropdownIndex(null);
-    setCustomTypeDraft(null);
-  }
-
-  function confirmCustomType() {
-    const trimmed = customTypeDraft.trim();
-    if (!trimmed) return;
-    updateWarrantyRow(warrantyTypeDropdownIndex, { type: trimmed });
-    closeWarrantyTypeDropdown();
   }
 
   function handlePurchaseDateChange(date) {
@@ -426,13 +407,29 @@ export default function ItemFields({
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           {!hideCategoryPicker && (
-            <View className="w-full mb-2" style={pickerBoxStyle}>
-              <Picker selectedValue={sysCategory} onValueChange={setSysCategory}>
-                {Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac").map(([key, meta]) => (
-                  <Picker.Item key={key} label={meta.label} value={key} />
-                ))}
-              </Picker>
-            </View>
+            <>
+              <Pressable
+                onPress={() => setCategoryDropdownOpen(true)}
+                className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
+                style={fieldStyle}
+              >
+                <Text className="text-[13.5px] text-stone-800">{CATEGORY_META[sysCategory]?.label || "Select type"}</Text>
+                <ChevronDown size={14} color="#78716c" />
+              </Pressable>
+              <SelectModal
+                visible={categoryDropdownOpen}
+                title="System type"
+                options={Object.entries(CATEGORY_META)
+                  .filter(([key]) => key !== "hvac")
+                  .map(([key, meta]) => ({ value: key, label: meta.label }))}
+                selectedValue={sysCategory}
+                onSelect={(value) => {
+                  setSysCategory(value);
+                  setCategoryDropdownOpen(false);
+                }}
+                onClose={() => setCategoryDropdownOpen(false)}
+              />
+            </>
           )}
 
           {sysCategory === "hvac_indoor" && (
@@ -556,7 +553,7 @@ export default function ItemFields({
               <View key={i} className="rounded-lg p-2 mb-2" style={fieldStyle}>
                 <View className="flex-row items-center justify-between mb-2">
                   <Pressable
-                    onPress={() => openWarrantyTypeDropdown(i)}
+                    onPress={() => setWarrantyTypeDropdownIndex(i)}
                     className="flex-1 flex-row items-center justify-between px-3 py-2 rounded-lg"
                     style={fieldStyle}
                   >
@@ -668,91 +665,21 @@ export default function ItemFields({
         </>
       )}
 
-      {warrantyTypeDropdownIndex !== null && (
-        <Modal transparent animationType="fade" visible onRequestClose={closeWarrantyTypeDropdown}>
-          <Pressable
-            onPress={closeWarrantyTypeDropdown}
-            style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)", alignItems: "center", justifyContent: "center", padding: 28 }}
-          >
-            <Animated.View
-              style={{
-                width: "100%",
-                maxWidth: 340,
-                opacity: dropdownAnim,
-                transform: [{ scale: dropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
-              }}
-            >
-              <Pressable
-                onPress={() => {}}
-                className="bg-white rounded-2xl p-4"
-                style={{ shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
-              >
-                <Text className="text-[15px] font-semibold text-stone-900 mb-3">
-                  {customTypeDraft !== null ? "Custom warranty type" : "Warranty type"}
-                </Text>
-                {customTypeDraft !== null ? (
-                  <View>
-                    <TextInput
-                      value={customTypeDraft}
-                      onChangeText={setCustomTypeDraft}
-                      placeholder="e.g. Compressor, Sealed system"
-                      autoFocus
-                      className="w-full px-3 py-2.5 rounded-lg text-[13.5px] mb-3"
-                      style={fieldStyle}
-                      inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-                      returnKeyType="done"
-                      onSubmitEditing={confirmCustomType}
-                    />
-                    <View className="flex-row gap-2">
-                      <Pressable onPress={() => setCustomTypeDraft(null)} className="flex-1 py-2.5 rounded-lg items-center" style={fieldStyle}>
-                        <Text className="text-[13px] font-semibold text-stone-600">Back</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={confirmCustomType}
-                        disabled={!customTypeDraft.trim()}
-                        className="flex-1 py-2.5 rounded-lg items-center"
-                        style={{ backgroundColor: PRIMARY, opacity: customTypeDraft.trim() ? 1 : 0.5 }}
-                      >
-                        <Text className="text-[13px] font-semibold text-white">Use this type</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : (
-                  <>
-                    {(() => {
-                      const current = warranties[warrantyTypeDropdownIndex]?.type;
-                      const options = current && !WARRANTY_TYPES.includes(current) ? [...WARRANTY_TYPES, current] : WARRANTY_TYPES;
-                      return options.map((opt) => {
-                        const selected = opt === current;
-                        return (
-                          <Pressable
-                            key={opt}
-                            onPress={() => {
-                              updateWarrantyRow(warrantyTypeDropdownIndex, { type: opt });
-                              closeWarrantyTypeDropdown();
-                            }}
-                            className="flex-row items-center justify-between py-2.5 px-3 rounded-lg mb-1"
-                            style={{ backgroundColor: selected ? "#F0F5E8" : "transparent" }}
-                          >
-                            <Text className="text-[13.5px]" style={{ color: selected ? PRIMARY : "#44403c", fontWeight: selected ? "600" : "400" }}>
-                              {opt}
-                            </Text>
-                            {selected && <Check size={16} color={PRIMARY} />}
-                          </Pressable>
-                        );
-                      });
-                    })()}
-                    <Pressable onPress={() => setCustomTypeDraft("")} className="flex-row items-center gap-1.5 py-2.5 px-3 mt-1">
-                      <Plus size={14} color={PRIMARY} />
-                      <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Custom type...</Text>
-                    </Pressable>
-                  </>
-                )}
-              </Pressable>
-            </Animated.View>
-          </Pressable>
-        </Modal>
-      )}
+      <SelectModal
+        visible={warrantyTypeDropdownIndex !== null}
+        title="Warranty type"
+        options={WARRANTY_TYPES.map((t) => ({ value: t, label: t }))}
+        selectedValue={warrantyTypeDropdownIndex !== null ? warranties[warrantyTypeDropdownIndex]?.type : null}
+        onSelect={(value) => {
+          updateWarrantyRow(warrantyTypeDropdownIndex, { type: value });
+          setWarrantyTypeDropdownIndex(null);
+        }}
+        onClose={() => setWarrantyTypeDropdownIndex(null)}
+        allowCustom
+        customLabel="Custom type..."
+        customTitle="Custom warranty type"
+        customPlaceholder="e.g. Compressor, Sealed system"
+      />
     </>
   );
 }

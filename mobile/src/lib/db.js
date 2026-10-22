@@ -391,6 +391,21 @@ export const db = {
         rowToTask
       ),
     remove: (id) => deleteRow("tasks", id),
+    // Reads straight from the database rather than the client cache, since
+    // this backs a duplicate-prevention check that two near-simultaneous
+    // saves could otherwise both pass against a stale local task list.
+    findIncompleteByTitle: async (systemId, title) => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("system_id", systemId)
+        .eq("title", title)
+        .eq("completed", false)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (error) throw error;
+      return data && data.length > 0 ? rowToTask(data[0]) : null;
+    },
   },
   expenses: {
     add: (e) => insertRow("expenses", expenseToRow(e), rowToExpense),
