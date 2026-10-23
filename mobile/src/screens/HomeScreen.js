@@ -31,7 +31,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
       className="px-5 pb-4 mb-5"
       style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20 }}
     >
-      <View className="flex-row items-center justify-between mb-3">
+      <View className="flex-row items-center justify-between mb-3" style={{ paddingHorizontal: 10 }}>
         <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }} numberOfLines={1}>
           {profile.propertyName || "Home"}
         </Text>
@@ -59,8 +59,8 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
         </View>
       )}
 
-      <View className="mb-4">
-        <Pressable onPress={() => setActionsOpen(true)} className="w-full flex-row items-center justify-center gap-2 bg-white rounded-2xl px-5 py-4">
+      <View className="items-center mb-4">
+        <Pressable onPress={() => setActionsOpen(true)} className="flex-row items-center justify-center gap-2 bg-white rounded-2xl px-5 py-3">
           <Text className="text-[15.5px] font-semibold" style={{ color: PRIMARY }}>What would you like to do?</Text>
           <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
         </Pressable>
