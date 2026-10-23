@@ -41,7 +41,7 @@ export default function CostsScreen({ expenses, forecast, systemById, onEdit, on
               <LedgerRow
                 key={e.id}
                 label={e.note}
-                sub={`${e.category}${sys ? " · " + systemName(sys) : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                sub={`${e.category}${sys ? " · " + systemName(sys) : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}${e.vendor ? " · " + e.vendor : ""}`}
                 value={money(e.amount)}
                 onPress={() => onEdit(e)}
               />

@@ -14,6 +14,7 @@ export default function Tasks() {
         completed={tasks.filter((t) => t.completed)}
         systemById={systemById}
         onToggle={toggleTask}
+        onComplete={(t) => router.push(`/tasks/${t.id}/complete`)}
         onEdit={(t) => router.push(`/tasks/${t.id}/edit`)}
         onAddManual={() => router.push("/tasks/new")}
         onImportTasks={() => router.push("/tasks/import")}

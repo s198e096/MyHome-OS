@@ -141,6 +141,32 @@ export function AppDataProvider({ children }) {
     }
   }
 
+  // Completing a task from the "did this cost anything?" prompt: optionally
+  // logs a linked expense first (so it's in the expense log with its own
+  // parts/labor/DIY-or-vendor breakdown), then completes the task as usual.
+  async function completeTaskWithCost(id, cost) {
+    const t = tasks.find((x) => x.id === id);
+    if (cost) {
+      const partsCost = cost.partsCost ? Number(cost.partsCost) : null;
+      const laborCost = cost.laborCost ? Number(cost.laborCost) : null;
+      const created = await db.expenses.add({
+        systemId: t?.systemId || null,
+        taskId: id,
+        amount: (partsCost || 0) + (laborCost || 0),
+        date: TODAY.toISOString().slice(0, 10),
+        category: "Maintenance",
+        note: t?.title || "Task",
+        partsCost,
+        laborCost,
+        diy: cost.diy,
+        timeSpentHours: cost.diy && cost.timeSpentHours ? Number(cost.timeSpentHours) : null,
+        vendor: !cost.diy && cost.vendor ? cost.vendor.trim() : null,
+      });
+      setExpenses((es) => [...es, created]);
+    }
+    await toggleTask(id);
+  }
+
   async function addTask(title, dueDate, systemId, recurrence) {
     const created = await db.tasks.add({ title, dueDate, systemId, completed: false, recurrence: recurrence || null });
     setTasks((ts) => [...ts, created]);
@@ -340,6 +366,7 @@ export function AppDataProvider({ children }) {
     updateEnergyCheck,
     createQuickTask,
     toggleTask,
+    completeTaskWithCost,
     addTask,
     updateTask,
     deleteTask,

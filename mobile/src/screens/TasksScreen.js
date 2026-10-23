@@ -29,7 +29,7 @@ function groupBySystem(tasks, systemById) {
   return [...groups.values()];
 }
 
-export default function TasksScreen({ tasks, completed, systemById, onToggle, onEdit, onAddManual, onImportTasks }) {
+export default function TasksScreen({ tasks, completed, systemById, onToggle, onComplete, onEdit, onAddManual, onImportTasks }) {
   const insets = useSafeAreaInsets();
   const groups = groupBySystem(tasks, systemById);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -77,7 +77,7 @@ export default function TasksScreen({ tasks, completed, systemById, onToggle, on
                   style={{ borderBottomWidth: i < groupTasks.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
                 >
                   <View className="flex-row items-center gap-2.5 flex-1 min-w-0">
-                    <Pressable onPress={() => onToggle(t.id)} hitSlop={8}>
+                    <Pressable onPress={() => onComplete(t)} hitSlop={8}>
                       <View className="rounded-full" style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: "#C9C5B8" }} />
                     </Pressable>
                     <Pressable onPress={() => onEdit(t)} className="flex-1 min-w-0">

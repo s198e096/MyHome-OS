@@ -67,18 +67,30 @@ const taskToRow = (t) => ({
 const rowToExpense = (r) => ({
   id: r.id,
   systemId: r.system_id,
+  taskId: r.task_id,
   amount: r.amount,
   date: r.date,
   category: r.category,
   note: r.note,
+  partsCost: r.parts_cost,
+  laborCost: r.labor_cost,
+  diy: r.diy,
+  timeSpentHours: r.time_spent_hours,
+  vendor: r.vendor,
 });
 
 const expenseToRow = (e) => ({
   system_id: e.systemId || null,
+  task_id: e.taskId || null,
   amount: e.amount,
   date: e.date,
   category: e.category,
   note: e.note,
+  parts_cost: e.partsCost ?? null,
+  labor_cost: e.laborCost ?? null,
+  diy: e.diy ?? null,
+  time_spent_hours: e.timeSpentHours ?? null,
+  vendor: e.vendor || null,
 });
 
 const rowToDocument = (r) => ({

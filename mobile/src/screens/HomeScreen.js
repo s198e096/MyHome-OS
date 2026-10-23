@@ -95,7 +95,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
   );
 }
 
-function UpcomingTasksList({ tasks, systemById, onToggle }) {
+function UpcomingTasksList({ tasks, systemById, onComplete }) {
   return (
     <View className="mb-5">
       <View className="flex-row items-center justify-between mb-2">
@@ -117,7 +117,7 @@ function UpcomingTasksList({ tasks, systemById, onToggle }) {
               <View style={{ width: 4, backgroundColor: barColor }} />
               <View className="flex-1 px-3 py-2.5">
                 <View className="flex-row items-center gap-2.5">
-                  <Pressable onPress={() => onToggle(t.id)} hitSlop={8}>
+                  <Pressable onPress={() => onComplete(t)} hitSlop={8}>
                     <View className="rounded-full" style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: "#C9C5B8" }} />
                   </Pressable>
                   <View className="flex-1 min-w-0">
@@ -146,7 +146,7 @@ function UpcomingTasksList({ tasks, systemById, onToggle }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenAccount, onOpenAssistant, onNavigate, onToggleTask }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const thisMonthTasks = upcomingTasks.filter((t) => {
     const d = new Date(`${t.dueDate}T00:00:00`);
@@ -190,7 +190,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
           </View>
         )}
 
-        <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onToggle={onToggleTask} />
+        <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onComplete={onCompleteTask} />
 
         <View className="mb-5">
           <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>
