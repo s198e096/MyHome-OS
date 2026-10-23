@@ -759,44 +759,64 @@ function SystemDetailsStep({ system, onDone }) {
   );
 }
 
+// Default names for the units a guided HVAC walkthrough creates: the same
+// labels the unguided path falls back to, so both routes read the same. The
+// user can rename either whenever they like.
+const HVAC_INDOOR_NAME = CATEGORY_META.hvac_indoor.label;
+const HVAC_OUTDOOR_NAME = CATEGORY_META.hvac_outdoor.label;
+
+// Placeholder names earlier versions wrote for HVAC units. Systems saved back
+// then still carry them, so they must keep counting as placeholders (see
+// GENERIC_UNIT_LABELS below).
+const LEGACY_HVAC_LABELS = [
+  "Gas furnace",
+  "Central AC condenser",
+  "Heat pump air handler",
+  "Heat pump outdoor unit",
+  "Mini split indoor head",
+  "Mini split outdoor compressor",
+  "Packaged HVAC unit",
+  "Through-wall AC unit",
+];
+
 // The five HVAC configurations we can recognize. Each maps to one or two
 // actual system entries (most configurations split into an indoor and an
 // outdoor unit) — the real brand/model are left for the user to fill in
-// later via the regular details walkthrough, but `brand` gets a descriptive
-// placeholder (e.g. "Gas furnace") so indoor/outdoor entries stay
-// distinguishable in the list. Deliberately not `model`: that field is what
-// systemHasDetails() checks to mark a system "Completed", so a placeholder
-// there would make picking a type alone look like a finished walkthrough.
+// later via the regular details walkthrough, but `brand` holds the default
+// name ("HVAC - Indoor Unit" / "HVAC - Outdoor Unit"). Deliberately not
+// `model`: that field is what systemHasDetails() checks to mark a system
+// "Completed", so a placeholder there would make picking a type alone look
+// like a finished walkthrough.
 const HVAC_TYPES = {
   furnace_ac: {
     label: "Gas Furnace + Central AC",
     hint: "Most common",
     units: [
-      { category: "hvac_indoor", brand: "Gas furnace" },
-      { category: "hvac_outdoor", brand: "Central AC condenser" },
+      { category: "hvac_indoor", brand: HVAC_INDOOR_NAME },
+      { category: "hvac_outdoor", brand: HVAC_OUTDOOR_NAME },
     ],
   },
   heat_pump: {
     label: "Central heat pump system",
     units: [
-      { category: "hvac_indoor", brand: "Heat pump air handler" },
-      { category: "hvac_outdoor", brand: "Heat pump outdoor unit" },
+      { category: "hvac_indoor", brand: HVAC_INDOOR_NAME },
+      { category: "hvac_outdoor", brand: HVAC_OUTDOOR_NAME },
     ],
   },
   mini_split: {
     label: "Ductless mini split",
     units: [
-      { category: "hvac_indoor", brand: "Mini split indoor head" },
-      { category: "hvac_outdoor", brand: "Mini split outdoor compressor" },
+      { category: "hvac_indoor", brand: HVAC_INDOOR_NAME },
+      { category: "hvac_outdoor", brand: HVAC_OUTDOOR_NAME },
     ],
   },
   packaged: {
     label: "Packaged HVAC system",
-    units: [{ category: "hvac_outdoor", brand: "Packaged HVAC unit" }],
+    units: [{ category: "hvac_outdoor", brand: HVAC_OUTDOOR_NAME }],
   },
   through_wall: {
     label: "Through-wall AC",
-    units: [{ category: "hvac_indoor", brand: "Through-wall AC unit" }],
+    units: [{ category: "hvac_indoor", brand: HVAC_INDOOR_NAME }],
   },
 };
 
@@ -992,11 +1012,12 @@ const EV_CHARGER_GUIDE_TREE = {
 // HVAC_TYPES above for why it's `brand` and not `model`). SystemDetailsStep
 // uses this to tell a real, user/scan-provided brand apart from one of these
 // placeholders, so it knows whether a label photo still needs auto-scanning.
-const GENERIC_UNIT_LABELS = new Set(
-  [HVAC_TYPES, WATER_HEATER_TYPES, GENERATOR_TYPES, SOLAR_TYPES, EV_CHARGER_TYPES].flatMap((types) =>
+const GENERIC_UNIT_LABELS = new Set([
+  ...LEGACY_HVAC_LABELS,
+  ...[HVAC_TYPES, WATER_HEATER_TYPES, GENERATOR_TYPES, SOLAR_TYPES, EV_CHARGER_TYPES].flatMap((types) =>
     Object.values(types).flatMap((t) => t.units.map((u) => u.brand))
-  )
-);
+  ),
+]);
 
 // Creates/updates the system entries for a chosen type's unit list — shared
 // by every guided walkthrough (HVAC, water heater, ...). Reuses any existing
