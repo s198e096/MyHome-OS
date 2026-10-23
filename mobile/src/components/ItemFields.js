@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown, Check } from "lucide-react-native";
-import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, systemName } from "../lib/constants.js";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, EXPENSE_CATEGORIES, OTHER_BILLS, isBillCategory, systemName } from "../lib/constants.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
@@ -340,17 +340,22 @@ export default function ItemFields({
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="Note (e.g. Gutter cleaning)"
+            placeholder={
+              category === OTHER_BILLS
+                ? "Which bill? (e.g. Internet)"
+                : isBillCategory(category)
+                  ? "Note (e.g. October bill)"
+                  : "Note (e.g. Gutter cleaning)"
+            }
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <View className="w-full mb-2" style={pickerBoxStyle}>
             <Picker selectedValue={category} onValueChange={setCategory}>
-              <Picker.Item label="Maintenance" value="Maintenance" />
-              <Picker.Item label="Repair" value="Repair" />
-              <Picker.Item label="Replacement" value="Replacement" />
-              <Picker.Item label="Inspection" value="Inspection" />
+              {EXPENSE_CATEGORIES.map((c) => (
+                <Picker.Item key={c} label={c} value={c} />
+              ))}
             </Picker>
           </View>
         </>
@@ -371,7 +376,7 @@ export default function ItemFields({
         </>
       )}
 
-      {(kind === "task" || kind === "expense" || kind === "doc") && (
+      {(kind === "task" || (kind === "expense" && !isBillCategory(category)) || kind === "doc") && (
         <View className="w-full mb-3" style={pickerBoxStyle}>
           <Picker selectedValue={systemId} onValueChange={setSystemId}>
             <Picker.Item label="General" value="" />

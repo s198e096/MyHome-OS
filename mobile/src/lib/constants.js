@@ -14,6 +14,13 @@ export const FREE_SYSTEM_LIMIT = 10;
 
 export const ROOMS = ["Living Room", "Dining Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Other"];
 
+// Household bills logged as costs. They belong to the whole home, not one
+// system, so choosing one hides the system picker and saves as General.
+export const OTHER_BILLS = "Other bills";
+export const BILL_CATEGORIES = ["Electricity bill", "Water bill", "Gas bill", OTHER_BILLS];
+export const EXPENSE_CATEGORIES = ["Maintenance", "Repair", "Replacement", "Inspection", ...BILL_CATEGORIES];
+export const isBillCategory = (category) => BILL_CATEGORIES.includes(category);
+
 export const CATEGORY_META = {
   hvac: { label: "HVAC", icon: Wind },
   hvac_indoor: { label: "HVAC - Indoor Unit", icon: Wind },

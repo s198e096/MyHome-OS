@@ -2,7 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
-import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, systemName } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 
@@ -82,7 +82,8 @@ export default function ItemFormScreen({
   };
 
   async function handleSubmit() {
-    const finalSystemId = systemId || null;
+    // Household bills (electricity, water) belong to the whole home, not a system.
+    const finalSystemId = kind === "expense" && isBillCategory(category) ? null : systemId || null;
     setError("");
     try {
       if (kind === "task") {
