@@ -2,7 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
-import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, systemName } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, systemName } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 
@@ -18,6 +18,12 @@ export default function ItemFormScreen({
   onAddFurniture, onUpdateFurniture, onDeleteFurniture,
 }) {
   const isEdit = !!item;
+  // New systems ask what type they are first, so the rest of the form (and
+  // which fields apply, e.g. filter size) is tailored to that from the
+  // start, rather than showing every field with a category picker buried
+  // inside the form. Editing an existing system skips this — its category
+  // is already set, and stays changeable inline as before.
+  const [categoryChosen, setCategoryChosen] = useState(isEdit || kind !== "system");
 
   const [title, setTitle] = useState(
     kind === "expense" ? item?.note || "" : kind === "furniture" ? item?.name || "" : item?.title || item?.label || ""
@@ -63,7 +69,7 @@ export default function ItemFormScreen({
   const titles = {
     task: isEdit ? "Edit task" : "Add task",
     expense: isEdit ? "Edit expense" : "Add expense",
-    system: isEdit ? "Edit system" : "Add system",
+    system: isEdit ? "Edit system" : `Add ${CATEGORY_META[sysCategory]?.label || "system"}`,
     doc: isEdit ? "Edit document" : "Add document",
     furniture: isEdit ? "Edit furniture" : "Add furniture",
   };
@@ -171,6 +177,41 @@ export default function ItemFormScreen({
     onBack();
   }
 
+  if (kind === "system" && !categoryChosen) {
+    const options = Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac");
+    return (
+      <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+          <ChevronLeft size={16} color="#78716c" />
+          <Text className="text-[13px] text-stone-500">Systems</Text>
+        </Pressable>
+        <Text className="text-[17px] font-semibold text-stone-900 mb-1">What type of system is this?</Text>
+        <Text className="text-[12.5px] text-stone-500 mb-4">We&apos;ll tailor the next page to what you&apos;re adding.</Text>
+        <View className="flex-row flex-wrap gap-2 mb-6">
+          {options.map(([key, meta]) => {
+            const Icon = meta.icon;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => {
+                  setSysCategory(key);
+                  setCategoryChosen(true);
+                }}
+                className="items-center justify-center rounded-xl py-3 px-2"
+                style={{ flexBasis: "31%", flexGrow: 1, backgroundColor: "white", borderWidth: 1, borderColor: "#E0E8D3" }}
+              >
+                <Icon size={20} color="#5F5B50" />
+                <Text className="text-[11.5px] font-semibold mt-1.5 text-center" style={{ color: "#5F5B50" }} numberOfLines={2}>
+                  {meta.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
     <ScrollView
@@ -179,9 +220,12 @@ export default function ItemFormScreen({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+      <Pressable
+        onPress={() => (kind === "system" && !isEdit ? setCategoryChosen(false) : onBack())}
+        className="flex-row items-center gap-1 mb-3"
+      >
         <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">{backLabels[kind]}</Text>
+        <Text className="text-[13px] text-stone-500">{kind === "system" && !isEdit ? "Change type" : backLabels[kind]}</Text>
       </Pressable>
 
       {photoUrl && !photoUrl.toLowerCase().endsWith(".pdf") && (kind === "system" || kind === "furniture" || kind === "doc") && (
@@ -225,6 +269,7 @@ export default function ItemFormScreen({
         sysManualUrl={sysManualUrl} setSysManualUrl={setSysManualUrl}
         receiptPhotoUrls={receiptPhotoUrls} setReceiptPhotoUrls={setReceiptPhotoUrls}
         warrantyPhotoUrls={warrantyPhotoUrls} setWarrantyPhotoUrls={setWarrantyPhotoUrls}
+        hideCategoryPicker={kind === "system" && !isEdit}
       />
 
       {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}

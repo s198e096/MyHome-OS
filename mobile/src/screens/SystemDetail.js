@@ -1,15 +1,37 @@
 import { useState, createElement } from "react";
-import { View, Text, Pressable, Image, ScrollView } from "react-native";
+import { View, Text, Pressable, Image, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Pencil } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { ChevronLeft, Pencil, Shield, Clock, FileText } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName, systemIcon } from "../lib/constants.js";
-import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, yearsFromToday } from "../lib/forecast.js";
+import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, yearsFromToday, systemStatus } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
 
 const PLAN_YEARS = [5, 10, 15, 20];
+const MONO_FONT = Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" });
+
+// Brighter variants of STATUS_COLOR for use on the dark hero panel, where
+// the normal (darker) status colors wouldn't read clearly.
+const STATUS_BRIGHT = { green: "#8FD169", yellow: "#F0C14B", red: "#E2726B" };
+const STATUS_LABEL = { green: "On track", yellow: "Needs attention", red: "Overdue" };
 
 const monthYear = (year, month) =>
   new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+
+function SpecTile({ label, value, valueColor, mono }) {
+  return (
+    <View className="rounded-xl p-3" style={{ flexBasis: "48%", flexGrow: 1, backgroundColor: "white", borderWidth: 1, borderColor: "#E0E8D3" }}>
+      <Text className="text-[10px] font-semibold text-stone-400" style={{ letterSpacing: 0.6 }}>{label.toUpperCase()}</Text>
+      <Text
+        className="text-[14px] font-semibold mt-1"
+        numberOfLines={1}
+        style={{ color: valueColor || "#1C2B14", fontFamily: mono ? MONO_FONT : undefined }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
 
 export default function SystemDetail({ sys, tasks, documents, warranties, onBack, onEdit, onSetPlan }) {
   const meta = CATEGORY_META[sys.category];
@@ -20,6 +42,14 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
     plan?.source === "plan" && plan.year * 12 + plan.month - 1 < TODAY.getFullYear() * 12 + TODAY.getMonth();
   const [planError, setPlanError] = useState("");
   const insets = useSafeAreaInsets();
+  const status = systemStatus(sys, tasks);
+
+  let lifePct = null;
+  if (hasEstimate) {
+    const ageYears = (TODAY - new Date(sys.purchaseDate)) / (365.25 * 86400000);
+    lifePct = Math.max(0, Math.min(100, Math.round((ageYears / sys.expectedLifeYears) * 100)));
+  }
+  const lifeColor = lifePct == null ? "#D9E8C4" : lifePct >= 90 ? STATUS_BRIGHT.red : lifePct >= 60 ? STATUS_BRIGHT.yellow : STATUS_BRIGHT.green;
 
   async function setPlan(date) {
     setPlanError("");
@@ -48,44 +78,65 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
       </View>
 
       {sys.photoUrl && (
-        <View className="rounded-xl bg-white p-2 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+        <View className="rounded-xl bg-white p-2 mb-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
           <Image source={{ uri: sys.photoUrl }} style={{ width: "100%", height: 180, borderRadius: 8 }} resizeMode="cover" />
         </View>
       )}
 
-      <View className="flex-row items-center gap-3 mb-4">
-        <View className="rounded-lg p-2.5 bg-[#F5F8F0]">
-          {createElement(Icon, { size: 20, color: "#5F5B50" })}
+      <LinearGradient colors={["#1C2B14", "#0A0F07"]} className="rounded-2xl p-4 mb-4" style={{ overflow: "hidden" }}>
+        <View className="flex-row items-start justify-between gap-2">
+          <View className="flex-row items-center gap-3 flex-1 min-w-0">
+            <View
+              className="rounded-xl items-center justify-center"
+              style={{ width: 46, height: 46, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" }}
+            >
+              {createElement(Icon, { size: 22, color: "#D9E8C4" })}
+            </View>
+            <View className="flex-1 min-w-0">
+              <Text className="text-[17px] font-bold text-white" numberOfLines={1}>{systemName(sys)}</Text>
+              <Text className="text-[12px]" style={{ color: "#9FB08A" }} numberOfLines={1}>{meta.label} · {sys.location}</Text>
+            </View>
+          </View>
+          <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: STATUS_BRIGHT[status] }} />
+            <Text className="text-[11px] font-semibold" style={{ color: "#D9E8C4" }}>{STATUS_LABEL[status]}</Text>
+          </View>
         </View>
-        <View>
-          <Text className="text-[17px] font-semibold text-stone-900">{systemName(sys)}</Text>
-          <Text className="text-[12px] text-stone-400">{meta.label} · {sys.location}</Text>
-        </View>
-      </View>
 
-      <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-        {!!sys.serialNumber && <LedgerRow label="Serial number" value={sys.serialNumber} />}
-        <LedgerRow
+        <View className="mt-4">
+          <View className="flex-row items-center justify-between mb-1.5">
+            <Text className="text-[11px]" style={{ color: "#9FB08A" }}>Expected life used</Text>
+            <Text className="text-[11px] font-semibold" style={{ color: "#D9E8C4" }}>{lifePct != null ? `${lifePct}%` : "Not enough data"}</Text>
+          </View>
+          <View className="rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "rgba(255,255,255,0.12)" }}>
+            <View style={{ width: `${lifePct ?? 0}%`, height: 6, backgroundColor: lifeColor, borderRadius: 999 }} />
+          </View>
+        </View>
+      </LinearGradient>
+
+      <View className="flex-row flex-wrap gap-2 mb-4">
+        {!!sys.serialNumber && <SpecTile label="Serial" value={sys.serialNumber} mono />}
+        <SpecTile
           label="Installed"
           value={sys.purchaseDate ? new Date(sys.purchaseDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Not set"}
         />
-        <LedgerRow label="Purchase price" value={sys.purchasePrice != null ? money(sys.purchasePrice) : "Not set"} />
-        <LedgerRow label="Expected life" value={sys.expectedLifeYears != null ? `${sys.expectedLifeYears} years` : "Not set"} />
-        <LedgerRow
+        <SpecTile label="Purchase price" value={sys.purchasePrice != null ? money(sys.purchasePrice) : "Not set"} />
+        <SpecTile label="Expected life" value={sys.expectedLifeYears != null ? `${sys.expectedLifeYears} yrs` : "Not set"} />
+        <SpecTile
           label="Est. replacement"
-          value={hasEstimate ? `${money(sys.replacementCost)}, ${estimatedReplacementYear(sys)}` : "Not set"}
+          value={hasEstimate ? `${money(sys.replacementCost)} · ${estimatedReplacementYear(sys)}` : "Not set"}
         />
-        <LedgerRow
+        <SpecTile
           label="Warranty"
           value={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? "Active" : "Expired"}
           valueColor={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? STATUS_COLOR.green : STATUS_COLOR.red}
         />
-        <LedgerRow
-          label="Registered with vendor"
+        <SpecTile
+          label="Registered"
           value={sys.warrantyRegistered ? "Yes" : "No"}
           valueColor={sys.warrantyRegistered ? STATUS_COLOR.green : "#9C978C"}
         />
-        <LedgerRow
+        <SpecTile
           label="Planned replacement"
           value={
             sys.plannedReplacementDate
@@ -155,7 +206,10 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
 
       {warranties.length > 0 && (
         <>
-          <Text className="text-[12px] font-semibold text-stone-500 mb-1">Warranty details</Text>
+          <View className="flex-row items-center gap-1.5 mb-1">
+            <Shield size={13} color="#78716c" />
+            <Text className="text-[12px] font-semibold text-stone-500">Warranty details</Text>
+          </View>
           <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
             {warranties.map((w) => (
               <LedgerRow
@@ -170,7 +224,10 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
         </>
       )}
 
-      <Text className="text-[12px] font-semibold text-stone-500 mb-1">Upcoming tasks</Text>
+      <View className="flex-row items-center gap-1.5 mb-1">
+        <Clock size={13} color="#78716c" />
+        <Text className="text-[12px] font-semibold text-stone-500">Upcoming tasks</Text>
+      </View>
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         {tasks.length === 0 && <Text className="py-3 text-[13px] text-stone-400">No tasks scheduled.</Text>}
         {tasks.map((t) => (
@@ -178,7 +235,10 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
         ))}
       </View>
 
-      <Text className="text-[12px] font-semibold text-stone-500 mb-1">Documents</Text>
+      <View className="flex-row items-center gap-1.5 mb-1">
+        <FileText size={13} color="#78716c" />
+        <Text className="text-[12px] font-semibold text-stone-500">Documents</Text>
+      </View>
       <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         {documents.length === 0 && <Text className="py-3 text-[13px] text-stone-400">No documents attached.</Text>}
         {documents.map((d) => (
