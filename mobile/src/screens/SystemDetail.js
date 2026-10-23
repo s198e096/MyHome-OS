@@ -44,11 +44,16 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
   const insets = useSafeAreaInsets();
   const status = systemStatus(sys, tasks);
 
+  // The life bar only needs the install date and expected life, not a replacement cost.
+  const hasLife = !!sys.purchaseDate && sys.expectedLifeYears > 0;
   let lifePct = null;
-  if (hasEstimate) {
-    const ageYears = (TODAY - new Date(sys.purchaseDate)) / (365.25 * 86400000);
+  let ageYears = null;
+  if (hasLife) {
+    ageYears = Math.max(0, (TODAY - new Date(sys.purchaseDate)) / (365.25 * 86400000));
     lifePct = Math.max(0, Math.min(100, Math.round((ageYears / sys.expectedLifeYears) * 100)));
   }
+  const subtitle = [meta.label, sys.location].filter(Boolean).join(" · ");
+  const showPhoto = !!sys.photoUrl && !/\.pdf$/i.test(sys.photoUrl);
   const lifeColor = lifePct == null ? "#D9E8C4" : lifePct >= 90 ? STATUS_BRIGHT.red : lifePct >= 60 ? STATUS_BRIGHT.yellow : STATUS_BRIGHT.green;
 
   async function setPlan(date) {
@@ -77,42 +82,63 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
         </Pressable>
       </View>
 
-      {sys.photoUrl && (
-        <View className="rounded-xl bg-white p-2 mb-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-          <Image source={{ uri: sys.photoUrl }} style={{ width: "100%", height: 180, borderRadius: 8 }} resizeMode="cover" />
-        </View>
-      )}
+      {/* Outer view carries the shadow; the gradient inside clips the photo to the rounded corners. */}
+      <View
+        className="mb-4"
+        style={{
+          borderRadius: 18,
+          shadowColor: "#0A0F07",
+          shadowOpacity: 0.22,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 6 },
+          elevation: 5,
+        }}
+      >
+        <LinearGradient
+          colors={["#1C2B14", "#0A0F07"]}
+          style={{ borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}
+        >
+          {showPhoto && <Image source={{ uri: sys.photoUrl }} style={{ width: "100%", height: 160 }} resizeMode="cover" />}
 
-      <LinearGradient colors={["#1C2B14", "#0A0F07"]} className="rounded-2xl p-4 mb-4" style={{ overflow: "hidden" }}>
-        <View className="flex-row items-start justify-between gap-2">
-          <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View
-              className="rounded-xl items-center justify-center"
-              style={{ width: 46, height: 46, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" }}
-            >
-              {createElement(Icon, { size: 22, color: "#D9E8C4" })}
+          <View className="p-4">
+            <View className="flex-row items-start justify-between gap-2">
+              <View className="flex-row items-center gap-3 flex-1 min-w-0">
+                <View
+                  className="rounded-xl items-center justify-center"
+                  style={{ width: 46, height: 46, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" }}
+                >
+                  {createElement(Icon, { size: 22, color: "#D9E8C4" })}
+                </View>
+                <View className="flex-1 min-w-0">
+                  <Text className="text-[17px] font-bold text-white" numberOfLines={2}>{systemName(sys)}</Text>
+                  {!!subtitle && (
+                    <Text className="text-[12px] mt-0.5" style={{ color: "#9FB08A" }} numberOfLines={1}>{subtitle}</Text>
+                  )}
+                </View>
+              </View>
+              <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: STATUS_BRIGHT[status] }} />
+                <Text className="text-[11px] font-semibold" style={{ color: "#D9E8C4" }}>{STATUS_LABEL[status]}</Text>
+              </View>
             </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-[17px] font-bold text-white" numberOfLines={1}>{systemName(sys)}</Text>
-              <Text className="text-[12px]" style={{ color: "#9FB08A" }} numberOfLines={1}>{meta.label} · {sys.location}</Text>
-            </View>
-          </View>
-          <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: STATUS_BRIGHT[status] }} />
-            <Text className="text-[11px] font-semibold" style={{ color: "#D9E8C4" }}>{STATUS_LABEL[status]}</Text>
-          </View>
-        </View>
 
-        <View className="mt-4">
-          <View className="flex-row items-center justify-between mb-1.5">
-            <Text className="text-[11px]" style={{ color: "#9FB08A" }}>Expected life used</Text>
-            <Text className="text-[11px] font-semibold" style={{ color: "#D9E8C4" }}>{lifePct != null ? `${lifePct}%` : "Not enough data"}</Text>
+            <View className="mt-4 pt-3.5" style={{ borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)" }}>
+              <View className="flex-row items-center justify-between mb-1.5">
+                <Text className="text-[11px]" style={{ color: "#9FB08A" }}>Expected life used</Text>
+                <Text className="text-[12px] font-bold" style={{ color: "#D9E8C4" }}>{lifePct != null ? `${lifePct}%` : "—"}</Text>
+              </View>
+              <View className="rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "rgba(255,255,255,0.12)" }}>
+                <View style={{ width: `${lifePct ?? 0}%`, height: 6, backgroundColor: lifeColor, borderRadius: 999 }} />
+              </View>
+              <Text className="text-[11px] mt-1.5" style={{ color: "#9FB08A" }}>
+                {lifePct != null
+                  ? `${Number(ageYears.toFixed(1))} of ${sys.expectedLifeYears} years`
+                  : "Add the install date and expected life to track this."}
+              </Text>
+            </View>
           </View>
-          <View className="rounded-full overflow-hidden" style={{ height: 6, backgroundColor: "rgba(255,255,255,0.12)" }}>
-            <View style={{ width: `${lifePct ?? 0}%`, height: 6, backgroundColor: lifeColor, borderRadius: 999 }} />
-          </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </View>
 
       <View className="flex-row flex-wrap gap-2 mb-4">
         {!!sys.serialNumber && <SpecTile label="Serial" value={sys.serialNumber} mono />}
