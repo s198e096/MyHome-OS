@@ -100,11 +100,28 @@ export function systemStatus(sys, tasks) {
   return "green";
 }
 
-export function computeForecast(systems, spentThisYear) {
-  const years = [2026, 2027, 2028, 2029, 2030];
+export function computeForecast(systems, expenses) {
+  const currentYear = TODAY.getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
+
+  const totalsByYear = {};
+  for (const e of expenses) {
+    const y = new Date(e.date).getFullYear();
+    totalsByYear[y] = (totalsByYear[y] || 0) + e.amount;
+  }
+
+  // Baseline for future years: the average of actual past years' spending,
+  // so it reflects this home's real upkeep costs rather than a guess. No
+  // history yet (e.g. a brand-new home) means no baseline, not a made-up
+  // number.
+  const pastYears = Object.keys(totalsByYear).map(Number).filter((y) => y < currentYear);
+  const averageAnnualSpend = pastYears.length
+    ? pastYears.reduce((s, y) => s + totalsByYear[y], 0) / pastYears.length
+    : 0;
+
   return years.map((y) => {
     const replacing = systems.filter((s) => replacementYear(s) === y);
-    const base = y === TODAY.getFullYear() ? spentThisYear : 550;
+    const base = y === currentYear ? totalsByYear[y] || 0 : averageAnnualSpend;
     const big = replacing.reduce((s, sys) => s + sys.replacementCost, 0);
     return { year: y, amount: base + big, systems: replacing };
   });

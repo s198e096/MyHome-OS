@@ -98,7 +98,7 @@ export function AppDataProvider({ children }) {
     .filter((e) => new Date(e.date).getFullYear() === TODAY.getFullYear())
     .reduce((s, e) => s + e.amount, 0);
 
-  const forecast = useMemo(() => computeForecast(systems, spentThisYear), [systems, spentThisYear]);
+  const forecast = useMemo(() => computeForecast(systems, expenses), [systems, expenses]);
 
   const next12mo = forecast[0].amount * 0.4 + (forecast[1] ? forecast[1].amount * 0.6 : 0);
   const monthlyReserve = Math.round(forecast.reduce((s, f) => s + f.amount, 0) / (forecast.length * 12));

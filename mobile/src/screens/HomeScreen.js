@@ -195,10 +195,10 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
         <View className="mb-5">
           <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>
           <View className="flex-row gap-2">
-            <View className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+            <Pressable onPress={() => onNavigate("/costs")} className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
               <Text className="text-[11px] text-stone-400">Spent this year</Text>
               <Text className="text-[18px] font-semibold text-stone-900">{money(spentThisYear)}</Text>
-            </View>
+            </Pressable>
             <View className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
               <Text className="text-[11px] text-stone-400">Next 12 months</Text>
               <Text className="text-[18px] font-semibold text-stone-900">{money(Math.round(next12mo))}</Text>
