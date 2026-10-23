@@ -5,16 +5,18 @@ import CostsScreen from "../../../screens/CostsScreen.js";
 
 export default function Costs() {
   const router = useRouter();
-  const { expenses, forecast, systemById } = useAppData();
+  const { expenses, systemById, spentThisYear, next12mo, monthlyReserve } = useAppData();
 
   return (
     <AnimatedTabScreen tabKey="costs">
       <CostsScreen
         expenses={expenses}
-        forecast={forecast}
         systemById={systemById}
-        onEdit={(e) => router.push(`/costs/${e.id}/edit`)}
+        spentThisYear={spentThisYear}
+        next12mo={next12mo}
+        monthlyReserve={monthlyReserve}
         onAdd={() => router.push("/costs/new")}
+        onViewLog={() => router.push("/costs/log")}
       />
     </AnimatedTabScreen>
   );

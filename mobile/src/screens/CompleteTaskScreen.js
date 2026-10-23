@@ -129,39 +129,53 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                 </View>
 
                 {diy ? (
-                  <View className="mb-4">
-                    <Text className="text-[11px] text-stone-500 mb-1">Time spent</Text>
-                    <View className="flex-row gap-2">
+                  <>
+                    <View className="mb-4">
+                      <Text className="text-[11px] text-stone-500 mb-1">Time spent</Text>
+                      <View className="flex-row gap-2">
+                        <TextInput
+                          value={timeSpent}
+                          onChangeText={setTimeSpent}
+                          placeholder="e.g. 2"
+                          inputMode="decimal"
+                          className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
+                          style={fieldStyle}
+                          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                        />
+                        <Pressable
+                          onPress={() => setTimeUnitDropdownOpen(true)}
+                          className="flex-row items-center justify-between px-3 py-2 rounded-lg"
+                          style={[fieldStyle, { width: 120 }]}
+                        >
+                          <Text className="text-[13.5px] text-stone-800">{TIME_UNITS.find((u) => u.value === timeUnit)?.label}</Text>
+                          <ChevronDown size={14} color="#78716c" />
+                        </Pressable>
+                      </View>
+                      <SelectModal
+                        visible={timeUnitDropdownOpen}
+                        title="Time unit"
+                        options={TIME_UNITS}
+                        selectedValue={timeUnit}
+                        onSelect={(value) => {
+                          setTimeUnit(value);
+                          setTimeUnitDropdownOpen(false);
+                        }}
+                        onClose={() => setTimeUnitDropdownOpen(false)}
+                      />
+                    </View>
+
+                    <View className="mb-4">
+                      <Text className="text-[11px] text-stone-500 mb-1">Parts vendor</Text>
                       <TextInput
-                        value={timeSpent}
-                        onChangeText={setTimeSpent}
-                        placeholder="e.g. 2"
-                        inputMode="decimal"
-                        className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
+                        value={vendor}
+                        onChangeText={setVendor}
+                        placeholder="e.g. Home Depot"
+                        className="w-full px-3 py-2 rounded-lg text-[13.5px]"
                         style={fieldStyle}
                         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                       />
-                      <Pressable
-                        onPress={() => setTimeUnitDropdownOpen(true)}
-                        className="flex-row items-center justify-between px-3 py-2 rounded-lg"
-                        style={[fieldStyle, { width: 120 }]}
-                      >
-                        <Text className="text-[13.5px] text-stone-800">{TIME_UNITS.find((u) => u.value === timeUnit)?.label}</Text>
-                        <ChevronDown size={14} color="#78716c" />
-                      </Pressable>
                     </View>
-                    <SelectModal
-                      visible={timeUnitDropdownOpen}
-                      title="Time unit"
-                      options={TIME_UNITS}
-                      selectedValue={timeUnit}
-                      onSelect={(value) => {
-                        setTimeUnit(value);
-                        setTimeUnitDropdownOpen(false);
-                      }}
-                      onClose={() => setTimeUnitDropdownOpen(false)}
-                    />
-                  </View>
+                  </>
                 ) : (
                   <View className="mb-4">
                     <Text className="text-[11px] text-stone-500 mb-1">Vendor name</Text>

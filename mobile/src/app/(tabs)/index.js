@@ -14,9 +14,6 @@ export default function Home() {
       systemById={data.systemById}
       systems={data.systems}
       tasks={data.tasks}
-      spentThisYear={data.spentThisYear}
-      next12mo={data.next12mo}
-      monthlyReserve={data.monthlyReserve}
       profile={data.profile}
       onOpenAccount={() => router.push("/account")}
       onOpenAssistant={(prefill) => router.push(prefill ? { pathname: "/ask", params: { prefill } } : "/ask")}

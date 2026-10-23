@@ -143,7 +143,10 @@ export function AppDataProvider({ children }) {
 
   // Completing a task from the "did this cost anything?" prompt: optionally
   // logs a linked expense first (so it's in the expense log with its own
-  // parts/labor/DIY-or-vendor breakdown), then completes the task as usual.
+  // parts/labor/time-or-vendor breakdown), then completes the task as
+  // usual. `vendor` means different things depending on `diy` (where the
+  // parts were bought vs. who was hired), but it's the same column either
+  // way since `diy` already disambiguates it.
   async function completeTaskWithCost(id, cost) {
     const t = tasks.find((x) => x.id === id);
     if (cost) {
@@ -160,7 +163,7 @@ export function AppDataProvider({ children }) {
         laborCost,
         diy: cost.diy,
         timeSpentHours: cost.diy && cost.timeSpentHours ? Number(cost.timeSpentHours) : null,
-        vendor: !cost.diy && cost.vendor ? cost.vendor.trim() : null,
+        vendor: cost.vendor ? cost.vendor.trim() : null,
       });
       setExpenses((es) => [...es, created]);
     }

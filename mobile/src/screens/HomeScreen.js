@@ -59,9 +59,9 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
         </View>
       )}
 
-      <View className="items-center mb-4">
-        <Pressable onPress={() => setActionsOpen(true)} className="flex-row items-center gap-2 bg-white rounded-full px-4 py-2">
-          <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>Actions</Text>
+      <View className="mb-4">
+        <Pressable onPress={() => setActionsOpen(true)} className="w-full flex-row items-center justify-center gap-2 bg-white rounded-2xl px-5 py-4">
+          <Text className="text-[15.5px] font-semibold" style={{ color: PRIMARY }}>What would you like to do?</Text>
           <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
         </Pressable>
         <SelectModal
@@ -146,7 +146,7 @@ function UpcomingTasksList({ tasks, systemById, onComplete }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, spentThisYear, next12mo, monthlyReserve, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask }) {
+export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask }) {
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const thisMonthTasks = upcomingTasks.filter((t) => {
     const d = new Date(`${t.dueDate}T00:00:00`);
@@ -191,25 +191,6 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
         )}
 
         <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onComplete={onCompleteTask} />
-
-        <View className="mb-5">
-          <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>
-          <View className="flex-row gap-2">
-            <Pressable onPress={() => onNavigate("/costs")} className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-              <Text className="text-[11px] text-stone-400">Spent this year</Text>
-              <Text className="text-[18px] font-semibold text-stone-900">{money(spentThisYear)}</Text>
-            </Pressable>
-            <View className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-              <Text className="text-[11px] text-stone-400">Next 12 months</Text>
-              <Text className="text-[18px] font-semibold text-stone-900">{money(Math.round(next12mo))}</Text>
-            </View>
-          </View>
-          <View className="rounded-xl bg-white p-3 mt-2" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-            <Text className="text-[11px] text-stone-400">Recommended monthly reserve</Text>
-            <Text className="text-[18px] font-semibold text-stone-900">{money(monthlyReserve)}/mo</Text>
-          </View>
-        </View>
-
       </View>
     </ScrollView>
   );

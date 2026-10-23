@@ -100,6 +100,39 @@ export function systemStatus(sys, tasks) {
   return "green";
 }
 
+// Years that have at least one expense, newest first — populates the year
+// picker above the per-system breakdown charts.
+export function expenseYears(expenses) {
+  return [...new Set(expenses.map((e) => new Date(e.date).getFullYear()))].sort((a, b) => b - a);
+}
+
+// One chosen year's expenses, grouped by system ("general" for none) and
+// summed, highest first — the pie chart's slices.
+export function expensesBySystemForYear(expenses, year) {
+  const totals = {};
+  for (const e of expenses) {
+    if (new Date(e.date).getFullYear() !== year) continue;
+    const key = e.systemId || "general";
+    totals[key] = (totals[key] || 0) + e.amount;
+  }
+  return Object.entries(totals)
+    .map(([key, amount]) => ({ key, value: amount }))
+    .sort((a, b) => b.value - a.value);
+}
+
+// Same breakdown, but DIY hours logged on completed tasks instead of $.
+export function timeSpentBySystemForYear(expenses, year) {
+  const totals = {};
+  for (const e of expenses) {
+    if (!e.timeSpentHours || new Date(e.date).getFullYear() !== year) continue;
+    const key = e.systemId || "general";
+    totals[key] = (totals[key] || 0) + e.timeSpentHours;
+  }
+  return Object.entries(totals)
+    .map(([key, hours]) => ({ key, value: hours }))
+    .sort((a, b) => b.value - a.value);
+}
+
 export function computeForecast(systems, expenses) {
   const currentYear = TODAY.getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
