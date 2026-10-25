@@ -4,7 +4,7 @@ import SystemDocsScreen from "../../../screens/SystemDocsScreen.js";
 
 export default function GeneralDocs() {
   const router = useRouter();
-  const { documents } = useAppData();
+  const { documents, deleteDocument } = useAppData();
 
   return (
     <SystemDocsScreen
@@ -12,6 +12,7 @@ export default function GeneralDocs() {
       documents={documents.filter((d) => !d.systemId)}
       onBack={() => router.back()}
       onEdit={(d) => router.push(`/docs/${d.id}/edit`)}
+      onDelete={deleteDocument}
     />
   );
 }

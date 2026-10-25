@@ -14,6 +14,7 @@ import {
   updateEnergyCheckStatus,
 } from "./db.js";
 import { useSession } from "./auth-context.js";
+  removeStoredManual,
 
 const AppDataContext = createContext(null);
 
@@ -231,8 +232,11 @@ export function AppDataProvider({ children }) {
     const created = await db.warranties.add({ systemId, type, expirationDate, estimated });
     setWarranties((ws) => [...ws, created]);
     return created;
+    const doc = documents.find((d) => d.id === id);
   }
 
+    // A manual PDF saved to the user's storage goes with its document.
+    await removeStoredManual(doc?.photoUrl);
   async function updateWarranty(id, patch) {
     const current = warranties.find((w) => w.id === id);
     const updated = await db.warranties.update(id, { ...current, ...patch });

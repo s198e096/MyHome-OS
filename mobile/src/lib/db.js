@@ -1,6 +1,7 @@
 import * as Linking from "expo-linking";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { supabase } from "./supabase.js";
+import { storedManualPath } from "./manual-links.js";
 
 const rowToSystem = (r) => ({
   id: r.id,
@@ -284,6 +285,21 @@ export async function uploadPhoto(asset) {
   if (error) throw error;
 
   return supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
+}
+
+// Removes the manual PDF a label scan saved to the user's own storage folder
+// when its document is deleted, so the file doesn't pile up unreferenced.
+// Any other URL (a ManualsLib link, an uploaded photo) has no such file and
+// is left alone. Best-effort and never throws: the document is already gone
+// either way, and a leftover file is harmless.
+export async function removeStoredManual(url) {
+  const path = storedManualPath(url);
+  if (!path) return;
+  try {
+    await supabase.storage.from("photos").remove([path]);
+  } catch {
+    // ignore
+  }
 }
 
 export async function scanSystemLabel(photoUrl) {

@@ -7,7 +7,7 @@ import SystemDocsScreen from "../../../../screens/SystemDocsScreen.js";
 export default function DocsBySystem() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { documents, systemById } = useAppData();
+  const { documents, systemById, deleteDocument } = useAppData();
   const sys = systemById(id);
 
   if (!sys) {
@@ -24,6 +24,7 @@ export default function DocsBySystem() {
       documents={documents.filter((d) => d.systemId === sys.id)}
       onBack={() => router.back()}
       onEdit={(d) => router.push(`/docs/${d.id}/edit`)}
+      onDelete={deleteDocument}
     />
   );
 }
