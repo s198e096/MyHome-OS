@@ -390,8 +390,6 @@ export const db = {
   systems: {
     add: (s) => insertRow("systems", systemToRow(s), rowToSystem),
     update: (id, patch) => updateRow("systems", id, systemToRow(patch), rowToSystem),
-    setPlannedReplacement: (id, date) =>
-      updateRow("systems", id, { planned_replacement_date: date || null }, rowToSystem),
     remove: (id) => deleteRow("systems", id),
   },
   tasks: {

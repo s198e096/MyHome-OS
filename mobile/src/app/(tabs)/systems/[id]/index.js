@@ -6,7 +6,7 @@ import SystemDetail from "../../../../screens/SystemDetail.js";
 export default function SystemDetailRoute() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { systemById, tasks, documents, warranties, setPlannedReplacement } = useAppData();
+  const { systemById, tasks, documents, warranties } = useAppData();
   const sys = systemById(id);
 
   if (!sys) {
@@ -25,7 +25,6 @@ export default function SystemDetailRoute() {
       warranties={warranties.filter((w) => w.systemId === sys.id)}
       onBack={() => router.back()}
       onEdit={() => router.push(`/systems/${sys.id}/edit`)}
-      onSetPlan={(date) => setPlannedReplacement(sys.id, date)}
     />
   );
 }
