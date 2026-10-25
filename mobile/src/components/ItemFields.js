@@ -394,7 +394,7 @@ export default function ItemFields({
           <SelectModal
             visible={docTypeDropdownOpen}
             title="Document type"
-            options={["Receipt", "Warranty", "Invoice", "Manual"].map((t) => ({ value: t, label: t }))}
+            options={["Receipt", "Warranty", "Invoice", "Manual", "Maintenance Invoice"].map((t) => ({ value: t, label: t }))}
             selectedValue={docType}
             onSelect={(value) => {
               setDocType(value);
