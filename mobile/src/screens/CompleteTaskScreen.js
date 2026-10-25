@@ -3,8 +3,10 @@ import { KeyboardAvoidingView, Platform, View, Text, Pressable, TextInput, Scrol
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronDown } from "lucide-react-native";
 import { PRIMARY, systemName } from "../lib/constants.js";
+import { TODAY } from "../lib/forecast.js";
 import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 import SelectModal from "../components/SelectModal.js";
+import { DateField } from "../components/ItemFields.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -37,12 +39,13 @@ function ChoicePressable({ label, active, onPress, disabled }) {
   );
 }
 
-// Reached by tapping the checkbox on an open task — asks whether completing
-// it cost anything, and if so, splits that into parts/labor plus either
+// Reached from the "Complete" action on a task — asks when it was done and
+// whether it cost anything, splitting a cost into parts/labor plus either
 // time spent (DIY) or who was hired (vendor), before actually marking the
-// task done. "No cost" completes immediately with no further questions.
+// task done.
 export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
   const insets = useSafeAreaInsets();
+  const [completedDate, setCompletedDate] = useState(TODAY.toISOString().slice(0, 10));
   const [hasCost, setHasCost] = useState(null);
   const [diy, setDiy] = useState(null);
   const [partsCost, setPartsCost] = useState("");
@@ -56,15 +59,10 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
   async function finish(cost) {
     setSaving(true);
     try {
-      await onComplete(cost);
+      await onComplete(cost, completedDate);
     } finally {
       setSaving(false);
     }
-  }
-
-  function chooseNoCost() {
-    setHasCost(false);
-    finish(null);
   }
 
   return (
@@ -85,11 +83,24 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
           {task.title}{sys ? ` · ${systemName(sys)}` : ""}
         </Text>
 
-        <Text className="text-[13px] font-semibold text-stone-800 mb-2">Did this cost anything?</Text>
+        <DateField label="Date completed" value={completedDate} onChange={setCompletedDate} />
+
+        <Text className="text-[13px] font-semibold text-stone-800 mb-2 mt-2">Did this cost anything?</Text>
         <View className="flex-row gap-2 mb-4">
-          <ChoicePressable label="No cost" active={hasCost === false} onPress={chooseNoCost} disabled={saving} />
+          <ChoicePressable label="No cost" active={hasCost === false} onPress={() => setHasCost(false)} disabled={saving} />
           <ChoicePressable label="Yes, add cost" active={hasCost === true} onPress={() => setHasCost(true)} disabled={saving} />
         </View>
+
+        {hasCost === false && (
+          <Pressable
+            onPress={() => finish(null)}
+            disabled={saving}
+            className="w-full py-2.5 rounded-lg items-center mb-6"
+            style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+          >
+            <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Complete task"}</Text>
+          </Pressable>
+        )}
 
         {hasCost === true && (
           <>

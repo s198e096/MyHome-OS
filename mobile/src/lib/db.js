@@ -45,6 +45,7 @@ const rowToTask = (r) => ({
   difficulty: r.difficulty,
   reopenedAt: r.reopened_at ? new Date(r.reopened_at).getTime() : null,
   recurrence: r.recurrence || "",
+  completedDate: r.completed_date || "",
 });
 
 const taskToRow = (t) => ({
@@ -389,11 +390,15 @@ export const db = {
   tasks: {
     add: (t) => insertRow("tasks", taskToRow(t), rowToTask),
     update: (id, patch) => updateRow("tasks", id, taskToRow(patch), rowToTask),
-    setCompleted: (id, completed, reopenedAt) =>
+    setCompleted: (id, completed, reopenedAt, completedDate) =>
       updateRow(
         "tasks",
         id,
-        { completed, reopened_at: reopenedAt ? new Date(reopenedAt).toISOString() : null },
+        {
+          completed,
+          reopened_at: reopenedAt ? new Date(reopenedAt).toISOString() : null,
+          completed_date: completed ? completedDate || null : null,
+        },
         rowToTask
       ),
     remove: (id) => deleteRow("tasks", id),
