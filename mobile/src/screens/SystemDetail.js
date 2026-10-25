@@ -14,9 +14,6 @@ const MONO_FONT = Platform.select({ ios: "Menlo", android: "monospace", default:
 const STATUS_BRIGHT = { green: "#8FD169", yellow: "#F0C14B", red: "#E2726B" };
 const STATUS_LABEL = { green: "On track", yellow: "Needs attention", red: "Overdue" };
 
-const monthYear = (year, month) =>
-  new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
-
 function SpecTile({ label, value, valueColor, mono }) {
   return (
     <View className="rounded-xl p-3" style={{ flexBasis: "48%", flexGrow: 1, backgroundColor: "white", borderWidth: 1, borderColor: "#E0E8D3" }}>
@@ -37,8 +34,6 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
   const Icon = systemIcon(sys);
   const hasEstimate = !!sys.purchaseDate && sys.expectedLifeYears != null && sys.replacementCost != null;
   const plan = replacementPlan(sys);
-  const planPassed =
-    plan?.source === "plan" && plan.year * 12 + plan.month - 1 < TODAY.getFullYear() * 12 + TODAY.getMonth();
   const insets = useSafeAreaInsets();
   const status = systemStatus(sys, tasks);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
@@ -160,15 +155,6 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
           value={sys.warrantyRegistered ? "Yes" : "No"}
           valueColor={sys.warrantyRegistered ? STATUS_COLOR.green : "#9C978C"}
         />
-        <SpecTile
-          label="Planned replacement"
-          value={
-            sys.plannedReplacementDate
-              ? monthYear(...sys.plannedReplacementDate.split("-").slice(0, 2).map(Number))
-              : "Not planned"
-          }
-          valueColor={sys.plannedReplacementDate ? PRIMARY : "#9C978C"}
-        />
       </View>
 
       {plan && (
@@ -176,13 +162,9 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
           <Text className="text-[11px]" style={{ color: STATUS_COLOR.yellow, fontWeight: "600" }}>Recommended savings</Text>
           <Text className="text-[15px]" style={{ color: STATUS_COLOR.yellow, fontWeight: "600" }}>{money(plan.monthly)}/mo toward replacement</Text>
           <Text className="text-[11.5px] mt-1" style={{ color: STATUS_COLOR.yellow }}>
-            {plan.source === "plan"
-              ? planPassed
-                ? `Your planned date (${monthYear(plan.year, plan.month)}) has passed — pick a new one below.`
-                : `To replace it in ${monthYear(plan.year, plan.month)}, ${formatMonths(plan.months)} from now.`
-              : plan.months === 1
-                ? "Based on expected life, replacement is due now. Pick a later date below to spread the cost."
-                : `Based on expected life: replacement due ${plan.year}, ${formatMonths(plan.months)} away.`}
+            {plan.months === 1
+              ? "Based on expected life, replacement is due now."
+              : `Based on expected life: replacement due ${plan.year}, ${formatMonths(plan.months)} away.`}
           </Text>
         </View>
       )}

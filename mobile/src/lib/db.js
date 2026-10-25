@@ -16,7 +16,6 @@ const rowToSystem = (r) => ({
   warrantyExpiration: r.warranty_expiration || "",
   photoUrl: r.photo_url,
   filterSize: r.filter_size || "",
-  plannedReplacementDate: r.planned_replacement_date || "",
   warrantyRegistered: r.warranty_registered ?? false,
 });
 
@@ -33,11 +32,6 @@ const systemToRow = (s) => ({
   warranty_expiration: s.warrantyExpiration || null,
   photo_url: s.photoUrl || null,
   filter_size: s.filterSize || null,
-  // "" means never set: leave the column out so saves still work before the
-  // planned_replacement_date migration is run. null clears an existing plan.
-  ...(s.plannedReplacementDate === undefined || s.plannedReplacementDate === ""
-    ? {}
-    : { planned_replacement_date: s.plannedReplacementDate || null }),
   warranty_registered: !!s.warrantyRegistered,
 });
 

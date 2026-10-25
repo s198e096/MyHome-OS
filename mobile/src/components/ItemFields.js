@@ -145,7 +145,6 @@ export default function ItemFields({
   warranties, setWarranties,
   sysWarrantyRegistered, setSysWarrantyRegistered,
   sysFilterSize, setSysFilterSize,
-  sysPlanned, setSysPlanned,
   sysManualUrl, setSysManualUrl,
   receiptPhotoUrls, setReceiptPhotoUrls,
   warrantyPhotoUrls, setWarrantyPhotoUrls,
@@ -663,15 +662,6 @@ export default function ItemFields({
               </Pressable>
             )}
           </View>
-
-          {setSysPlanned && (
-            <>
-              <DateField label="Planned replacement (optional)" value={sysPlanned} onChange={setSysPlanned} optional />
-              <Text className="text-[11px] text-stone-400 mb-3">
-                When you plan to replace it. Savings are calculated from this date alone. Leave empty to base them on expected life and estimated replacement.
-              </Text>
-            </>
-          )}
         </>
       )}
 
