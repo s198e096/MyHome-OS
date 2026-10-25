@@ -10,11 +10,13 @@ import {
   resolvePendingPropertyValue as resolvePendingPropertyValueRow,
   createCheckoutSession,
   createPortalSession,
+  createReportCheckoutSession,
+  loadReportPurchases,
   loadEnergyChecks,
   updateEnergyCheckStatus,
+  removeStoredManual,
 } from "./db.js";
 import { useSession } from "./auth-context.js";
-  removeStoredManual,
 
 const AppDataContext = createContext(null);
 
@@ -39,10 +41,12 @@ export function AppDataProvider({ children }) {
   const [warranties, setWarranties] = useState([]);
   const [furniture, setFurniture] = useState([]);
   const [energyChecks, setEnergyChecks] = useState([]);
+  const [reportPurchases, setReportPurchases] = useState([]);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (!session) {
+      setReportPurchases([]);
       setDataLoaded(false);
       setSystems([]);
       setTasks([]);
@@ -58,15 +62,19 @@ export function AppDataProvider({ children }) {
     let cancelled = false;
     (async () => {
       const fallbackName = session.user.email?.split("@")[0] || "New user";
-      const [all, profileRow, checksResult] = await Promise.all([
+      const [all, profileRow, checksResult, purchasesResult] = await Promise.all([
         loadAllData(),
         loadProfile(session.user.id, fallbackName),
         loadEnergyChecks().catch((err) => {
           console.error("Failed to load energy checks:", err);
           return [];
         }),
+        // Tolerates the purchases table not existing yet, so the app still
+        // loads before that migration has been run.
+        loadReportPurchases().catch(() => []),
       ]);
       if (cancelled) return;
+      setReportPurchases(purchasesResult);
       setSystems(all.systems);
       setTasks(all.tasks);
       setExpenses(all.expenses);
@@ -224,19 +232,19 @@ export function AppDataProvider({ children }) {
   }
 
   async function deleteDocument(id) {
+    const doc = documents.find((d) => d.id === id);
     await db.documents.remove(id);
     setDocuments((ds) => ds.filter((d) => d.id !== id));
+    // A manual PDF saved to the user's storage goes with its document.
+    await removeStoredManual(doc?.photoUrl);
   }
 
   async function addWarranty(systemId, type, expirationDate, estimated) {
     const created = await db.warranties.add({ systemId, type, expirationDate, estimated });
     setWarranties((ws) => [...ws, created]);
     return created;
-    const doc = documents.find((d) => d.id === id);
   }
 
-    // A manual PDF saved to the user's storage goes with its document.
-    await removeStoredManual(doc?.photoUrl);
   async function updateWarranty(id, patch) {
     const current = warranties.find((w) => w.id === id);
     const updated = await db.warranties.update(id, { ...current, ...patch });
@@ -362,6 +370,23 @@ export function AppDataProvider({ children }) {
     return createPortalSession();
   }
 
+  // The current (unexpired) purchase of a paid report, or null. A purchase
+  // keeps working until the expiry the server stamped on it.
+  function activeReportPurchase(type) {
+    const now = Date.now();
+    return reportPurchases.find((p) => p.reportType === type && new Date(p.expiresAt).getTime() > now) || null;
+  }
+
+  async function buyReport(type) {
+    return createReportCheckoutSession(type);
+  }
+
+  async function refreshReportPurchases() {
+    const list = await loadReportPurchases();
+    setReportPurchases(list);
+    return list;
+  }
+
   const value = {
     dataLoaded,
     systems,
@@ -407,6 +432,10 @@ export function AppDataProvider({ children }) {
     resolvePropertyValuePrompt,
     selectPlan,
     manageBilling,
+    reportPurchases,
+    activeReportPurchase,
+    buyReport,
+    refreshReportPurchases,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

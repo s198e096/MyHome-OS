@@ -354,6 +354,33 @@ export async function createCheckoutSession(planId) {
   return data.url;
 }
 
+// One-time purchase of a paid PDF report ("home_sale" or "insurance_inventory").
+// Returns the Stripe Checkout URL; the purchase is recorded by the Stripe
+// webhook once payment completes, not by the app.
+export async function createReportCheckoutSession(reportType) {
+  const origin = Linking.createURL("/");
+  const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+    body: { reportType, origin },
+  });
+  if (error) throw error;
+  return data.url;
+}
+
+const rowToReportPurchase = (r) => ({
+  id: r.id,
+  reportType: r.report_type,
+  purchasedAt: r.purchased_at,
+  expiresAt: r.expires_at,
+});
+
+// The signed-in user's report purchases, newest first (read-only: only the
+// Stripe webhook can write to this table).
+export async function loadReportPurchases() {
+  const { data, error } = await supabase.from("report_purchases").select("*").order("purchased_at", { ascending: false });
+  if (error) throw error;
+  return data.map(rowToReportPurchase);
+}
+
 export async function createPortalSession() {
   const origin = Linking.createURL("/");
   const { data, error } = await supabase.functions.invoke("create-portal-session", {

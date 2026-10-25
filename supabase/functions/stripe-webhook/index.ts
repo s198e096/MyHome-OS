@@ -1,5 +1,7 @@
 // Receives Stripe events and keeps profiles.plan in sync with what the
-// customer actually paid for. Deploy: `supabase functions deploy stripe-webhook`.
+// customer actually paid for. It also records one-time PDF report purchases
+// (checkout sessions carrying `report_type` metadata) in report_purchases.
+// Deploy: `supabase functions deploy stripe-webhook`.
 // Requires STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET secrets.
 //
 // After deploying, create a webhook endpoint in the Stripe dashboard
@@ -22,6 +24,11 @@ const adminClient = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// How long a report purchase keeps working. Keep in step with
+// REPORT_ACCESS_DAYS in the app (mobile/src/lib/reports/catalog.js), which
+// words the screen.
+const REPORT_ACCESS_DAYS = 30;
+
 Deno.serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   const body = await req.text();
@@ -38,7 +45,28 @@ Deno.serve(async (req) => {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.metadata?.supabase_user_id || session.client_reference_id;
       const plan = session.metadata?.plan;
-      if (userId && plan) {
+      const reportType = session.metadata?.report_type;
+      if (reportType) {
+        // A one-time PDF report, not a plan change. Only record it once the
+        // payment has actually gone through. The unique stripe_session_id makes
+        // a retried webhook harmless; a real failure throws so Stripe retries.
+        if (userId && session.payment_status === "paid") {
+          const purchasedAt = new Date();
+          const expiresAt = new Date(purchasedAt.getTime() + REPORT_ACCESS_DAYS * 24 * 60 * 60 * 1000);
+          const { error } = await adminClient.from("report_purchases").upsert(
+            {
+              user_id: userId,
+              report_type: reportType,
+              stripe_session_id: session.id,
+              amount_cents: session.amount_total,
+              purchased_at: purchasedAt.toISOString(),
+              expires_at: expiresAt.toISOString(),
+            },
+            { onConflict: "stripe_session_id", ignoreDuplicates: true }
+          );
+          if (error) throw error;
+        }
+      } else if (userId && plan) {
         await adminClient
           .from("profiles")
           .update({

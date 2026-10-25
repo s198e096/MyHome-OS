@@ -5,8 +5,9 @@ import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import LedgerRow from "../components/LedgerRow.js";
+import ReportsSection from "../components/ReportsSection.js";
 
-export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut }) {
+export default function AccountScreen({ profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut }) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
   const insets = useSafeAreaInsets();
   const featureChips = buildFeatureSummary(profile);
@@ -75,6 +76,8 @@ export default function AccountScreen({ profile, onEdit, onManagePlan, onSignOut
           </View>
         </>
       )}
+
+      <ReportsSection reports={reports} onBuy={onBuyReport} onGenerate={onGenerateReport} onRecheck={onRecheckReport} />
 
       <Pressable onPress={onSignOut} className="w-full py-2.5 rounded-lg items-center mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         <Text className="text-[13.5px] font-semibold" style={{ color: STATUS_COLOR.red }}>Sign out</Text>

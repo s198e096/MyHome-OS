@@ -1,7 +1,13 @@
 // Creates a Stripe Checkout Session for the signed-in user to subscribe to
-// (or one-time purchase) a plan, and returns the URL to redirect them to.
+// (or one-time purchase) a plan — or to buy a one-time PDF report ("home_sale"
+// or "insurance_inventory", sent as `reportType`) — and returns the URL to
+// redirect them to.
 // Deploy: `supabase functions deploy create-checkout-session`.
-// Requires the STRIPE_SECRET_KEY secret to be set on the project.
+// Requires the STRIPE_SECRET_KEY secret to be set on the project, plus one
+// secret per report holding its one-time Stripe price id:
+//   STRIPE_PRICE_HOME_SALE            ($14.99)
+//   STRIPE_PRICE_INSURANCE_INVENTORY  ($29.99)
+// A report purchase is recorded by stripe-webhook, not here.
 //
 // "Enforce JWT Verification" must be turned OFF for this function, since
 // Supabase's gateway checks the JWT on the CORS preflight (OPTIONS) request
@@ -24,6 +30,12 @@ const PLAN_PRICES: Record<string, { price: string; mode: "subscription" | "payme
   lifetime: { price: "price_1UHoopDXX8DMw6xrjZ920s15", mode: "payment" },
 };
 
+// Report type -> name of the secret holding its Stripe price id.
+const REPORT_PRICE_SECRETS: Record<string, string> = {
+  home_sale: "STRIPE_PRICE_HOME_SALE",
+  insurance_inventory: "STRIPE_PRICE_INSURANCE_INVENTORY",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -44,13 +56,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { planId, origin } = await req.json();
-    const plan = PLAN_PRICES[planId];
-    if (!plan) {
-      return new Response(JSON.stringify({ error: "Unknown planId" }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+    const { planId, reportType, origin } = await req.json();
+
+    // A request is either for a plan or for a one-time PDF report; either way
+    // it resolves to a Stripe price and a checkout mode.
+    let plan: { price: string; mode: "subscription" | "payment" } | undefined;
+    if (reportType) {
+      const secretName = REPORT_PRICE_SECRETS[reportType];
+      const price = secretName ? Deno.env.get(secretName) : undefined;
+      if (!price) {
+        return new Response(
+          JSON.stringify({ error: secretName ? "This report isn't available for purchase yet" : "Unknown reportType" }),
+          { status: secretName ? 503 : 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      plan = { price, mode: "payment" };
+    } else {
+      plan = PLAN_PRICES[planId];
+      if (!plan) {
+        return new Response(JSON.stringify({ error: "Unknown planId" }), {
+          status: 400,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
     }
     if (!origin) {
       return new Response(JSON.stringify({ error: "origin is required" }), {
@@ -89,10 +117,14 @@ Deno.serve(async (req) => {
       customer: customerId,
       mode: plan.mode,
       line_items: [{ price: plan.price, quantity: 1 }],
-      success_url: `${origin}/?billing=success`,
-      cancel_url: `${origin}/?billing=cancel`,
+      success_url: `${origin}/?${reportType ? "report" : "billing"}=success`,
+      cancel_url: `${origin}/?${reportType ? "report" : "billing"}=cancel`,
       client_reference_id: user.id,
-      metadata: { supabase_user_id: user.id, plan: planId },
+      // A report purchase carries `report_type` and deliberately NO `plan`, so
+      // the webhook can never mistake it for a plan change.
+      metadata: reportType
+        ? { supabase_user_id: user.id, report_type: reportType }
+        : { supabase_user_id: user.id, plan: planId },
       subscription_data: plan.mode === "subscription" ? { metadata: { supabase_user_id: user.id, plan: planId } } : undefined,
     });
 
