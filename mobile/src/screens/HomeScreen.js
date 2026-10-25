@@ -151,10 +151,15 @@ function UpcomingTasksList({ tasks, systemById, onComplete }) {
 export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask }) {
   const activeSystems = systems.filter((s) => !s.archived);
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
-  const thisMonthTasks = upcomingTasks.filter((t) => {
-    const d = new Date(`${t.dueDate}T00:00:00`);
+  const isThisMonth = (dueDate) => {
+    const d = new Date(`${dueDate}T00:00:00`);
     return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth();
-  });
+  };
+  const thisMonthTasks = upcomingTasks.filter((t) => isThisMonth(t.dueDate));
+  // The "To-do" count: this month's tasks plus anything overdue (which may
+  // be from an earlier month) — not every open task regardless of when
+  // it's due.
+  const todoCount = upcomingTasks.filter((t) => isThisMonth(t.dueDate) || daysUntil(t.dueDate) < 0).length;
 
   const systemsValue = activeSystems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
@@ -162,7 +167,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0]" contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
       <HomeHero
-        todoCount={upcomingTasks.length}
+        todoCount={todoCount}
         overdueCount={overdueCount}
         systemsCount={activeSystems.length}
         profile={profile}
