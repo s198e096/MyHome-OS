@@ -5,6 +5,7 @@ import { Plus, Check, Repeat, Pencil, CheckCircle2, Trash2 } from "lucide-react-
 import { PRIMARY, STATUS_COLOR, systemShortName } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
+import TaskCalendar from "../components/TaskCalendar.js";
 
 const ADD_OPTIONS = [
   { value: "manual", label: "Add task manually" },
@@ -14,6 +15,7 @@ const ADD_OPTIONS = [
 const TABS = [
   { key: "open", label: "Tasks" },
   { key: "completed", label: "Completed" },
+  { key: "calendar", label: "Calendar" },
 ];
 
 // Groups by system (in whatever order each system's first task appears in
@@ -167,6 +169,8 @@ export default function TasksScreen({ tasks, completed, systemById, onRemoveComp
           ))}
         </>
       )}
+
+      {tab === "calendar" && <TaskCalendar tasks={tasks} systemById={systemById} onEditTask={onEdit} />}
     </ScrollView>
   );
 }
