@@ -415,10 +415,14 @@ export default function ItemFields({
             </>
           )}
 
+          {/* Appliances share one category, so their first field is what the
+              appliance IS (Oven, Microwave), not the maker — two appliances
+              from the same manufacturer would otherwise look identical in
+              every list. The manufacturer goes in the second field. */}
           <TextInput
             value={sysBrand}
             onChangeText={setSysBrand}
-            placeholder="Brand (e.g. Carrier)"
+            placeholder={sysCategory === "appliance" ? "Appliance (e.g. Oven, Microwave)" : "Brand (e.g. Carrier)"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
@@ -426,11 +430,16 @@ export default function ItemFields({
           <TextInput
             value={sysModel}
             onChangeText={setSysModel}
-            placeholder="Model (e.g. Infinity)"
+            placeholder={sysCategory === "appliance" ? "Brand & model (e.g. Maytag MMV1174)" : "Model (e.g. Infinity)"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          {sysCategory === "appliance" && (
+            <Text className="text-[11px] text-stone-400 mb-2">
+              Name each appliance by what it is, so two from the same brand are easy to tell apart.
+            </Text>
+          )}
           <TextInput
             value={sysSerial}
             onChangeText={setSysSerial}
