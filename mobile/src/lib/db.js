@@ -16,7 +16,6 @@ const rowToSystem = (r) => ({
   warrantyExpiration: r.warranty_expiration || "",
   photoUrl: r.photo_url,
   filterSize: r.filter_size || "",
-  plannedReplacementDate: r.planned_replacement_date || "",
   warrantyRegistered: r.warranty_registered ?? false,
 });
 
@@ -33,11 +32,6 @@ const systemToRow = (s) => ({
   warranty_expiration: s.warrantyExpiration || null,
   photo_url: s.photoUrl || null,
   filter_size: s.filterSize || null,
-  // "" means never set: leave the column out so saves still work before the
-  // planned_replacement_date migration is run. null clears an existing plan.
-  ...(s.plannedReplacementDate === undefined || s.plannedReplacementDate === ""
-    ? {}
-    : { planned_replacement_date: s.plannedReplacementDate || null }),
   warranty_registered: !!s.warrantyRegistered,
 });
 
@@ -51,6 +45,7 @@ const rowToTask = (r) => ({
   difficulty: r.difficulty,
   reopenedAt: r.reopened_at ? new Date(r.reopened_at).getTime() : null,
   recurrence: r.recurrence || "",
+  completedDate: r.completed_date || "",
 });
 
 const taskToRow = (t) => ({
@@ -395,11 +390,15 @@ export const db = {
   tasks: {
     add: (t) => insertRow("tasks", taskToRow(t), rowToTask),
     update: (id, patch) => updateRow("tasks", id, taskToRow(patch), rowToTask),
-    setCompleted: (id, completed, reopenedAt) =>
+    setCompleted: (id, completed, reopenedAt, completedDate) =>
       updateRow(
         "tasks",
         id,
-        { completed, reopened_at: reopenedAt ? new Date(reopenedAt).toISOString() : null },
+        {
+          completed,
+          reopened_at: reopenedAt ? new Date(reopenedAt).toISOString() : null,
+          completed_date: completed ? completedDate || null : null,
+        },
         rowToTask
       ),
     remove: (id) => deleteRow("tasks", id),

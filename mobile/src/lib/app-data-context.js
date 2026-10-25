@@ -119,10 +119,10 @@ export function AppDataProvider({ children }) {
     return profile.plan === "free" && systems.length >= FREE_SYSTEM_LIMIT;
   }
 
-  async function toggleTask(id) {
+  async function toggleTask(id, completedDate) {
     const t = tasks.find((t) => t.id === id);
     const completed = !t.completed;
-    const updated = await db.tasks.setCompleted(id, completed, completed ? null : Date.now());
+    const updated = await db.tasks.setCompleted(id, completed, completed ? null : Date.now(), completedDate);
     setTasks((ts) => ts.map((t) => (t.id === id ? updated : t)));
     // Completing a recurring task schedules its next occurrence as a new
     // row, rather than just pushing this one's due date forward, so it
@@ -148,8 +148,9 @@ export function AppDataProvider({ children }) {
   // usual. `vendor` means different things depending on `diy` (where the
   // parts were bought vs. who was hired), but it's the same column either
   // way since `diy` already disambiguates it.
-  async function completeTaskWithCost(id, cost) {
+  async function completeTaskWithCost(id, cost, completedDate) {
     const t = tasks.find((x) => x.id === id);
+    const date = completedDate || TODAY.toISOString().slice(0, 10);
     if (cost) {
       const partsCost = cost.partsCost ? Number(cost.partsCost) : null;
       const laborCost = cost.laborCost ? Number(cost.laborCost) : null;
@@ -157,7 +158,7 @@ export function AppDataProvider({ children }) {
         systemId: t?.systemId || null,
         taskId: id,
         amount: (partsCost || 0) + (laborCost || 0),
-        date: TODAY.toISOString().slice(0, 10),
+        date,
         category: "Maintenance",
         note: t?.title || "Task",
         partsCost,
@@ -168,7 +169,7 @@ export function AppDataProvider({ children }) {
       });
       setExpenses((es) => [...es, created]);
     }
-    await toggleTask(id);
+    await toggleTask(id, date);
   }
 
   async function addTask(title, dueDate, systemId, recurrence) {

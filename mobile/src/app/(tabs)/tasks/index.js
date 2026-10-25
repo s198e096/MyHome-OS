@@ -5,7 +5,7 @@ import TasksScreen from "../../../screens/TasksScreen.js";
 
 export default function Tasks() {
   const router = useRouter();
-  const { upcomingTasks, tasks, systemById, toggleTask } = useAppData();
+  const { upcomingTasks, tasks, systemById, deleteTask } = useAppData();
 
   return (
     <AnimatedTabScreen tabKey="tasks">
@@ -13,7 +13,7 @@ export default function Tasks() {
         tasks={upcomingTasks}
         completed={tasks.filter((t) => t.completed)}
         systemById={systemById}
-        onToggle={toggleTask}
+        onRemoveCompleted={(t) => deleteTask(t.id)}
         onComplete={(t) => router.push(`/tasks/${t.id}/complete`)}
         onEdit={(t) => router.push(`/tasks/${t.id}/edit`)}
         onAddManual={() => router.push("/tasks/new")}

@@ -22,8 +22,8 @@ export default function CompleteTask() {
       task={task}
       sys={task.systemId ? systemById(task.systemId) : null}
       onBack={() => router.back()}
-      onComplete={async (cost) => {
-        await completeTaskWithCost(task.id, cost);
+      onComplete={async (cost, completedDate) => {
+        await completeTaskWithCost(task.id, cost, completedDate);
         router.back();
       }}
     />
