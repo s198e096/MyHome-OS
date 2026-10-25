@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
-import { Sparkles, Calculator, X, Plus, ChevronDown, Check } from "lucide-react-native";
+import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, EXPENSE_CATEGORIES, OTHER_BILLS, isBillCategory, systemName } from "../lib/constants.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
@@ -651,25 +651,30 @@ export default function ItemFields({
               <Text className="text-[12px] mt-1.5" style={{ color: STATUS_COLOR.red }}>{warrantyBlockedMessage}</Text>
             )}
             {setSysWarrantyRegistered && (
-              <Pressable
-                onPress={() => setSysWarrantyRegistered(!sysWarrantyRegistered)}
-                className="flex-row items-center gap-2 mt-3"
-                hitSlop={4}
-              >
-                <View
-                  className="items-center justify-center rounded"
-                  style={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: sysWarrantyRegistered ? PRIMARY : "white",
-                    borderWidth: sysWarrantyRegistered ? 0 : 1,
-                    borderColor: "#D8D5CB",
-                  }}
-                >
-                  {sysWarrantyRegistered && <Check size={14} color="white" />}
+              <View className="mt-3 pt-3" style={{ borderTopWidth: 1, borderTopColor: "#E7EEDB" }}>
+                <Text className="text-[13px] font-semibold text-stone-800">Is this system registered with the vendor?</Text>
+                <Text className="text-[11.5px] text-stone-500 mt-0.5 mb-2">
+                  Registering with the manufacturer is often needed to keep the warranty valid.
+                </Text>
+                <View className="flex-row gap-2">
+                  {[
+                    { label: "Yes", value: true },
+                    { label: "No", value: false },
+                  ].map(({ label, value }) => {
+                    const selected = !!sysWarrantyRegistered === value;
+                    return (
+                      <Pressable
+                        key={label}
+                        onPress={() => setSysWarrantyRegistered(value)}
+                        className="rounded-full px-5 py-1.5"
+                        style={{ backgroundColor: selected ? PRIMARY : "white", borderWidth: selected ? 0 : 1, borderColor: "#D8D5CB" }}
+                      >
+                        <Text className="text-[12.5px] font-semibold" style={{ color: selected ? "white" : "#5F5B50" }}>{label}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
-                <Text className="text-[13px] text-stone-700">Registered with vendor</Text>
-              </Pressable>
+              </View>
             )}
           </View>
 

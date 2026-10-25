@@ -2,7 +2,7 @@ import { useState, createElement } from "react";
 import { View, Text, Pressable, Image, Modal, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronLeft, ChevronRight, Pencil, Shield, Clock, FileText, Image as ImageIcon, X } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Pencil, Shield, ShieldCheck, Clock, FileText, Image as ImageIcon, X } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName, systemIcon } from "../lib/constants.js";
 import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, systemStatus } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
@@ -112,6 +112,15 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
                   {!!subtitle && (
                     <Text className="text-[12px] mt-0.5" style={{ color: "#9FB08A" }} numberOfLines={1}>{subtitle}</Text>
                   )}
+                  {sys.warrantyRegistered && (
+                    <View
+                      className="flex-row items-center gap-1 mt-1.5 self-start rounded-full px-2 py-0.5"
+                      style={{ backgroundColor: "rgba(143,209,105,0.16)" }}
+                    >
+                      <ShieldCheck size={11} color={STATUS_BRIGHT.green} />
+                      <Text className="text-[10.5px] font-semibold" style={{ color: STATUS_BRIGHT.green }}>Registered with vendor</Text>
+                    </View>
+                  )}
                 </View>
               </View>
               <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
@@ -156,9 +165,9 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
           valueColor={sys.warrantyExpiration && new Date(sys.warrantyExpiration) > TODAY ? STATUS_COLOR.green : STATUS_COLOR.red}
         />
         <SpecTile
-          label="Registered"
-          value={sys.warrantyRegistered ? "Yes" : "No"}
-          valueColor={sys.warrantyRegistered ? STATUS_COLOR.green : "#9C978C"}
+          label="Vendor registration"
+          value={sys.warrantyRegistered ? "Registered" : "Not registered"}
+          valueColor={sys.warrantyRegistered ? STATUS_COLOR.green : STATUS_COLOR.yellow}
         />
         <SpecTile
           label="Planned replacement"
