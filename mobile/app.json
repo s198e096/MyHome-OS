@@ -34,7 +34,8 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-asset",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      ["expo-notifications", {}]
     ],
     "extra": {
       "router": {},

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName, defaultExpectedLifeYears } from "./constants.js";
 import { TODAY, daysUntil, computeForecast, advanceDueDate } from "./forecast.js";
 import { isManualsLibUrl, MANUALSLIB_NAME } from "./manual-links.js";
+import { syncTaskNotifications, clearTaskNotifications } from "./notifications.js";
 import {
   db,
   loadAllData,
@@ -51,6 +52,7 @@ export function AppDataProvider({ children }) {
       setFurniture([]);
       setEnergyChecks([]);
       setProfile(null);
+      clearTaskNotifications().catch(() => {});
       return;
     }
 
@@ -80,6 +82,14 @@ export function AppDataProvider({ children }) {
       cancelled = true;
     };
   }, [session]);
+
+  // Keeps on-device reminders in sync with the open-tasks list, once data
+  // has actually loaded (otherwise the initial empty array would wipe out
+  // any reminders already scheduled from a previous session).
+  useEffect(() => {
+    if (!dataLoaded) return;
+    syncTaskNotifications(tasks).catch((err) => console.error("Failed to sync task notifications:", err));
+  }, [dataLoaded, tasks]);
 
   const systemById = (id) => systems.find((s) => s.id === id);
 
