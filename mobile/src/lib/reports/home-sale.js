@@ -8,7 +8,7 @@
 // so this file needs no app or React Native imports.
 
 import { buildFeatureSummary } from "../propertyFeatures.js";
-import { escapeHtml as e, fmtMoney, fmtDate, fmtMonthYear, fmtYear, fmtLongDate, yearsSince, daysSince, sum, plural } from "./format.js";
+import { escapeHtml as e, fmtMoney, fmtDate, fmtMonthYear, fmtYear, fmtLongDate, fmtAddress, fmtPropertyName, yearsSince, daysSince, sum, plural } from "./format.js";
 import { groupSystems, describeSystem, systemGroup } from "./groups.js";
 import { htmlDocument } from "./styles.js";
 
@@ -215,7 +215,7 @@ export function buildHomeSaleReport(data, h) {
   const header = `<header class="report-head">
       <div class="brand">MyHome OS · Home Sale</div>
       <h1>Property History Report</h1>
-      <div class="addr">${e(profile.propertyName || "Home")}${profile.address ? ` — ${e(profile.address)}` : ""}</div>
+      <div class="addr">${e(fmtPropertyName(profile.propertyName) || "Home")}${profile.address ? ` — ${e(fmtAddress(profile.address))}` : ""}</div>
       <div class="meta">Prepared ${e(fmtLongDate(generatedOn))}${features.length ? ` · ${e(features.join(" · "))}` : ""}</div>
     </header>`;
 

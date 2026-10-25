@@ -61,3 +61,76 @@ export const sum = (items, pick) => items.reduce((total, item) => total + (Numbe
 export const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 export const yesNo = (flag) => (flag ? "Yes" : "No");
+
+// --- addresses ---
+//
+// Addresses often arrive in lower case with no commas ("1814 ashborough rd se
+// marietta ga 30067"), which looks careless on a document handed to an insurer
+// or a buyer. An address that already has any capital letter was typed on
+// purpose and is left exactly as written; an all-lower-case one is capitalized,
+// and when it has no commas they are added between street, city and state.
+
+const STATE_CODES = new Set(
+  "al ak az ar ca co ct de dc fl ga hi id il in ia ks ky la me md ma mi mn ms mo mt ne nv nh nj nm ny nc nd oh ok or pa ri sc sd tn tx ut vt va wa wv wi wy".split(" ")
+);
+const STREET_SUFFIXES = new Set(
+  "st street rd road ave avenue blvd boulevard dr drive ln lane ct court cir circle way pl place pkwy parkway hwy highway ter terrace trl trail sq square loop".split(" ")
+);
+const DIRECTIONS = new Set(["n", "s", "e", "w", "ne", "nw", "se", "sw"]);
+const UNIT_WORDS = new Set(["apt", "unit", "ste", "suite", "bldg", "fl"]);
+const ORDINAL = /^\d+(st|nd|rd|th)$/;
+const ZIP = /^\d{5}(-\d{4})?$/;
+
+function capitalizeWord(w) {
+  if (DIRECTIONS.has(w) || w === "po") return w.toUpperCase();
+  if (ORDINAL.test(w)) return w;
+  if (/\d/.test(w)) return w.toUpperCase(); // 4b -> 4B
+  return w.replace(/(^|[-'’/])([a-z])/g, (_, lead, ch) => lead + ch.toUpperCase()).replace(/^Mc([a-z])/, (_, ch) => "Mc" + ch.toUpperCase());
+}
+
+export function fmtAddress(raw) {
+  const text = String(raw ?? "").trim().replace(/\s+/g, " ");
+  if (!text || text !== text.toLowerCase()) return text;
+
+  const hadCommas = text.includes(",");
+  const words = text.split(" ").map((token) => ({ w: token.replace(/,+$/, ""), comma: token.endsWith(",") }));
+  const lower = words.map((x) => x.w);
+
+  // State = the word before a trailing ZIP (or the last word when there is no ZIP).
+  const last = lower.length - 1;
+  const hasZip = last >= 1 && ZIP.test(lower[last]);
+  const stateIdx = hasZip ? last - 1 : last;
+  const hasState = stateIdx >= 1 && STATE_CODES.has(lower[stateIdx]);
+
+  words.forEach((x, i) => {
+    x.w = hasState && i === stateIdx ? x.w.toUpperCase() : capitalizeWord(x.w);
+  });
+
+  if (!hadCommas && hasState) {
+    // Street ends at the first street-type word after the house number and a
+    // name (plus a following direction like SE, and a unit like "apt 4b").
+    let end = -1;
+    for (let i = 2; i < stateIdx; i++) {
+      if (STREET_SUFFIXES.has(lower[i])) {
+        end = i;
+        break;
+      }
+    }
+    if (end !== -1) {
+      if (end + 1 < stateIdx && DIRECTIONS.has(lower[end + 1])) end += 1;
+      if (end + 2 < stateIdx && (UNIT_WORDS.has(lower[end + 1]) || lower[end + 1].startsWith("#"))) end += UNIT_WORDS.has(lower[end + 1]) ? 2 : 1;
+      if (end + 1 < stateIdx) {
+        words[end].comma = true; // street,
+        words[stateIdx - 1].comma = true; // city,
+      }
+    }
+  }
+
+  return words.map((x) => x.w + (x.comma ? "," : "")).join(" ");
+}
+
+// A property nickname typed in all lower case ("main") reads better as "Main".
+export function fmtPropertyName(raw) {
+  const text = String(raw ?? "").trim();
+  return text && text === text.toLowerCase() ? text.replace(/(^|[\s-])([a-z])/g, (_, lead, ch) => lead + ch.toUpperCase()) : text;
+}

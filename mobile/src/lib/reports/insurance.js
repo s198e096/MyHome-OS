@@ -14,7 +14,7 @@
 //   h.categoryLabel(sys) -> "HVAC - Indoor Unit"
 // so this file needs no app or React Native imports.
 
-import { escapeHtml as e, fmtMoney, fmtMonthYear, fmtLongDate, sum, plural } from "./format.js";
+import { escapeHtml as e, fmtMoney, fmtMonthYear, fmtLongDate, fmtAddress, fmtPropertyName, sum, plural } from "./format.js";
 import { groupSystems, describeSystem } from "./groups.js";
 import { htmlDocument } from "./styles.js";
 
@@ -176,7 +176,7 @@ export function buildInsuranceReport(data, h) {
   const header = `<header class="report-head">
       <div class="brand">MyHome OS · Insurance inventory</div>
       <h1>Home Inventory Report</h1>
-      <div class="addr">${e(profile.propertyName || "Home")}${profile.address ? ` — ${e(profile.address)}` : ""}</div>
+      <div class="addr">${e(fmtPropertyName(profile.propertyName) || "Home")}${profile.address ? ` — ${e(fmtAddress(profile.address))}` : ""}</div>
       <div class="meta">Policyholder: ${e(profile.name || "—")}${profile.email ? ` · ${e(profile.email)}` : ""} · Prepared ${e(fmtLongDate(generatedOn))}</div>
     </header>`;
 
