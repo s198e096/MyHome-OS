@@ -16,7 +16,9 @@ export default function Costs() {
         next12mo={next12mo}
         monthlyReserve={monthlyReserve}
         onAdd={() => router.push("/costs/new")}
-        onViewLog={() => router.push("/costs/log")}
+        onViewLog={(filter) =>
+          router.push(filter ? { pathname: "/costs/log", params: { systemId: filter.systemId, year: filter.year } } : "/costs/log")
+        }
       />
     </AnimatedTabScreen>
   );
