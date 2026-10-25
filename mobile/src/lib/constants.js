@@ -14,12 +14,14 @@ export const FREE_SYSTEM_LIMIT = 10;
 
 export const ROOMS = ["Living Room", "Dining Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Other"];
 
-// Household bills logged as costs. They belong to the whole home, not one
-// system, so choosing one hides the system picker and saves as General.
-export const OTHER_BILLS = "Other bills";
-export const BILL_CATEGORIES = ["Electricity bill", "Water bill", "Gas bill", OTHER_BILLS];
-export const EXPENSE_CATEGORIES = ["Maintenance", "Repair", "Replacement", "Inspection", ...BILL_CATEGORIES];
+// Household bills, previously offered as expense categories. No longer
+// shown when adding a new expense, but kept so an expense already logged
+// under one of these (and the reports feature, which separates bills from
+// system costs) still work.
+const BILL_CATEGORIES = ["Electricity bill", "Water bill", "Gas bill", "Other bills"];
 export const isBillCategory = (category) => BILL_CATEGORIES.includes(category);
+
+export const EXPENSE_CATEGORIES = ["Maintenance", "Repair", "Replacement", "Inspection", "Upgrade", "Other"];
 
 export const CATEGORY_META = {
   hvac: { label: "HVAC", icon: Wind },

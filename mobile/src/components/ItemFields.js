@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
-import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, EXPENSE_CATEGORIES, OTHER_BILLS, isBillCategory, systemName } from "../lib/constants.js";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, EXPENSE_CATEGORIES, isBillCategory, systemName } from "../lib/constants.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled, MANUFACTURE_DATE_NOTE } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
@@ -135,6 +135,7 @@ export default function ItemFields({
   systemId, setSystemId,
   docType, setDocType,
   photoUrl, setPhotoUrl,
+  expenseReceiptUrl, setExpenseReceiptUrl,
   sysBrand, setSysBrand,
   sysModel, setSysModel,
   sysSerial, setSysSerial,
@@ -172,6 +173,7 @@ export default function ItemFields({
   const [recurrenceDropdownOpen, setRecurrenceDropdownOpen] = useState(false);
   const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
   const [docTypeDropdownOpen, setDocTypeDropdownOpen] = useState(false);
+  const [expenseCategoryDropdownOpen, setExpenseCategoryDropdownOpen] = useState(false);
 
   async function handleScan() {
     setScanning(true);
@@ -357,27 +359,39 @@ export default function ItemFields({
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          <Pressable
+            onPress={() => setExpenseCategoryDropdownOpen(true)}
+            className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
+            style={fieldStyle}
+          >
+            <Text className="text-[13.5px] text-stone-800">{category}</Text>
+            <ChevronDown size={14} color="#78716c" />
+          </Pressable>
+          <SelectModal
+            visible={expenseCategoryDropdownOpen}
+            title="Expense category"
+            options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))}
+            selectedValue={category}
+            onSelect={(value) => {
+              setCategory(value);
+              setExpenseCategoryDropdownOpen(false);
+            }}
+            onClose={() => setExpenseCategoryDropdownOpen(false)}
+          />
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder={
-              category === OTHER_BILLS
-                ? "Which bill? (e.g. Internet)"
-                : isBillCategory(category)
-                  ? "Note (e.g. October bill)"
-                  : "Note (e.g. Gutter cleaning)"
-            }
+            placeholder={isBillCategory(category) ? "Note (e.g. October bill)" : "Note (e.g. Gutter cleaning)"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
-          <View className="w-full mb-2" style={pickerBoxStyle}>
-            <Picker selectedValue={category} onValueChange={setCategory}>
-              {EXPENSE_CATEGORIES.map((c) => (
-                <Picker.Item key={c} label={c} value={c} />
-              ))}
-            </Picker>
-          </View>
+
+          <Text className="text-[11px] text-stone-500 mb-1">Receipt photo (optional)</Text>
+          <PhotoPicker photoUrl={expenseReceiptUrl} onChange={setExpenseReceiptUrl} />
+          <Text className="text-[11px] text-stone-400 mb-2" style={{ marginTop: -8 }}>
+            Filed under Documents → Maintenance Invoices.
+          </Text>
         </>
       )}
 
