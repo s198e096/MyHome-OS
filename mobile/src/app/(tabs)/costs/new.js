@@ -4,7 +4,7 @@ import ItemFormScreen from "../../../screens/ItemFormScreen.js";
 
 export default function NewExpense() {
   const router = useRouter();
-  const { systems, addExpense } = useAppData();
+  const { systems, addExpense, addDocument } = useAppData();
 
   return (
     <ItemFormScreen
@@ -13,6 +13,7 @@ export default function NewExpense() {
       systems={systems}
       onBack={() => router.back()}
       onAddExpense={addExpense}
+      onAddDocument={addDocument}
     />
   );
 }

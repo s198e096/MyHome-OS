@@ -44,6 +44,7 @@ export default function ItemFormScreen({
   const [systemId, setSystemId] = useState(item ? item.systemId || "" : systems.find((s) => !s.archived)?.id || "");
   const [docType, setDocType] = useState(item?.type || "Receipt");
   const [photoUrl, setPhotoUrl] = useState(item?.photoUrl || "");
+  const [expenseReceiptUrl, setExpenseReceiptUrl] = useState("");
 
   const [sysBrand, setSysBrand] = useState(item?.brand || "");
   const [sysModel, setSysModel] = useState(item?.model || "");
@@ -108,8 +109,13 @@ export default function ItemFormScreen({
       } else if (kind === "expense") {
         const num = parseFloat(amount);
         if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
-        if (isEdit) await onUpdateExpense(item.id, { amount: num, category, note: title.trim() || category, systemId: finalSystemId });
-        else await onAddExpense(num, category, title.trim() || category, finalSystemId);
+        const note = title.trim() || category;
+        if (isEdit) await onUpdateExpense(item.id, { amount: num, category, note, systemId: finalSystemId });
+        else await onAddExpense(num, category, note, finalSystemId);
+        // A photo of the receipt, if one was taken — filed under its own
+        // "Maintenance Invoices" document category, same as the one
+        // attachable when completing a task.
+        if (expenseReceiptUrl) await onAddDocument(`${note} Invoice`, "Maintenance Invoice", finalSystemId, expenseReceiptUrl);
       } else if (kind === "doc") {
         if (!title.trim()) return setError("Enter a document label.");
         if (isEdit) await onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: photoUrl || null });
@@ -283,6 +289,7 @@ export default function ItemFormScreen({
         systemId={systemId} setSystemId={setSystemId}
         docType={docType} setDocType={setDocType}
         photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
+        expenseReceiptUrl={expenseReceiptUrl} setExpenseReceiptUrl={setExpenseReceiptUrl}
         sysBrand={sysBrand} setSysBrand={handleSysBrandChange}
         sysModel={sysModel} setSysModel={setSysModel}
         sysSerial={sysSerial} setSysSerial={setSysSerial}
