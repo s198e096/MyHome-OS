@@ -171,6 +171,7 @@ export default function ItemFields({
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [recurrenceDropdownOpen, setRecurrenceDropdownOpen] = useState(false);
   const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
+  const [docTypeDropdownOpen, setDocTypeDropdownOpen] = useState(false);
 
   async function handleScan() {
     setScanning(true);
@@ -382,14 +383,25 @@ export default function ItemFields({
 
       {kind === "doc" && (
         <>
-          <View className="w-full mb-2" style={pickerBoxStyle}>
-            <Picker selectedValue={docType} onValueChange={setDocType}>
-              <Picker.Item label="Receipt" value="Receipt" />
-              <Picker.Item label="Warranty" value="Warranty" />
-              <Picker.Item label="Invoice" value="Invoice" />
-              <Picker.Item label="Manual" value="Manual" />
-            </Picker>
-          </View>
+          <Pressable
+            onPress={() => setDocTypeDropdownOpen(true)}
+            className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
+            style={fieldStyle}
+          >
+            <Text className="text-[13.5px] text-stone-800">{docType}</Text>
+            <ChevronDown size={14} color="#78716c" />
+          </Pressable>
+          <SelectModal
+            visible={docTypeDropdownOpen}
+            title="Document type"
+            options={["Receipt", "Warranty", "Invoice", "Manual"].map((t) => ({ value: t, label: t }))}
+            selectedValue={docType}
+            onSelect={(value) => {
+              setDocType(value);
+              setDocTypeDropdownOpen(false);
+            }}
+            onClose={() => setDocTypeDropdownOpen(false)}
+          />
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
