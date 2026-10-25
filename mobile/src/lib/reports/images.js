@@ -29,7 +29,8 @@ export function bytesToBase64(bytes) {
 const isPhoto = (url) => !!url && !opensInBrowser(url);
 
 // The photos a report should embed, most useful first, as { url, maxWidth }:
-// receipts and warranties at a legible size, then item photos as thumbnails.
+// receipts and warranties at a legible size, then item photos at a size that
+// still looks sharp three to a page.
 export function collectReportImages({ systems = [], furniture = [], documents = [] }) {
   const wanted = [];
   const seen = new Set();
@@ -40,8 +41,8 @@ export function collectReportImages({ systems = [], furniture = [], documents = 
     }
   };
   documents.filter((d) => PROOF_TYPES.includes(d.type)).forEach((d) => add(d.photoUrl, 900));
-  systems.filter((s) => !s.archived).forEach((s) => add(s.photoUrl, 240));
-  furniture.forEach((f) => add(f.photoUrl, 240));
+  systems.filter((s) => !s.archived).forEach((s) => add(s.photoUrl, 640));
+  furniture.forEach((f) => add(f.photoUrl, 640));
   return wanted.slice(0, MAX_IMAGES);
 }
 

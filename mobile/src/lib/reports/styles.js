@@ -85,11 +85,22 @@ export const REPORT_CSS = `
     page-break-inside: avoid;
   }
   .box ul { margin: 4px 0 0 16px; padding: 0; }
-  .thumb { width: 54px; height: 54px; object-fit: cover; border-radius: 5px; border: 1px solid #E0E8D3; display: block; }
-  .receipt-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-  .receipt { width: 48%; border: 1px solid #E0E8D3; border-radius: 8px; padding: 6px; page-break-inside: avoid; }
-  .receipt img { width: 100%; max-height: 330px; object-fit: contain; display: block; background: #FAFBF7; border-radius: 4px; }
-  .receipt .cap { font-size: 9px; margin-top: 4px; }
+  .appendix { page-break-before: always; }
+  .photo-grid { margin: 4px 0 8px; }
+  .photo {
+    display: inline-block;
+    vertical-align: top;
+    width: 32%;
+    margin: 0 0.5% 10px;
+    border: 1px solid #E0E8D3;
+    border-radius: 8px;
+    padding: 6px;
+    page-break-inside: avoid;
+  }
+  .photo.wide { width: 48.5%; }
+  .photo img { width: 100%; max-height: 190px; object-fit: contain; display: block; background: #FAFBF7; border-radius: 4px; }
+  .photo.wide img { max-height: 400px; }
+  .photo .cap { font-size: 9px; margin-top: 4px; }
   .sig { display: flex; gap: 30px; margin-top: 26px; page-break-inside: avoid; }
   .sig .line { flex: 1; border-top: 1px solid #44403c; padding-top: 3px; font-size: 9px; color: #57534e; }
   footer.report-foot {
