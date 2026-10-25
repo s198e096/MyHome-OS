@@ -14,6 +14,7 @@ import {
   ONBOARDING_STRUCTURE_CATEGORIES,
   ONBOARDING_FIXTURE_CATEGORIES,
   systemIcon,
+  defaultExpectedLifeYears,
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
@@ -369,7 +370,11 @@ function SystemDetailsStep({ system, onDone }) {
   const [sysLocation, setSysLocation] = useState(system.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(system.purchaseDate || "");
   const [sysPurchasePrice, setSysPurchasePrice] = useState(system.purchasePrice != null ? String(system.purchasePrice) : "");
-  const [sysLifeYears, setSysLifeYears] = useState(system.expectedLifeYears != null ? String(system.expectedLifeYears) : "");
+  const [sysLifeYears, setSysLifeYears] = useState(() => {
+    if (system.expectedLifeYears != null) return String(system.expectedLifeYears);
+    const fallback = defaultExpectedLifeYears(system.category, system.brand);
+    return fallback != null ? String(fallback) : "";
+  });
   const [sysReplacementCost, setSysReplacementCost] = useState(system.replacementCost != null ? String(system.replacementCost) : "");
   const [sysWarranty, setSysWarranty] = useState(system.warrantyExpiration || "");
   const [sysWarrantyRegistered, setSysWarrantyRegistered] = useState(!!system.warrantyRegistered);

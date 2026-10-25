@@ -1,8 +1,8 @@
-import { createElement } from "react";
-import { View, Text, Pressable, Image, ScrollView, Platform } from "react-native";
+import { useState, createElement } from "react";
+import { View, Text, Pressable, Image, Modal, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronLeft, Pencil, Shield, Clock, FileText } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Pencil, Shield, Clock, FileText, Image as ImageIcon, X } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName, systemIcon } from "../lib/constants.js";
 import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, systemStatus } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
@@ -41,6 +41,7 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
     plan?.source === "plan" && plan.year * 12 + plan.month - 1 < TODAY.getFullYear() * 12 + TODAY.getMonth();
   const insets = useSafeAreaInsets();
   const status = systemStatus(sys, tasks);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
 
   // The life bar only needs the install date and expected life, not a replacement cost.
   const hasLife = !!sys.purchaseDate && sys.expectedLifeYears > 0;
@@ -83,7 +84,19 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
           colors={["#1C2B14", "#0A0F07"]}
           style={{ borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}
         >
-          {showPhoto && <Image source={{ uri: sys.photoUrl }} style={{ width: "100%", height: 160 }} resizeMode="cover" />}
+          {showPhoto && (
+            <Pressable
+              onPress={() => setPhotoViewerOpen(true)}
+              className="flex-row items-center justify-between px-4 py-2.5"
+              style={{ borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}
+            >
+              <View className="flex-row items-center gap-2">
+                <ImageIcon size={14} color="#D9E8C4" />
+                <Text className="text-[12.5px] font-semibold" style={{ color: "#D9E8C4" }}>View photo</Text>
+              </View>
+              <ChevronRight size={14} color="#9FB08A" />
+            </Pressable>
+          )}
 
           <View className="p-4">
             <View className="flex-row items-start justify-between gap-2">
@@ -215,6 +228,24 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
           <LedgerRow key={d.id} label={d.label} sub={d.type} value="" />
         ))}
       </View>
+
+      {showPhoto && (
+        <Modal transparent visible={photoViewerOpen} animationType="fade" onRequestClose={() => setPhotoViewerOpen(false)}>
+          <Pressable
+            onPress={() => setPhotoViewerOpen(false)}
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.92)", alignItems: "center", justifyContent: "center" }}
+          >
+            <Image source={{ uri: sys.photoUrl }} style={{ width: "92%", height: "70%" }} resizeMode="contain" />
+            <Pressable
+              onPress={() => setPhotoViewerOpen(false)}
+              hitSlop={10}
+              style={{ position: "absolute", top: insets.top + 16, right: 20 }}
+            >
+              <X size={24} color="white" />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
     </ScrollView>
   );
 }

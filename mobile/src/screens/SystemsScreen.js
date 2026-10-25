@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Image, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, FREE_SYSTEM_LIMIT, systemShortName, systemIcon } from "../lib/constants.js";
@@ -37,13 +37,9 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit
               style={{ borderBottomWidth: i < systems.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
             >
               <View className="flex-row items-center gap-3 flex-1 min-w-0">
-                {s.photoUrl ? (
-                  <Image source={{ uri: s.photoUrl }} style={{ width: 34, height: 34, borderRadius: 8, borderWidth: 1, borderColor: "#E0E8D3" }} />
-                ) : (
-                  <View className="rounded-lg p-2 bg-[#F5F8F0]">
-                    <Icon size={17} color="#5F5B50" />
-                  </View>
-                )}
+                <View className="rounded-lg p-2 bg-[#F5F8F0]">
+                  <Icon size={17} color="#5F5B50" />
+                </View>
                 <View className="flex-1 min-w-0">
                   <Text className="text-[13.5px] text-stone-800" numberOfLines={1}>{systemShortName(s)}</Text>
                   <Text className="text-[11.5px] text-stone-400" numberOfLines={1}>{meta.label} · {s.location}</Text>

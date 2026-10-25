@@ -57,6 +57,59 @@ export function systemShortName(sys) {
   return sys.brand || CATEGORY_META[sys.category]?.label || "System";
 }
 
+// Default "expected life" years per category, sourced from InterNACHI's
+// home component life expectancy table (nachi.org/life-expectancy.htm).
+// Where the source gives a range, this uses the midpoint, rounded to the
+// nearest year. A few categories aren't covered by that table at all
+// (ev_charger, balcony, garden) — those are this app's own best-effort
+// estimate, not sourced from NACHI.
+export const DEFAULT_LIFE_YEARS = {
+  hvac_indoor: 20, // Furnace: 15-25 years
+  hvac_outdoor: 14, // Condenser: 8-20 years
+  water_heater: 9, // Water Heater (conventional): 6-12 years
+  roof: 30, // Asphalt Shingles (architectural): 30 years
+  plumbing: 50, // Water Line (copper/plastic): 50 years
+  toilet: 100, // Toilets, Bidets and Urinals: 100+ years
+  faucet: 18, // Faucets and Spray Hose: 15-20 years
+  sink: 8, // Enameled Steel Kitchen Sink: 5-10+ years
+  electrical: 60, // Service Panel: 60 years
+  generator: 12, // Residential Propane Backup Generators: 12 years
+  solar: 25, // Solar Panels: 20-30 years
+  ev_charger: 10, // not in the NACHI table — this app's own estimate
+  windows: 14, // Double-Pane: 8-20 years
+  exterior: 9, // Paint (exterior): 7-10 years
+  balcony: 20, // not in the NACHI table — using Deck's "Structural Wood" as an analog
+  deck: 20, // Structural Wood: 10-30 years
+  garden: 20, // not in the NACHI table — using Wood Fencing as a proxy
+};
+
+// Same idea, but per-appliance-name, since "appliance" is one shared
+// category — matched the same way APPLIANCE_ICON_RULES matches an icon.
+const DEFAULT_APPLIANCE_LIFE_YEARS_RULES = [
+  [/range hood/i, 14], // Range/Oven Hood: 14 years
+  [/garbage disposal|disposal/i, 12], // Disposal (food waste): 12 years
+  [/refrigerator|fridge/i, 11], // Refrigerator: 9-13 years
+  [/dishwasher/i, 9], // Dishwasher: 9 years
+  [/washing machine|washer/i, 10], // Washing Machine: 5-15 years
+  [/dryer/i, 13], // Dryer (clothes): 13 years
+  [/microwave/i, 9], // Microwave Oven: 9 years
+  [/oven|\brange\b/i, 14], // Gas Oven: 10-18 years / Electric Range: 13-15 years
+  [/freezer/i, 15], // Freezer: 10-20 years
+  [/water softener|softener/i, 20], // Water Softener: 20 years
+];
+const DEFAULT_APPLIANCE_LIFE_YEARS_FALLBACK = 10;
+
+// Best-guess default "expected life" for a system, used to pre-fill the
+// field rather than leaving it blank or always defaulting to the same
+// flat number regardless of what kind of system this is.
+export function defaultExpectedLifeYears(category, brand) {
+  if (category === "appliance") {
+    if (!brand) return null;
+    return DEFAULT_APPLIANCE_LIFE_YEARS_RULES.find(([pattern]) => pattern.test(brand))?.[1] ?? DEFAULT_APPLIANCE_LIFE_YEARS_FALLBACK;
+  }
+  return DEFAULT_LIFE_YEARS[category] ?? null;
+}
+
 // Every "appliance" system shares one generic category, so CATEGORY_META
 // alone can't tell a fridge from a dryer — match on the name instead
 // (brand holds the appliance name for this category, e.g. "Refrigerator",

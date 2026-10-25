@@ -2,7 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
-import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 
@@ -49,7 +49,13 @@ export default function ItemFormScreen({
   const [sysLocation, setSysLocation] = useState(item?.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "");
   const [sysPurchasePrice, setSysPurchasePrice] = useState(item?.purchasePrice != null ? String(item.purchasePrice) : "");
-  const [sysLifeYears, setSysLifeYears] = useState(item?.expectedLifeYears != null ? String(item.expectedLifeYears) : "10");
+  const [sysLifeYears, setSysLifeYears] = useState(() => {
+    if (item?.expectedLifeYears != null) return String(item.expectedLifeYears);
+    // A new system doesn't have a category yet (picked in the gate step
+    // below) to base a default on; an existing one being edited does.
+    const fallback = item ? defaultExpectedLifeYears(item.category, item.brand) : null;
+    return fallback != null ? String(fallback) : "";
+  });
   const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
   const [sysWarranty, setSysWarranty] = useState(item?.warrantyExpiration || "");
   const [sysFilterSize, setSysFilterSize] = useState(item?.filterSize || "");
@@ -178,6 +184,18 @@ export default function ItemFormScreen({
     onBack();
   }
 
+  // For an appliance, the generic category alone isn't enough to pick a
+  // default life — fill it in once the user types a recognizable name
+  // (e.g. "Refrigerator"), but only while they haven't entered one
+  // themselves, so this never overwrites a value they already set.
+  function handleSysBrandChange(text) {
+    setSysBrand(text);
+    if (sysCategory === "appliance" && !sysLifeYears) {
+      const fallback = defaultExpectedLifeYears(sysCategory, text);
+      if (fallback != null) setSysLifeYears(String(fallback));
+    }
+  }
+
   if (kind === "system" && !categoryChosen) {
     const options = Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac");
     return (
@@ -196,6 +214,11 @@ export default function ItemFormScreen({
                 key={key}
                 onPress={() => {
                   setSysCategory(key);
+                  // Appliances share one category, so there's nothing to
+                  // base a default life on until the user names which
+                  // appliance it is — that's filled in reactively below.
+                  const fallback = defaultExpectedLifeYears(key, sysBrand);
+                  if (fallback != null) setSysLifeYears(String(fallback));
                   setCategoryChosen(true);
                 }}
                 className="items-center justify-center rounded-xl py-3 px-2"
@@ -253,7 +276,7 @@ export default function ItemFormScreen({
         systemId={systemId} setSystemId={setSystemId}
         docType={docType} setDocType={setDocType}
         photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
-        sysBrand={sysBrand} setSysBrand={setSysBrand}
+        sysBrand={sysBrand} setSysBrand={handleSysBrandChange}
         sysModel={sysModel} setSysModel={setSysModel}
         sysSerial={sysSerial} setSysSerial={setSysSerial}
         sysCategory={sysCategory} setSysCategory={setSysCategory}

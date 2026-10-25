@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName } from "./constants.js";
+import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName, defaultExpectedLifeYears } from "./constants.js";
 import { TODAY, daysUntil, computeForecast, advanceDueDate } from "./forecast.js";
 import {
   db,
@@ -290,7 +290,11 @@ export function AppDataProvider({ children }) {
   }
 
   async function addSystem(sys) {
-    const created = await db.systems.add(sys);
+    const payload = {
+      ...sys,
+      expectedLifeYears: sys.expectedLifeYears ?? defaultExpectedLifeYears(sys.category, sys.brand),
+    };
+    const created = await db.systems.add(payload);
     setSystems((ss) => [...ss, created]);
     await syncFilterReminder(created);
     return created;
