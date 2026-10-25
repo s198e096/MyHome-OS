@@ -10,7 +10,7 @@ export default function Systems() {
   return (
     <AnimatedTabScreen tabKey="systems">
       <SystemsScreen
-        systems={systems}
+        systems={systems.filter((s) => !s.archived)}
         tasks={tasks}
         onSelect={(s) => router.push(`/systems/${s.id}`)}
         onAdd={() => router.push(addSystemAtLimit() ? "/account/plan" : "/systems/new")}

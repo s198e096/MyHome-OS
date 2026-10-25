@@ -14,7 +14,7 @@ export default function ImportTasks() {
 
   return (
     <ImportTasksScreen
-      systems={systems}
+      systems={systems.filter((s) => !s.archived)}
       tasks={tasks}
       onBack={() => router.back()}
       onImport={handleImport}

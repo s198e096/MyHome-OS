@@ -10,7 +10,7 @@ import { opensInBrowser } from "../lib/manual-links.js";
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
 
 export default function ItemFormScreen({
-  kind, item, hint, systems, onBack,
+  kind, item, hint, systems, replacesSystem, onBack,
   onAddTask, onUpdateTask, onDeleteTask,
   onAddExpense, onUpdateExpense, onDeleteExpense,
   onAddDocument, onUpdateDocument, onDeleteDocument,
@@ -23,8 +23,10 @@ export default function ItemFormScreen({
   // which fields apply, e.g. filter size) is tailored to that from the
   // start, rather than showing every field with a category picker buried
   // inside the form. Editing an existing system skips this — its category
-  // is already set, and stays changeable inline as before.
-  const [categoryChosen, setCategoryChosen] = useState(isEdit || kind !== "system");
+  // is already set, and stays changeable inline as before. Upgrading a
+  // system already knows the category (from the one being replaced), so
+  // it skips the gate too, but "Change type" still re-opens it.
+  const [categoryChosen, setCategoryChosen] = useState(isEdit || kind !== "system" || !!replacesSystem);
 
   const [title, setTitle] = useState(
     kind === "expense" ? item?.note || "" : kind === "furniture" ? item?.name || "" : item?.title || item?.label || ""
@@ -39,22 +41,27 @@ export default function ItemFormScreen({
   const [category, setCategory] = useState(
     kind === "furniture" ? item?.room || ROOMS[0] : item?.category || "Maintenance"
   );
-  const [systemId, setSystemId] = useState(item ? item.systemId || "" : systems[0]?.id || "");
+  const [systemId, setSystemId] = useState(item ? item.systemId || "" : systems.find((s) => !s.archived)?.id || "");
   const [docType, setDocType] = useState(item?.type || "Receipt");
   const [photoUrl, setPhotoUrl] = useState(item?.photoUrl || "");
 
   const [sysBrand, setSysBrand] = useState(item?.brand || "");
   const [sysModel, setSysModel] = useState(item?.model || "");
   const [sysSerial, setSysSerial] = useState(item?.serialNumber || "");
-  const [sysCategory, setSysCategory] = useState(item?.category || "hvac_indoor");
-  const [sysLocation, setSysLocation] = useState(item?.location || "");
+  const [sysCategory, setSysCategory] = useState(item?.category || replacesSystem?.category || "hvac_indoor");
+  const [sysLocation, setSysLocation] = useState(item?.location || replacesSystem?.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(item?.purchaseDate || "");
   const [sysPurchasePrice, setSysPurchasePrice] = useState(item?.purchasePrice != null ? String(item.purchasePrice) : "");
   const [sysLifeYears, setSysLifeYears] = useState(() => {
     if (item?.expectedLifeYears != null) return String(item.expectedLifeYears);
-    // A new system doesn't have a category yet (picked in the gate step
-    // below) to base a default on; an existing one being edited does.
-    const fallback = item ? defaultExpectedLifeYears(item.category, item.brand) : null;
+    // A brand-new system doesn't have a category yet (picked in the gate
+    // step below) to base a default on; one being edited or upgraded
+    // (replacing a system whose category is already known) does.
+    const fallback = item
+      ? defaultExpectedLifeYears(item.category, item.brand)
+      : replacesSystem
+        ? defaultExpectedLifeYears(replacesSystem.category, null)
+        : null;
     return fallback != null ? String(fallback) : "";
   });
   const [sysReplacementCost, setSysReplacementCost] = useState(item?.replacementCost != null ? String(item.replacementCost) : "");
@@ -75,7 +82,9 @@ export default function ItemFormScreen({
   const titles = {
     task: isEdit ? "Edit task" : "Add task",
     expense: isEdit ? "Edit expense" : "Add expense",
-    system: isEdit ? "Edit system" : `Add ${CATEGORY_META[sysCategory]?.label || "system"}`,
+    system: isEdit
+      ? "Edit system"
+      : `${replacesSystem ? "Upgrade" : "Add"} ${CATEGORY_META[sysCategory]?.label || "system"}`,
     doc: isEdit ? "Edit document" : "Add document",
     furniture: isEdit ? "Edit furniture" : "Add furniture",
   };

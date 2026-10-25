@@ -17,6 +17,7 @@ const rowToSystem = (r) => ({
   photoUrl: r.photo_url,
   filterSize: r.filter_size || "",
   warrantyRegistered: r.warranty_registered ?? false,
+  archived: r.archived ?? false,
 });
 
 const systemToRow = (s) => ({
@@ -33,6 +34,7 @@ const systemToRow = (s) => ({
   photo_url: s.photoUrl || null,
   filter_size: s.filterSize || null,
   warranty_registered: !!s.warrantyRegistered,
+  archived: !!s.archived,
 });
 
 const rowToTask = (r) => ({

@@ -116,7 +116,8 @@ export function AppDataProvider({ children }) {
   }
 
   function addSystemAtLimit() {
-    return profile.plan === "free" && systems.length >= FREE_SYSTEM_LIMIT;
+    const activeCount = systems.filter((s) => !s.archived).length;
+    return profile.plan === "free" && activeCount >= FREE_SYSTEM_LIMIT;
   }
 
   async function toggleTask(id, completedDate) {
@@ -310,6 +311,13 @@ export function AppDataProvider({ children }) {
     return updated;
   }
 
+  // Marks a system archived instead of deleting it when it's upgraded — its
+  // documents, past tasks, and expenses stay intact for history, it just
+  // drops out of active lists and pickers.
+  async function archiveSystem(id) {
+    return updateSystem(id, { archived: true });
+  }
+
   async function attachManualDocument(systemId, brand, model, manualUrl) {
     const category = systems.find((s) => s.id === systemId)?.category;
     // A ManualsLib link is labeled with its source so it's clear it opens off-app.
@@ -388,6 +396,7 @@ export function AppDataProvider({ children }) {
     deleteFurniture,
     addSystem,
     updateSystem,
+    archiveSystem,
     attachManualDocument,
     deleteSystem,
     saveProfile,

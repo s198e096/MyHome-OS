@@ -11,6 +11,7 @@ const HOME_ACTIONS = [
   { value: "chat", label: "Chat with an AI agent about your home" },
   { value: "problem", label: "Report a problem" },
   { value: "expense", label: "Report an expense" },
+  { value: "upgrade", label: "Upgrade a system" },
 ];
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate }) {
@@ -22,6 +23,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
     setActionsOpen(false);
     if (value === "problem") onOpenAssistant("I'd like to report a problem: ");
     else if (value === "expense") onNavigate("/costs/new");
+    else if (value === "upgrade") onNavigate("/systems/upgrade");
     else onOpenAssistant();
   }
 
@@ -147,13 +149,14 @@ function UpcomingTasksList({ tasks, systemById, onComplete }) {
 }
 
 export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask }) {
+  const activeSystems = systems.filter((s) => !s.archived);
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const thisMonthTasks = upcomingTasks.filter((t) => {
     const d = new Date(`${t.dueDate}T00:00:00`);
     return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth();
   });
 
-  const systemsValue = systems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
+  const systemsValue = activeSystems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
 
   return (
@@ -161,7 +164,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
       <HomeHero
         todoCount={upcomingTasks.length}
         overdueCount={overdueCount}
-        systemsCount={systems.length}
+        systemsCount={activeSystems.length}
         profile={profile}
         estimatedValue={estimatedValue}
         onOpenAccount={onOpenAccount}

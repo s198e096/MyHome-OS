@@ -398,7 +398,7 @@ export default function ItemFields({
         <View className="w-full mb-3" style={pickerBoxStyle}>
           <Picker selectedValue={systemId} onValueChange={setSystemId}>
             <Picker.Item label="General" value="" />
-            {systems.map((s) => (
+            {systems.filter((s) => !s.archived).map((s) => (
               <Picker.Item key={s.id} label={systemName(s)} value={s.id} />
             ))}
           </Picker>
