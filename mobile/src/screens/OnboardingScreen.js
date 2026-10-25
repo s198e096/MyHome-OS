@@ -18,6 +18,7 @@ import {
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
+import { manufactureDateToInstalled } from "../lib/manufacture-date.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
@@ -369,6 +370,9 @@ function SystemDetailsStep({ system, onDone }) {
   const [sysCategory, setSysCategory] = useState(system.category);
   const [sysLocation, setSysLocation] = useState(system.location || "");
   const [sysPurchaseDate, setSysPurchaseDate] = useState(system.purchaseDate || "");
+  // The "Date installed" the label scan pre-filled from its manufacture date —
+  // lets the form show a note while the field still holds it.
+  const [labelPurchaseDate, setLabelPurchaseDate] = useState("");
   const [sysPurchasePrice, setSysPurchasePrice] = useState(system.purchasePrice != null ? String(system.purchasePrice) : "");
   const [sysLifeYears, setSysLifeYears] = useState(() => {
     if (system.expectedLifeYears != null) return String(system.expectedLifeYears);
@@ -404,6 +408,14 @@ function SystemDetailsStep({ system, onDone }) {
         if (result.model) setSysModel(result.model);
       }
       if (result.serialNumber) setSysSerial(result.serialNumber);
+      // Default "Date installed" to the label's manufacture date, but only
+      // into an empty field (or one still holding a previous label date); a
+      // receipt scan later in this flow overrides it with the real purchase date.
+      const fromLabel = manufactureDateToInstalled(result.manufactureDate);
+      if (fromLabel && (!sysPurchaseDate || sysPurchaseDate === labelPurchaseDate)) {
+        setSysPurchaseDate(fromLabel);
+        setLabelPurchaseDate(fromLabel);
+      }
       if (result.category) setSysCategory(result.category);
       if (result.manualUrl) setSysManualUrl(result.manualUrl);
       // Category alone (e.g. confirming "appliance", which rarely changes
@@ -719,6 +731,7 @@ function SystemDetailsStep({ system, onDone }) {
           sysCategory={sysCategory} setSysCategory={setSysCategory}
           sysLocation={sysLocation} setSysLocation={setSysLocation}
           sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}
+          labelPurchaseDate={labelPurchaseDate}
           sysPurchasePrice={sysPurchasePrice} setSysPurchasePrice={setSysPurchasePrice}
           sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
           sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}

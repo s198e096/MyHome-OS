@@ -1,5 +1,6 @@
 // Reads a photo of a home system's nameplate/label and extracts brand, model,
-// and category using Claude's vision API, then makes a best-effort attempt to
+// serial number, manufacture date and category using Claude's vision API,
+// then makes a best-effort attempt to
 // find the official PDF manual for that brand/model via Claude's web search
 // tool and store a copy of it in this user's Storage folder. Deploy via the
 // Supabase dashboard (Edge Functions -> Deploy a new function) or
@@ -21,6 +22,27 @@ const CORS_HEADERS = {
 };
 
 const CATEGORIES = ["hvac_indoor", "hvac_outdoor", "water_heater", "roof", "plumbing", "electrical", "appliance"];
+
+// The label's printed manufacture date, kept exactly as precise as the label
+// states it: "YYYY-MM-DD", "YYYY-MM" or "YYYY". Anything else — an unparseable
+// string, an impossible month/day, a year before 1950, or a date in the
+// future (a misread) — becomes null so the app never pre-fills a bad date.
+function normalizeManufactureDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  const m = trimmed.match(/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = m[2] ? Number(m[2]) : null;
+  const day = m[3] ? Number(m[3]) : null;
+  if (year < 1950) return null;
+  if (month !== null && (month < 1 || month > 12)) return null;
+  if (day !== null && (day < 1 || day > 31)) return null;
+  const asDate = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (month !== null && day !== null && asDate.getUTCDate() !== day) return null; // e.g. Feb 30
+  if (asDate.getTime() > Date.now()) return null;
+  return trimmed;
+}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -143,12 +165,13 @@ Deno.serve(async (req) => {
     const base64 = arrayBufferToBase64(await imageResp.arrayBuffer());
 
     const prompt = `You are reading a photo of a home system's nameplate/label (e.g. water heater, HVAC unit, appliance). Extract only what is actually visible on the label. Respond with ONLY a JSON object, no other text, in this exact shape:
-{"brand": string or null, "model": string or null, "serialNumber": string or null, "category": one of ${JSON.stringify(CATEGORIES)} or null}
+{"brand": string or null, "model": string or null, "serialNumber": string or null, "manufactureDate": string or null, "category": one of ${JSON.stringify(CATEGORIES)} or null}
 
 Rules:
 - "brand" is the manufacturer name (e.g. "Rheem", "Carrier", "Whirlpool").
 - "model" is the model number/name (often labeled "Model", "MOD", or "M/N").
 - "serialNumber" is the serial number (often labeled "Serial", "S/N", or "SER") — distinct from the model number.
+- "manufactureDate" is the date the unit was manufactured, ONLY if the label itself prints one (often labeled "Date of Manufacture", "Mfg. Date", "MFG", "MFD", "DOM", or "Manufactured"). Return it exactly as precise as the label states it: "YYYY-MM-DD" if a full date is printed, "YYYY-MM" if only a month and year are printed, or "YYYY" if only a year is printed. Expand two-digit years (e.g. "03/19" on a label means "2019-03"). Do NOT try to decode a date hidden inside the serial number, and do not use a certification/UL date, a warranty date, or an installation date. If you are not sure which date it is, or a numeric date could be read two ways (day/month vs. month/day), use null.
 - "category" is your best guess at which listed category this system belongs to. For HVAC equipment, pick "hvac_outdoor" if it's the outdoor condenser/compressor unit (sits outside, has a large fan), or "hvac_indoor" if it's the indoor evaporator coil / air handler / furnace (sits in a closet, attic, or basement). Use null if you cannot tell.
 - If a field isn't visible or legible, use null for it. Do not guess or invent values.`;
 
@@ -182,6 +205,7 @@ Rules:
       brand: typeof parsed.brand === "string" ? parsed.brand : null,
       model: typeof parsed.model === "string" ? parsed.model : null,
       serialNumber: typeof parsed.serialNumber === "string" ? parsed.serialNumber : null,
+      manufactureDate: normalizeManufactureDate(parsed.manufactureDate),
       category: CATEGORIES.includes(parsed.category) ? parsed.category : null,
     };
 

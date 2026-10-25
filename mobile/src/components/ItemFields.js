@@ -5,6 +5,7 @@ import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, EXPENSE_CATEGORIES, OTHER_BILLS, isBillCategory, systemName } from "../lib/constants.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
+import { manufactureDateToInstalled, MANUFACTURE_DATE_NOTE } from "../lib/manufacture-date.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
@@ -151,9 +152,16 @@ export default function ItemFields({
   warrantyPhotoUrls, setWarrantyPhotoUrls,
   hideCategoryPicker,
   hidePhotoSection,
+  // Set by a parent that runs its own label scan (onboarding); otherwise the
+  // add/edit form tracks it here. The label-derived "Date installed", so the
+  // note below the field shows only while the field still holds that date.
+  labelPurchaseDate,
 }) {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [localLabelDate, setLocalLabelDate] = useState("");
+  const labelDate = labelPurchaseDate !== undefined ? labelPurchaseDate : localLabelDate;
+  const dateIsFromLabel = !!labelDate && sysPurchaseDate === labelDate;
   const [scanningWarranty, setScanningWarranty] = useState(false);
   const [warrantyScanError, setWarrantyScanError] = useState("");
   const [warrantyEstimate, setWarrantyEstimate] = useState(null);
@@ -180,6 +188,14 @@ export default function ItemFields({
         if (result.model) setSysModel(result.model);
       }
       if (result.serialNumber) setSysSerial(result.serialNumber);
+      // Default "Date installed" to the label's manufacture date — but only
+      // into an empty field (or one still holding a previous label date), so
+      // a date the user typed or a receipt supplied is never overwritten.
+      const fromLabel = manufactureDateToInstalled(result.manufactureDate);
+      if (fromLabel && (!sysPurchaseDate || dateIsFromLabel)) {
+        handlePurchaseDateChange(fromLabel);
+        setLocalLabelDate(fromLabel);
+      }
       if (result.category) setSysCategory(result.category);
       if (result.manualUrl) setSysManualUrl(result.manualUrl);
       // Category alone (e.g. confirming "appliance", which rarely changes
@@ -557,6 +573,7 @@ export default function ItemFields({
           )}
 
           <DateField label="Date installed" value={sysPurchaseDate} onChange={handlePurchaseDateChange} optional />
+          {dateIsFromLabel && <Text className="text-[11px] text-stone-400 mb-2">{MANUFACTURE_DATE_NOTE}</Text>}
 
           <TextInput
             value={sysPurchasePrice}
