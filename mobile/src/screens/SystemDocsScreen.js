@@ -2,16 +2,18 @@ import { useState } from "react";
 import * as Linking from "expo-linking";
 import { View, Text, Pressable, Image, Modal, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight, FileText, Receipt, Shield, BookOpen, Pencil, ExternalLink, Trash2, X } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, FileText, Receipt, Shield, BookOpen, Wrench, Pencil, ExternalLink, Trash2, X } from "lucide-react-native";
 import { STATUS_COLOR } from "../lib/constants.js";
 import { isManualsLibUrl, opensInBrowser, MANUALSLIB_NAME } from "../lib/manual-links.js";
 
-const CATEGORY_ICON = { Warranty: Shield, Receipt: Receipt, Manual: BookOpen, Invoice: FileText };
-const CATEGORY_ORDER = ["Warranty", "Receipt", "Manual", "Invoice"];
+const CATEGORY_ICON = { Warranty: Shield, Receipt: Receipt, Manual: BookOpen, Invoice: FileText, "Maintenance Invoice": Wrench };
+const CATEGORY_LABEL = { Receipt: "Receipts", Manual: "Manuals", Invoice: "Invoices", "Maintenance Invoice": "Maintenance Invoices" };
+const CATEGORY_ORDER = ["Warranty", "Receipt", "Manual", "Invoice", "Maintenance Invoice"];
 
 // Second page of Documents, reached by tapping a system (or "General") on
 // the first page. Shows that bucket's document categories first (Warranty,
-// Receipts, Manuals, Invoices) rather than one flat list — picking a
+// Receipts, Manuals, Invoices, Maintenance Invoices) rather than one flat
+// list — picking a
 // category lists just its documents, and tapping one opens the full
 // image/document directly. Editing (type, photo) lives behind the Edit
 // button on that full view, not inline on the list. Manuals open straight in
@@ -84,7 +86,7 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
                     <Icon size={17} color="#5F5B50" />
                   </View>
                   <Text className="text-[13.5px] text-stone-800 flex-1 min-w-0" numberOfLines={1}>
-                    {type === "Receipt" ? "Receipts" : type === "Manual" ? "Manuals" : type === "Invoice" ? "Invoices" : type}
+                    {CATEGORY_LABEL[type] || type}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
@@ -109,7 +111,7 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
         <Text className="text-[13px] text-stone-500">{title}</Text>
       </Pressable>
       <Text className="text-[17px] font-semibold text-stone-900 mb-3">
-        {category === "Receipt" ? "Receipts" : category === "Manual" ? "Manuals" : category === "Invoice" ? "Invoices" : category}
+        {CATEGORY_LABEL[category] || category}
       </Text>
       <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         {categoryDocs.map((d, i) => {

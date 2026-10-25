@@ -188,6 +188,12 @@ export function AppDataProvider({ children }) {
         vendor: cost.vendor ? cost.vendor.trim() : null,
       });
       setExpenses((es) => [...es, created]);
+      // A photo of the work/labor receipt, if one was taken — filed under
+      // its own "Maintenance Invoices" document category rather than
+      // "Receipt", since it's evidence of a job done, not a purchase.
+      if (cost.receiptPhotoUrl) {
+        await addDocument(t?.title ? `${t.title} Invoice` : "Maintenance Invoice", "Maintenance Invoice", t?.systemId || null, cost.receiptPhotoUrl);
+      }
     }
     await toggleTask(id, date);
   }

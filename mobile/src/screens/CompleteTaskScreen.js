@@ -7,6 +7,7 @@ import { TODAY } from "../lib/forecast.js";
 import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 import SelectModal from "../components/SelectModal.js";
 import { DateField } from "../components/ItemFields.js";
+import PhotoPicker from "../components/PhotoPicker.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -54,6 +55,7 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
   const [timeUnit, setTimeUnit] = useState("hours");
   const [timeUnitDropdownOpen, setTimeUnitDropdownOpen] = useState(false);
   const [vendor, setVendor] = useState("");
+  const [receiptPhotoUrl, setReceiptPhotoUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function finish(cost) {
@@ -201,8 +203,16 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                   </View>
                 )}
 
+                <View className="mb-4">
+                  <Text className="text-[11px] text-stone-500 mb-1">Receipt / invoice photo (optional)</Text>
+                  <PhotoPicker photoUrl={receiptPhotoUrl} onChange={setReceiptPhotoUrl} />
+                  <Text className="text-[11px] text-stone-400 mt-1">
+                    Filed under Documents → Maintenance Invoices{sys ? ` for ${systemName(sys)}` : ""}.
+                  </Text>
+                </View>
+
                 <Pressable
-                  onPress={() => finish({ partsCost, laborCost, diy, timeSpentHours: toHours(timeSpent, timeUnit), vendor })}
+                  onPress={() => finish({ partsCost, laborCost, diy, timeSpentHours: toHours(timeSpent, timeUnit), vendor, receiptPhotoUrl })}
                   disabled={saving}
                   className="w-full py-2.5 rounded-lg items-center mb-6"
                   style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
