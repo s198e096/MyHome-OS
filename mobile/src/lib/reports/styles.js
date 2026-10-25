@@ -1,7 +1,16 @@
 // Print stylesheet for the PDF reports. Plain CSS in a string, rendered by the
 // phone's print engine (WebKit on iOS), so it sticks to widely supported rules.
+//
+// The sizes below are written the way a desktop browser prints them (1px =
+// 0.75pt). The phone's engine instead lays the page out at 1px = 1pt, which
+// would print everything a third larger, so every px value is scaled down once
+// at load to keep the page looking like the design.
+const PX_TO_PT = 0.75;
+const scalePx = (css) => css.replace(/(\d*\.?\d+)px/g, (_, n) => `${+(parseFloat(n) * PX_TO_PT).toFixed(2)}px`);
 
-export const REPORT_CSS = `
+const DESIGN_CSS = `
+  /* Print the colour fills (header band, cards, pills, table heads); WebKit drops them by default. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -111,6 +120,8 @@ export const REPORT_CSS = `
     color: #78716c;
   }
 `;
+
+export const REPORT_CSS = scalePx(DESIGN_CSS);
 
 export function htmlDocument(title, body) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>${REPORT_CSS}</style></head><body><div class="page-pad">${body}</div></body></html>`;
