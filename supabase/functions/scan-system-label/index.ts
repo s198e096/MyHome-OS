@@ -1,8 +1,10 @@
 // Reads a photo of a home system's nameplate/label and extracts brand, model,
 // serial number, manufacture date and category using Claude's vision API,
-// then makes a best-effort attempt to
-// find the official PDF manual for that brand/model via Claude's web search
-// tool and store a copy of it in this user's Storage folder. Deploy via the
+// then makes a best-effort attempt to find the official PDF manual for that
+// brand/model via Claude's web search tool and store a copy of it in this
+// user's Storage folder. If no PDF can be downloaded, it falls back to a link
+// to the manual's page on ManualsLib (link only — nothing is copied from that
+// site; see findManualsLibLink). Deploy via the
 // Supabase dashboard (Edge Functions -> Deploy a new function) or
 // `supabase functions deploy scan-system-label`.
 // Requires the ANTHROPIC_API_KEY secret to be set on the project.
@@ -126,6 +128,51 @@ Search the web for it. Reply with ONLY the direct URL to a PDF file of the manua
   }
 }
 
+// Pulls the one ManualsLib manual-page URL out of a search answer, or null.
+// Only an individual manual page (/manual/<id>/<name>.html) counts — never a
+// brand or product listing page — and any "?page=N" is dropped so the link
+// opens the manual from its first page.
+function extractManualsLibPage(text: string): string | null {
+  const m = text.match(/https?:\/\/(?:www\.)?manualslib\.com\/manual\/(\d+)\/([A-Za-z0-9._%~-]+)\.html/i);
+  return m ? `https://www.manualslib.com/manual/${m[1]}/${m[2]}.html` : null;
+}
+
+// Fallback for when no official PDF could be downloaded: asks Claude's web
+// search tool (limited to manualslib.com) for the manual's page there and
+// returns just that page's URL.
+//
+// Deliberately LINK-ONLY: this never fetches ManualsLib itself or stores a
+// copy of anything from it. ManualsLib's robots.txt disallows automated
+// access to its /download/ paths and its Terms of Use prohibit bots copying
+// its content, so the user opens the page and downloads it themselves.
+// Returns null (never throws) if anything fails — it's a nice-to-have.
+async function findManualsLibLink(
+  anthropicKey: string,
+  brand: string,
+  model: string,
+  category: string | null
+) {
+  try {
+    const searchPrompt = `Find the ManualsLib page for the owner's/user's manual (or, failing that, the installation manual) of this product:
+Brand: ${brand}
+Model: ${model}
+Category: ${category || "unknown"}
+
+Search manualslib.com. Reply with ONLY the URL of one specific manual page, which looks like https://www.manualslib.com/manual/<number>/<Name>.html. Pick the page for this exact model. If ManualsLib has no page for this exact model but has one for the same model that differs only by a trailing color, finish or revision code (for example MMV1174FZ vs MMV1174DS), pick that one. Do not return brand, product-line or category listing pages. If nothing matches this brand and model family, reply with exactly: NONE`;
+
+    const searchData = await callClaude(anthropicKey, {
+      model: "claude-sonnet-5",
+      max_tokens: 1024,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2, allowed_domains: ["manualslib.com"] }],
+      messages: [{ role: "user", content: searchPrompt }],
+    });
+
+    return extractManualsLibPage(extractText(searchData));
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -212,6 +259,11 @@ Rules:
     let manualUrl = null;
     if (result.brand && result.model) {
       manualUrl = await findAndStoreManual(anthropicKey, supabaseAuthed, user.id, result.brand, result.model, result.category);
+      // No official PDF we could download: fall back to a link to the
+      // manual's page on ManualsLib (the user opens it themselves).
+      if (!manualUrl) {
+        manualUrl = await findManualsLibLink(anthropicKey, result.brand, result.model, result.category);
+      }
     }
 
     return new Response(JSON.stringify({ ...result, manualUrl }), {

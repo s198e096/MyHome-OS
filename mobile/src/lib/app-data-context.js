@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName, defaultExpectedLifeYears } from "./constants.js";
 import { TODAY, daysUntil, computeForecast, advanceDueDate } from "./forecast.js";
+import { isManualsLibUrl, MANUALSLIB_NAME } from "./manual-links.js";
 import {
   db,
   loadAllData,
@@ -310,7 +311,9 @@ export function AppDataProvider({ children }) {
 
   async function attachManualDocument(systemId, brand, model, manualUrl) {
     const category = systems.find((s) => s.id === systemId)?.category;
-    const created = await db.documents.add({ label: `${systemName({ brand, model, category })} Manual`, type: "Manual", systemId, photoUrl: manualUrl });
+    // A ManualsLib link is labeled with its source so it's clear it opens off-app.
+    const suffix = isManualsLibUrl(manualUrl) ? ` (${MANUALSLIB_NAME})` : "";
+    const created = await db.documents.add({ label: `${systemName({ brand, model, category })} Manual${suffix}`, type: "Manual", systemId, photoUrl: manualUrl });
     setDocuments((ds) => [...ds, created]);
   }
 

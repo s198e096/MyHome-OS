@@ -19,6 +19,7 @@ import {
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled } from "../lib/manufacture-date.js";
+import { isManualsLibUrl } from "../lib/manual-links.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
@@ -701,7 +702,9 @@ function SystemDetailsStep({ system, onDone }) {
 
         {sysManualUrl && (
           <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
-            Found the owner&apos;s manual — it&apos;ll be attached to this system&apos;s Documents when you save.
+            {isManualsLibUrl(sysManualUrl)
+              ? "Found this model's manual on ManualsLib — a link to it will be added to this system's Documents when you save."
+              : "Found the owner's manual — it'll be attached to this system's Documents when you save."}
           </Text>
         )}
 
