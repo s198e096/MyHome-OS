@@ -20,6 +20,7 @@ import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
+import { scannedModelNumber } from "../lib/scan-result.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
@@ -396,18 +397,16 @@ function SystemDetailsStep({ system, onDone }) {
     setSysManualUrl("");
     try {
       const result = await scanSystemLabel(photoUrl);
-      if (system.category === "appliance") {
-        // `brand` holds the appliance's generic name here (e.g.
-        // "Refrigerator", from the checklist step) rather than a real
-        // manufacturer — keep that in place (it's what the appliance icon
-        // and list label key off) and fold the scanned manufacturer/model
-        // into the model field instead.
-        const manufacturerModel = [result.brand, result.model].filter(Boolean).join(" ");
-        if (manufacturerModel) setSysModel(manufacturerModel);
-      } else {
-        if (result.brand) setSysBrand(result.brand);
-        if (result.model) setSysModel(result.model);
+      // The Model field only ever gets the model number — never the
+      // manufacturer's name in front of it.
+      const modelNumber = scannedModelNumber(result.brand, result.model);
+      if (system.category !== "appliance" && result.brand) {
+        // For an appliance, `brand` holds the appliance's own name (e.g.
+        // "Refrigerator", from the checklist step — it's what the icon and
+        // list label key off), so a scanned manufacturer must not replace it.
+        setSysBrand(result.brand);
       }
+      if (modelNumber) setSysModel(modelNumber);
       if (result.serialNumber) setSysSerial(result.serialNumber);
       // Default "Date installed" to the label's manufacture date, but only
       // into an empty field (or one still holding a previous label date); a
@@ -424,7 +423,8 @@ function SystemDetailsStep({ system, onDone }) {
       // since those are what the user is actually waiting to see appear.
       // For toilets, no label found isn't a failure — it's the expected
       // case when the photo is just of its condition.
-      if (!result.brand && !result.model && !labelOptional) {
+      const filledSomething = system.category === "appliance" ? !!modelNumber : !!(result.brand || modelNumber);
+      if (!filledSomething && !labelOptional) {
         setScanError("Couldn't read the label clearly. You can fill in the fields manually.");
       }
     } catch {

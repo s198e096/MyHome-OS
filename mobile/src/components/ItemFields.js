@@ -7,6 +7,7 @@ import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTI
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled, MANUFACTURE_DATE_NOTE } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
+import { scannedModelNumber } from "../lib/scan-result.js";
 import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
@@ -176,17 +177,16 @@ export default function ItemFields({
     setSysManualUrl("");
     try {
       const result = await scanSystemLabel(photoUrl);
-      if (sysCategory === "appliance") {
-        // `brand` holds the appliance's generic name here (e.g.
-        // "Refrigerator") rather than a real manufacturer — keep that in
-        // place (it's what the appliance icon and list label key off) and
-        // fold the scanned manufacturer/model into the model field instead.
-        const manufacturerModel = [result.brand, result.model].filter(Boolean).join(" ");
-        if (manufacturerModel) setSysModel(manufacturerModel);
-      } else {
-        if (result.brand) setSysBrand(result.brand);
-        if (result.model) setSysModel(result.model);
+      // The Model field only ever gets the model number — never the
+      // manufacturer's name in front of it.
+      const modelNumber = scannedModelNumber(result.brand, result.model);
+      if (sysCategory !== "appliance" && result.brand) {
+        // For an appliance, `brand` holds the appliance's own name (e.g.
+        // "Dishwasher" — it's what the icon and list label key off), so a
+        // scanned manufacturer must not replace it.
+        setSysBrand(result.brand);
       }
+      if (modelNumber) setSysModel(modelNumber);
       if (result.serialNumber) setSysSerial(result.serialNumber);
       // Default "Date installed" to the label's manufacture date — but only
       // into an empty field (or one still holding a previous label date), so
@@ -199,9 +199,11 @@ export default function ItemFields({
       if (result.category) setSysCategory(result.category);
       if (result.manualUrl) setSysManualUrl(result.manualUrl);
       // Category alone (e.g. confirming "appliance", which rarely changes
-      // anything visible) isn't a useful fill — only count brand/model,
-      // since those are what the user is actually waiting to see appear.
-      if (!result.brand && !result.model) {
+      // anything visible) isn't a useful fill — only count what actually
+      // appeared in the fields: the model number, plus the brand for
+      // non-appliances (an appliance's manufacturer isn't written anywhere).
+      const filledSomething = sysCategory === "appliance" ? !!modelNumber : !!(result.brand || modelNumber);
+      if (!filledSomething) {
         setScanError("Couldn't read the label clearly. Try a closer, well-lit photo, or fill it in manually.");
       }
     } catch {
@@ -436,7 +438,7 @@ export default function ItemFields({
           {/* Appliances share one category, so their first field is what the
               appliance IS (Oven, Microwave), not the maker — two appliances
               from the same manufacturer would otherwise look identical in
-              every list. The manufacturer goes in the second field. */}
+              every list. The second field is just the model number. */}
           <TextInput
             value={sysBrand}
             onChangeText={setSysBrand}
@@ -448,16 +450,11 @@ export default function ItemFields({
           <TextInput
             value={sysModel}
             onChangeText={setSysModel}
-            placeholder={sysCategory === "appliance" ? "Brand & model (e.g. Maytag MMV1174)" : "Model (e.g. Infinity)"}
+            placeholder={sysCategory === "appliance" ? "Model number (e.g. LDFN454HT)" : "Model (e.g. Infinity)"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
-          {sysCategory === "appliance" && (
-            <Text className="text-[11px] text-stone-400 mb-2">
-              Name each appliance by what it is, so two from the same brand are easy to tell apart.
-            </Text>
-          )}
           <TextInput
             value={sysSerial}
             onChangeText={setSysSerial}
