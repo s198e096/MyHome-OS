@@ -6,7 +6,7 @@ import ItemFormScreen from "../../../../screens/ItemFormScreen.js";
 export default function EditExpense() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { systems, expenses, updateExpense, deleteExpense } = useAppData();
+  const { systems, expenses, updateExpense, deleteExpense, addDocument } = useAppData();
   const expense = expenses.find((e) => e.id === id);
 
   if (!expense) {
@@ -24,6 +24,7 @@ export default function EditExpense() {
       systems={systems}
       onBack={() => router.back()}
       onUpdateExpense={updateExpense}
+      onAddDocument={addDocument}
       onDeleteExpense={async (delId) => {
         await deleteExpense(delId);
         router.back();
