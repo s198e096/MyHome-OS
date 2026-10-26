@@ -22,6 +22,7 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!!session && !passwordRecovery}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="ask" />
       </Stack.Protected>
       <Stack.Protected guard={passwordRecovery}>
         <Stack.Screen name="reset-password" />

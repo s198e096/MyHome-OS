@@ -19,6 +19,7 @@ export function TabTransitionProvider({ children }) {
   const tabKey = pathToTabKey(pathname);
   const prevIndexRef = useRef(TAB_ORDER.indexOf(tabKey));
   const isFirstRef = useRef(true);
+  const settledTabRef = useRef(tabKey);
   const [state, setState] = useState({ activeTabKey: tabKey, direction: "right", navCount: 0 });
 
   useEffect(() => {
@@ -26,6 +27,11 @@ export function TabTransitionProvider({ children }) {
       isFirstRef.current = false;
       return;
     }
+    // The chat (/ask) is a full-screen page over the tabs, not a tab: leave the
+    // tab state alone, so coming back doesn't replay the slide on the same tab.
+    if (tabKey === "ask") return;
+    if (tabKey === settledTabRef.current) return;
+    settledTabRef.current = tabKey;
     const index = TAB_ORDER.indexOf(tabKey);
     const direction = index === -1 || index >= prevIndexRef.current ? "right" : "left";
     if (index !== -1) prevIndexRef.current = index;
