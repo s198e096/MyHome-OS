@@ -337,11 +337,29 @@ export async function fetchPropertyDetails(address) {
   return data;
 }
 
+// supabase-js reports every non-2xx reply from an edge function as one generic
+// error and keeps the real reply in `error.context`. Pull the status and the
+// function's own message out so the screen can say what actually went wrong.
+async function describeFunctionError(error) {
+  let detail = "";
+  try {
+    const body = await error.context.json();
+    detail = body?.error || body?.message || JSON.stringify(body);
+  } catch {
+    // No readable reply body (e.g. the request never reached the function).
+  }
+  const err = new Error(detail || error?.message || "Request failed");
+  err.status = error?.context?.status ?? null;
+  err.detail = detail;
+  err.network = error?.name === "FunctionsFetchError";
+  return err;
+}
+
 export async function askAssistant(messages) {
   const { data, error } = await supabase.functions.invoke("ask-assistant", {
     body: { messages },
   });
-  if (error) throw error;
+  if (error) throw await describeFunctionError(error);
   return data.reply;
 }
 

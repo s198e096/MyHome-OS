@@ -11,6 +11,20 @@ const EXAMPLE_QUESTIONS = [
   "What maintenance is coming up?",
 ];
 
+// What to tell the user when the assistant can't answer. While developing
+// (Expo Go), the server's own message is shown underneath so the real cause is
+// visible; a shipped app only shows the friendly line.
+function chatErrorText(err) {
+  const base =
+    err?.status === 401 ? "Your session expired. Sign out and back in, then try again."
+    : err?.status === 429 ? "Too many questions at once. Give it a minute and try again."
+    : err?.network ? "Couldn't reach the assistant. Check your connection and try again."
+    : "Couldn't get a response. Try again.";
+  return __DEV__ && (err?.detail || err?.status)
+    ? `${base}\n[${err.status ?? "no status"}] ${String(err.detail || "").slice(0, 300)}`
+    : base;
+}
+
 function Bubble({ role, content }) {
   const isUser = role === "user";
   return (
@@ -47,8 +61,8 @@ export default function AskAssistantScreen({ onBack, initialInput }) {
     try {
       const reply = await askAssistant(next);
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
-    } catch {
-      setError("Couldn't get a response. Try again.");
+    } catch (err) {
+      setError(chatErrorText(err));
     } finally {
       setSending(false);
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
