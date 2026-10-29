@@ -28,10 +28,11 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
   }
 
   return (
+    // Spacing is inline on purpose: className padding/margin is ignored on
+    // LinearGradient, which left the stats box running to the screen edges.
     <LinearGradient
       colors={[HERO_BG_TOP, HERO_BG_BOTTOM]}
-      className="px-5 pb-4 mb-5"
-      style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20 }}
+      style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20, paddingBottom: 18, marginBottom: 20 }}
     >
       <View className="flex-row items-center justify-between mb-3" style={{ paddingHorizontal: 10 }}>
         <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }} numberOfLines={1}>
@@ -76,22 +77,24 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
         />
       </View>
 
-      <View className="rounded-2xl bg-white flex-row overflow-hidden">
-        {[
-          { label: "To-do", value: todoCount, tab: "/tasks" },
-          { label: "Overdue", value: overdueCount, tab: "/tasks" },
-          { label: "Systems", value: systemsCount, tab: "/systems" },
-        ].map((s, i) => (
-          <Pressable
-            key={s.label}
-            onPress={() => onNavigate(s.tab)}
-            className="flex-1 items-center py-3"
-            style={{ borderRightWidth: i < 2 ? 1 : 0, borderRightColor: "#F0F0EA" }}
-          >
-            <Text className="text-[18px] font-bold" style={{ color: PRIMARY }}>{s.value}</Text>
-            <Text className="text-[11px] text-stone-500">{s.label}</Text>
-          </Pressable>
-        ))}
+      <View style={{ paddingHorizontal: 16 }}>
+        <View className="rounded-2xl bg-white flex-row overflow-hidden">
+          {[
+            { label: "To-do", value: todoCount, tab: "/tasks" },
+            { label: "Overdue", value: overdueCount, tab: "/tasks" },
+            { label: "Systems", value: systemsCount, tab: "/systems" },
+          ].map((s, i) => (
+            <Pressable
+              key={s.label}
+              onPress={() => onNavigate(s.tab)}
+              className="flex-1 items-center py-3"
+              style={{ borderRightWidth: i < 2 ? 1 : 0, borderRightColor: "#F0F0EA" }}
+            >
+              <Text className="text-[18px] font-bold" style={{ color: PRIMARY }}>{s.value}</Text>
+              <Text className="text-[11px] text-stone-500">{s.label}</Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
     </LinearGradient>
   );
