@@ -59,61 +59,71 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-4">Edit profile</Text>
 
+      <Text className="text-[11px] text-stone-500 mb-1">Name</Text>
       <TextInput
         value={name}
         onChangeText={setName}
-        placeholder="Name"
+        placeholder="e.g. Jane Doe"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
+      <Text className="text-[11px] text-stone-500 mb-1">Email</Text>
       <TextInput
         value={email}
         onChangeText={setEmail}
-        placeholder="Email"
+        placeholder="e.g. jane@example.com"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
+      <Text className="text-[11px] text-stone-500 mb-1">Property name</Text>
       <TextInput
         value={propertyName}
         onChangeText={setPropertyName}
-        placeholder="Property name (e.g. Main House)"
+        placeholder="e.g. Main House"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
+      <Text className="text-[11px] text-stone-500 mb-1">Home address</Text>
       <TextInput
         value={address}
         onChangeText={setAddress}
-        placeholder="Home address"
+        placeholder="e.g. 123 Main St"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
+      <Text className="text-[11px] text-stone-500 mb-1">Estimated property value ($)</Text>
       <TextInput
         value={propertyValue}
         onChangeText={setPropertyValue}
-        placeholder="Estimated property value ($)"
+        placeholder="e.g. 450000"
         inputMode="decimal"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
+      <Text className="text-[11px] text-stone-500 mb-1">Purchase price ($)</Text>
       <TextInput
         value={purchasePrice}
         onChangeText={setPurchasePrice}
-        placeholder="Purchase price ($)"
+        placeholder="e.g. 380000"
         inputMode="decimal"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
         inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
+      <View className="flex-row gap-2 mb-1">
+        <Text className="flex-1 text-[11px] text-stone-500">Bedrooms</Text>
+        <Text className="flex-1 text-[11px] text-stone-500">Year built</Text>
+      </View>
       <View className="flex-row gap-2 mb-3">
         <TextInput
           value={bedrooms}
           onChangeText={setBedrooms}
-          placeholder="Bedrooms"
+          placeholder="e.g. 3"
           inputMode="numeric"
           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
@@ -122,7 +132,7 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         <TextInput
           value={yearBuilt}
           onChangeText={setYearBuilt}
-          placeholder="Year built"
+          placeholder="e.g. 1998"
           inputMode="numeric"
           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
