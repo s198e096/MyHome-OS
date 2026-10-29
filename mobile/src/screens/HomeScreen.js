@@ -2,14 +2,14 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Clock, Home } from "lucide-react-native";
+import { Clock } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { TODAY, daysUntil, money } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
 
 const HOME_ACTIONS = [
   { value: "chat", label: "Chat with an AI agent about your home" },
-  { value: "problem", label: "Report a problem" },
+  { value: "problem", label: "Chat about a problem" },
   { value: "expense", label: "Report an expense" },
   { value: "upgrade", label: "Upgrade a system" },
 ];
@@ -21,7 +21,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
 
   function handleAction(value) {
     setActionsOpen(false);
-    if (value === "problem") onOpenAssistant("I'd like to report a problem: ");
+    if (value === "problem") onOpenAssistant("I need help with a problem: ");
     else if (value === "expense") onNavigate("/costs/new");
     else if (value === "upgrade") onNavigate("/systems/upgrade");
     else onOpenAssistant();
@@ -188,9 +188,6 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
                 <Text className="text-[11px] text-stone-400">Estimated property value</Text>
                 <Text className="text-[20px] font-bold" style={{ color: PRIMARY }}>{money(profile.propertyValue)}</Text>
                 <Text className="text-[11px] text-stone-400" numberOfLines={1}>{profile.address}</Text>
-              </View>
-              <View className="rounded-lg p-2 bg-[#F5F8F0]">
-                <Home size={20} color={PRIMARY} />
               </View>
             </View>
             {profile.propertyValueSource && (
