@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Send, Sparkles } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR } from "../lib/constants.js";
 import { askAssistant } from "../lib/db.js";
+import ChatMessageText from "../components/ChatMessageText.js";
 
 const EXAMPLE_QUESTIONS = [
   "When should I replace my HVAC filter?",
@@ -33,9 +34,13 @@ function Bubble({ role, content }) {
         className="rounded-2xl px-3.5 py-2.5"
         style={{ maxWidth: "85%", backgroundColor: isUser ? PRIMARY : "white", borderWidth: isUser ? 0 : 1, borderColor: "#E0E8D3" }}
       >
-        <Text className="text-[13.5px]" style={{ color: isUser ? "white" : "#292524", lineHeight: 19 }}>
-          {content}
-        </Text>
+        {isUser ? (
+          <Text className="text-[13.5px]" style={{ color: "white", lineHeight: 19 }}>
+            {content}
+          </Text>
+        ) : (
+          <ChatMessageText text={content} />
+        )}
       </View>
     </View>
   );
