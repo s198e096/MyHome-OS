@@ -7,7 +7,13 @@ import AskAssistantScreen from "../screens/AskAssistantScreen.js";
 // before the screen ever rendered.)
 export default function Ask() {
   const router = useRouter();
-  const { prefill } = useLocalSearchParams();
+  const { prefill, name } = useLocalSearchParams();
 
-  return <AskAssistantScreen onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} initialInput={prefill} />;
+  return (
+    <AskAssistantScreen
+      onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+      initialInput={prefill}
+      name={name}
+    />
+  );
 }

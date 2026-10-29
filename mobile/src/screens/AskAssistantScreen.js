@@ -26,6 +26,14 @@ function chatErrorText(err) {
     : base;
 }
 
+// "Hi Rami, what would you like to do?" - first name only, capitalized. The
+// chat sits outside the tabs (where the profile lives), so Home passes the name in.
+function greetingFor(name) {
+  const raw = String(Array.isArray(name) ? name[0] : name || "").trim().split(/\s+/)[0];
+  const first = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : "";
+  return `Hi ${first || "there"}, what would you like to do?`;
+}
+
 function Bubble({ role, content }) {
   const isUser = role === "user";
   return (
@@ -46,7 +54,7 @@ function Bubble({ role, content }) {
   );
 }
 
-export default function AskAssistantScreen({ onBack, initialInput }) {
+export default function AskAssistantScreen({ onBack, initialInput, name }) {
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState(initialInput || "");
@@ -96,8 +104,10 @@ export default function AskAssistantScreen({ onBack, initialInput }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <Bubble role="assistant" content={greetingFor(name)} />
+
           {messages.length === 0 && (
-            <View className="mt-4">
+            <View className="mt-1">
               <Text className="text-[13px] text-stone-500 mb-3">
                 Ask about your home&apos;s systems, upcoming maintenance, or anything else — I can see your logged data.
               </Text>

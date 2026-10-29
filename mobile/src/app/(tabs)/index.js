@@ -16,7 +16,9 @@ export default function Home() {
       tasks={data.tasks}
       profile={data.profile}
       onOpenAccount={() => router.push("/account")}
-      onOpenAssistant={(prefill) => router.push(prefill ? { pathname: "/ask", params: { prefill } } : "/ask")}
+      onOpenAssistant={(prefill) =>
+        router.push({ pathname: "/ask", params: { name: data.profile?.name || "", ...(prefill ? { prefill } : {}) } })
+      }
       onNavigate={(path) => router.push(path)}
       onCompleteTask={(t) => router.push(`/tasks/${t.id}/complete`)}
     />
