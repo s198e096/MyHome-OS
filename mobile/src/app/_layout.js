@@ -2,12 +2,15 @@ import "../../global.css";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "../lib/auth-context.js";
+import { ChatProvider } from "../lib/chat-context.js";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <SessionProvider>
-        <RootNavigator />
+        <ChatProvider>
+          <RootNavigator />
+        </ChatProvider>
       </SessionProvider>
     </SafeAreaProvider>
   );
