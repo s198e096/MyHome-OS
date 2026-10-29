@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Clock } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { TODAY, daysUntil, money } from "../lib/forecast.js";
+import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import SelectModal from "../components/SelectModal.js";
 
 const HOME_ACTIONS = [
@@ -34,10 +35,17 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
       colors={[HERO_BG_TOP, HERO_BG_BOTTOM]}
       style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20, paddingBottom: 18, marginBottom: 20 }}
     >
-      <View className="flex-row items-center justify-between mb-3" style={{ paddingHorizontal: 10 }}>
-        <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }} numberOfLines={1}>
-          {profile.propertyName || "Home"}
-        </Text>
+      <View className="flex-row items-center justify-between mb-4" style={{ paddingHorizontal: 16 }}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text className="text-[16px] font-bold" style={{ color: PRIMARY }} numberOfLines={1}>
+            {fmtPropertyName(profile.propertyName) || "Home"}
+          </Text>
+          {!!profile.address && (
+            <Text className="text-[11.5px]" style={{ color: "#3B5169", marginTop: 1 }} numberOfLines={1}>
+              {fmtAddress(profile.address)}
+            </Text>
+          )}
+        </View>
         <Pressable
           onPress={onOpenAccount}
           className="rounded-full items-center justify-center"
@@ -187,7 +195,7 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
               <View className="flex-1">
                 <Text className="text-[11px] text-stone-400">Estimated property value</Text>
                 <Text className="text-[20px] font-bold" style={{ color: PRIMARY }}>{money(profile.propertyValue)}</Text>
-                <Text className="text-[11px] text-stone-400" numberOfLines={1}>{profile.address}</Text>
+                <Text className="text-[11px] text-stone-400" numberOfLines={1}>{fmtAddress(profile.address)}</Text>
               </View>
             </View>
             {profile.propertyValueSource && (

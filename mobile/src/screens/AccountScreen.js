@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pencil, ChevronRight } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
+import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import LedgerRow from "../components/LedgerRow.js";
 import ReportsSection from "../components/ReportsSection.js";
@@ -31,12 +32,12 @@ export default function AccountScreen({ profile, reports, onBuyReport, onGenerat
       </View>
 
       <Text className="text-[12px] font-semibold text-stone-500 mb-1">
-        {profile.propertyName || "Home"}
+        {fmtPropertyName(profile.propertyName) || "Home"}
       </Text>
       <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         <View className="py-2.5" style={{ borderBottomWidth: 1, borderBottomColor: "#E7EEDB" }}>
           <Text className="text-[13.5px] text-stone-800">Address</Text>
-          <Text className="text-[12px] text-stone-500 mt-0.5">{profile.address}</Text>
+          <Text className="text-[12px] text-stone-500 mt-0.5">{fmtAddress(profile.address)}</Text>
         </View>
         {(profile.bedrooms != null || profile.yearBuilt != null) && (
           <LedgerRow
