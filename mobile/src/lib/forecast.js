@@ -10,31 +10,48 @@ export function daysUntil(dateStr) {
   return Math.round((d - TODAY) / 86400000);
 }
 
-// Next due date for a recurring task, from its current due date. Calendar-
-// based (not a fixed day count) for anything monthly or longer, so e.g. a
-// Jan 31 due date lands on Feb 28 rather than drifting mid-month.
-export function advanceDueDate(dateStr, recurrence) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  switch (recurrence) {
-    case "weekly":
-      d.setDate(d.getDate() + 7);
-      break;
-    case "monthly":
-      d.setMonth(d.getMonth() + 1);
-      break;
-    case "quarterly":
-      d.setMonth(d.getMonth() + 3);
-      break;
-    case "semiannually":
-      d.setMonth(d.getMonth() + 6);
-      break;
-    case "annually":
-      d.setFullYear(d.getFullYear() + 1);
-      break;
-    default:
-      return null;
+const RECURRENCE_STEP = {
+  weekly: { days: 7 },
+  monthly: { months: 1 },
+  quarterly: { months: 3 },
+  semiannually: { months: 6 },
+  annually: { months: 12 },
+};
+
+// The due date `steps` repeats after `dateStr` (default: the next one).
+// Calendar-based (not a fixed day count) for anything monthly or longer, and
+// clamped to the target month's length, so a Jan 31 due date lands on Feb 28
+// rather than spilling into March. Counting `steps` from the original date,
+// instead of chaining one repeat at a time, stops that clamping from drifting
+// the later dates. Pure date arithmetic, so no time-zone shifts.
+export function advanceDueDate(dateStr, recurrence, steps = 1) {
+  const step = RECURRENCE_STEP[recurrence];
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr || "");
+  if (!step || !m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  if (step.days) return new Date(Date.UTC(y, mo, d + step.days * steps)).toISOString().slice(0, 10);
+
+  const total = mo + step.months * steps;
+  const ty = y + Math.floor(total / 12);
+  const tm = ((total % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(ty, tm + 1, 0)).getUTCDate();
+  return `${ty}-${String(tm + 1).padStart(2, "0")}-${String(Math.min(d, lastDay)).padStart(2, "0")}`;
+}
+
+// The dates a repeating task falls on after its current due date, up to and
+// including `endKey` ("YYYY-MM-DD"). Used by the calendar, so a task that
+// repeats shows up on every one of its dates and not only the next one. The
+// current due date itself is not included (it is the task's own date).
+export function futureOccurrences(dueDate, recurrence, endKey, maxCount = 400) {
+  const dates = [];
+  for (let n = 1; n <= maxCount; n++) {
+    const next = advanceDueDate(dueDate, recurrence, n);
+    if (!next || next > endKey) break;
+    dates.push(next);
   }
-  return d.toISOString().slice(0, 10);
+  return dates;
 }
 
 export function money(n) {
