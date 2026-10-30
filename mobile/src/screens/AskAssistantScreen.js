@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pressable, ActivityIndicator, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Send, Sparkles } from "lucide-react-native";
+import { ChevronLeft, Send, Sparkles, Menu, SquarePen, Trash2, X } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR } from "../lib/constants.js";
 import { askAssistant } from "../lib/db.js";
+import { useChat } from "../lib/chat-context.js";
 import ChatMessageText from "../components/ChatMessageText.js";
 
 const EXAMPLE_QUESTIONS = [
@@ -54,13 +55,91 @@ function Bubble({ role, content }) {
   );
 }
 
+// Slide-over list of saved conversations (ChatGPT-style) — a "New chat"
+// button up top, each row tappable to switch, with its own delete button
+// since there's no other way to clean these up.
+function ConversationDrawer({ visible, conversations, activeId, onSelect, onNew, onDelete, onClose }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, flexDirection: "row" }}>
+        <View className="bg-[#F5F8F0]" style={{ width: "80%", maxWidth: 320, paddingTop: insets.top + 16 }}>
+          <View className="flex-row items-center justify-between px-4 mb-3">
+            <Text className="text-[15px] font-semibold text-stone-900">Conversations</Text>
+            <Pressable onPress={onClose} hitSlop={8}>
+              <X size={18} color="#78716c" />
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={onNew}
+            className="flex-row items-center gap-2 mx-4 mb-3 px-3 py-2.5 rounded-lg"
+            style={{ backgroundColor: PRIMARY }}
+          >
+            <SquarePen size={15} color="white" />
+            <Text className="text-[13px] font-semibold text-white">New chat</Text>
+          </Pressable>
+          <ScrollView className="flex-1 px-2" showsVerticalScrollIndicator={false}>
+            {conversations.length === 0 && <Text className="px-2 py-3 text-[12.5px] text-stone-400">No saved conversations yet.</Text>}
+            {conversations.map((c) => {
+              const selected = c.id === activeId;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => onSelect(c.id)}
+                  className="flex-row items-center justify-between gap-2 px-3 py-2.5 rounded-lg mb-1"
+                  style={{ backgroundColor: selected ? "#E7EEDB" : "transparent" }}
+                >
+                  <Text
+                    className="text-[13px] flex-1 min-w-0"
+                    numberOfLines={1}
+                    style={{ color: selected ? PRIMARY : "#44403c", fontWeight: selected ? "600" : "400" }}
+                  >
+                    {c.title}
+                  </Text>
+                  <Pressable onPress={() => onDelete(c.id)} hitSlop={8}>
+                    <Trash2 size={14} color="#B8B4A8" />
+                  </Pressable>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+        <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)" }} />
+      </View>
+    </Modal>
+  );
+}
+
 export default function AskAssistantScreen({ onBack, initialInput, name }) {
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState([]);
+  const { messages, setMessages, conversations, activeId, startNewConversation, switchConversation, deleteConversation } = useChat();
   const [input, setInput] = useState(initialInput || "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const scrollRef = useRef(null);
+
+  // Jump straight to the latest message when reopening a conversation that
+  // already has history, instead of landing scrolled to the top.
+  useEffect(() => {
+    if (messages.length > 0) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: later message-count changes are handled by the scrolls in send()
+  }, []);
+
+  function handleSelectConversation(id) {
+    switchConversation(id);
+    setInput("");
+    setError("");
+    setDrawerOpen(false);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
+  }
+
+  function handleNewConversation() {
+    startNewConversation();
+    setInput("");
+    setError("");
+    setDrawerOpen(false);
+  }
 
   async function send(text) {
     const question = text.trim();
@@ -94,8 +173,25 @@ export default function AskAssistantScreen({ onBack, initialInput, name }) {
             <Sparkles size={14} color={PRIMARY} />
             <Text className="text-[13px] font-semibold" style={{ color: PRIMARY }}>Ask Anything</Text>
           </View>
-          <View style={{ width: 50 }} />
+          <View className="flex-row items-center gap-3" style={{ width: 60, justifyContent: "flex-end" }}>
+            <Pressable onPress={handleNewConversation} hitSlop={8}>
+              <SquarePen size={18} color="#78716c" />
+            </Pressable>
+            <Pressable onPress={() => setDrawerOpen(true)} hitSlop={8}>
+              <Menu size={18} color="#78716c" />
+            </Pressable>
+          </View>
         </View>
+
+        <ConversationDrawer
+          visible={drawerOpen}
+          conversations={conversations}
+          activeId={activeId}
+          onSelect={handleSelectConversation}
+          onNew={handleNewConversation}
+          onDelete={deleteConversation}
+          onClose={() => setDrawerOpen(false)}
+        />
 
         <ScrollView
           ref={scrollRef}

@@ -350,15 +350,17 @@ export default function ItemFields({
 
       {kind === "expense" && (
         <>
+          <Text className="text-[11px] text-stone-500 mb-1">Amount ($)</Text>
           <TextInput
             value={amount}
             onChangeText={setAmount}
-            placeholder="Amount"
+            placeholder="e.g. 120"
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          <Text className="text-[11px] text-stone-500 mb-1">Category</Text>
           <Pressable
             onPress={() => setExpenseCategoryDropdownOpen(true)}
             className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
@@ -378,10 +380,11 @@ export default function ItemFields({
             }}
             onClose={() => setExpenseCategoryDropdownOpen(false)}
           />
+          <Text className="text-[11px] text-stone-500 mb-1">Note</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder={isBillCategory(category) ? "Note (e.g. October bill)" : "Note (e.g. Gutter cleaning)"}
+            placeholder={isBillCategory(category) ? "e.g. October bill" : "e.g. Gutter cleaning"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
@@ -423,6 +426,7 @@ export default function ItemFields({
 
       {(kind === "task" || (kind === "expense" && !isBillCategory(category)) || kind === "doc") && (
         <>
+          <Text className="text-[11px] text-stone-500 mb-1">System</Text>
           <Pressable
             onPress={() => setSystemDropdownOpen(true)}
             className="w-full mb-3 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
@@ -484,32 +488,36 @@ export default function ItemFields({
               appliance IS (Oven, Microwave), not the maker — two appliances
               from the same manufacturer would otherwise look identical in
               every list. The second field is just the model number. */}
+          <Text className="text-[11px] text-stone-500 mb-1">{sysCategory === "appliance" ? "Appliance" : "Brand"}</Text>
           <TextInput
             value={sysBrand}
             onChangeText={setSysBrand}
-            placeholder={sysCategory === "appliance" ? "Appliance (e.g. Oven, Microwave)" : "Brand (e.g. Carrier)"}
+            placeholder={sysCategory === "appliance" ? "e.g. Oven, Microwave" : "e.g. Carrier"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          <Text className="text-[11px] text-stone-500 mb-1">{sysCategory === "appliance" ? "Model number" : "Model"}</Text>
           <TextInput
             value={sysModel}
             onChangeText={setSysModel}
-            placeholder={sysCategory === "appliance" ? "Model number (e.g. LDFN454HT)" : "Model (e.g. Infinity)"}
+            placeholder={sysCategory === "appliance" ? "e.g. LDFN454HT" : "e.g. Infinity"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          <Text className="text-[11px] text-stone-500 mb-1">Serial number (S/N)</Text>
           <TextInput
             value={sysSerial}
             onChangeText={setSysSerial}
-            placeholder="Serial number (S/N)"
+            placeholder="e.g. 4H67T2991"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           {!hideCategoryPicker && (
             <>
+              <Text className="text-[11px] text-stone-500 mb-1">System type</Text>
               <Pressable
                 onPress={() => setCategoryDropdownOpen(true)}
                 className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
@@ -569,10 +577,11 @@ export default function ItemFields({
             </View>
           )}
 
+          <Text className="text-[11px] text-stone-500 mb-1">Location</Text>
           <TextInput
             value={sysLocation}
             onChangeText={setSysLocation}
-            placeholder="Location (e.g. Attic, Garage, Kitchen)"
+            placeholder="e.g. Attic, Garage, Kitchen"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
@@ -619,28 +628,31 @@ export default function ItemFields({
           <DateField label="Date installed" value={sysPurchaseDate} onChange={handlePurchaseDateChange} optional />
           {dateIsFromLabel && <Text className="text-[11px] text-stone-400 mb-2">{MANUFACTURE_DATE_NOTE}</Text>}
 
+          <Text className="text-[11px] text-stone-500 mb-1">Purchase price ($)</Text>
           <TextInput
             value={sysPurchasePrice}
             onChangeText={setSysPurchasePrice}
-            placeholder="Purchase price ($)"
+            placeholder="e.g. 450"
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          <Text className="text-[11px] text-stone-500 mb-1">Expected life (years)</Text>
           <TextInput
             value={sysLifeYears}
             onChangeText={setSysLifeYears}
-            placeholder="Expected life (years)"
+            placeholder="e.g. 15"
             inputMode="numeric"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
+          <Text className="text-[11px] text-stone-500 mb-1">Estimated replacement cost ($)</Text>
           <TextInput
             value={sysReplacementCost}
             onChangeText={setSysReplacementCost}
-            placeholder="Estimated replacement cost ($)"
+            placeholder="e.g. 3500"
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
