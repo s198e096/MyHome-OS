@@ -2,11 +2,17 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
 import { Clock } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { TODAY, daysUntil, money } from "../lib/forecast.js";
 import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import SelectModal from "../components/SelectModal.js";
+
+// Where "Source: RentCast" on the property value card links to: RentCast's
+// property data page, which describes the value estimates the number comes from.
+const RENTCAST_URL = "https://www.rentcast.io/api";
+const LINK_BLUE = "#2563EB";
 
 const HOME_ACTIONS = [
   { value: "chat", label: "Chat with an AI agent about your home" },
@@ -35,16 +41,11 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
       colors={[HERO_BG_TOP, HERO_BG_BOTTOM]}
       style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28, paddingTop: insets.top + 20, paddingBottom: 18, marginBottom: 20 }}
     >
-      <View className="flex-row items-center justify-between mb-4" style={{ paddingHorizontal: 16 }}>
+      <View className="flex-row items-center justify-between mb-3" style={{ paddingHorizontal: 16 }}>
         <View style={{ flex: 1, paddingRight: 12 }}>
           <Text className="text-[16px] font-bold" style={{ color: PRIMARY }} numberOfLines={1}>
             {fmtPropertyName(profile.propertyName) || "Home"}
           </Text>
-          {!!profile.address && (
-            <Text className="text-[11.5px]" style={{ color: "#3B5169", marginTop: 1 }} numberOfLines={1}>
-              {fmtAddress(profile.address)}
-            </Text>
-          )}
         </View>
         <Pressable
           onPress={onOpenAccount}
@@ -200,7 +201,20 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
             </View>
             {profile.propertyValueSource && (
               <View className="mt-2 pt-2" style={{ borderTopWidth: 1, borderTopColor: "#E7EEDB", borderStyle: "dashed" }}>
-                <Text className="text-[10px] text-stone-400">Source: {profile.propertyValueSource}</Text>
+                <Text className="text-[11px] text-stone-400">
+                  Source:{" "}
+                  {profile.propertyValueSource === "RentCast" ? (
+                    <Text
+                      accessibilityRole="link"
+                      onPress={() => WebBrowser.openBrowserAsync(RENTCAST_URL)}
+                      style={{ color: LINK_BLUE, textDecorationLine: "underline" }}
+                    >
+                      RentCast
+                    </Text>
+                  ) : (
+                    profile.propertyValueSource
+                  )}
+                </Text>
               </View>
             )}
           </View>
