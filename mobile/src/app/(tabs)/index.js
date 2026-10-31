@@ -21,6 +21,7 @@ export default function Home() {
       }
       onNavigate={(path) => router.push(path)}
       onCompleteTask={(t) => router.push(`/tasks/${t.id}/complete`)}
+      onEditTask={(t) => router.push(`/tasks/${t.id}/edit`)}
     />
     </AnimatedTabScreen>
   );

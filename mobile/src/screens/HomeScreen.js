@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
-import { Clock } from "lucide-react-native";
+import { Clock, CheckCircle2 } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { TODAY, daysUntil, money } from "../lib/forecast.js";
 import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
@@ -109,7 +109,12 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
   );
 }
 
-function UpcomingTasksList({ tasks, systemById, onComplete }) {
+const TASK_MENU_OPTIONS = [
+  { value: "complete", label: "Complete task" },
+  { value: "edit", label: "Edit task" },
+];
+
+function UpcomingTasksList({ tasks, systemById, onComplete, onPressTask }) {
   return (
     <View className="mb-5">
       <View className="flex-row items-center justify-between mb-2">
@@ -129,10 +134,16 @@ function UpcomingTasksList({ tasks, systemById, onComplete }) {
           return (
             <View key={t.id} className="rounded-xl bg-white flex-row overflow-hidden" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
               <View style={{ width: 4, backgroundColor: barColor }} />
-              <View className="flex-1 px-3 py-2.5">
+              <Pressable onPress={() => onPressTask(t)} className="flex-1 px-3 py-2.5">
                 <View className="flex-row items-center gap-2.5">
-                  <Pressable onPress={() => onComplete(t)} hitSlop={8}>
-                    <View className="rounded-full" style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: "#C9C5B8" }} />
+                  <Pressable
+                    onPress={() => onComplete(t)}
+                    hitSlop={8}
+                    accessibilityLabel="Mark complete"
+                    className="rounded-full items-center justify-center"
+                    style={{ width: 26, height: 26, backgroundColor: "#EAF1E3" }}
+                  >
+                    <CheckCircle2 size={17} color={STATUS_COLOR.green} />
                   </Pressable>
                   <View className="flex-1 min-w-0">
                     <Text className="text-[14px] font-semibold text-stone-900" numberOfLines={1}>{t.title}</Text>
@@ -151,7 +162,7 @@ function UpcomingTasksList({ tasks, systemById, onComplete }) {
                     {t.difficulty && <Text className="text-[12px] text-stone-500">{t.difficulty}</Text>}
                   </View>
                 )}
-              </View>
+              </Pressable>
             </View>
           );
         })}
@@ -160,18 +171,80 @@ function UpcomingTasksList({ tasks, systemById, onComplete }) {
   );
 }
 
-export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask }) {
+// Same row style as UpcomingTasksList, but always overdue (so the bar is
+// always red) and showing how many days overdue instead of nothing.
+function OverdueTasksList({ tasks, systemById, onComplete, onPressTask }) {
+  return (
+    <View className="mb-5">
+      <View className="flex-row items-center justify-between mb-2">
+        <Text className="text-[15px] font-bold text-stone-900">Overdue tasks</Text>
+        <Text className="text-[13px] text-stone-400">{tasks.length}</Text>
+      </View>
+      {tasks.length === 0 && (
+        <View className="rounded-xl bg-white px-3 py-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+          <Text className="text-[13px] text-stone-400">Nothing overdue — nice work.</Text>
+        </View>
+      )}
+      <View className="gap-2">
+        {tasks.map((t) => {
+          const sys = systemById(t.systemId);
+          const days = Math.abs(daysUntil(t.dueDate));
+          return (
+            <View key={t.id} className="rounded-xl bg-white flex-row overflow-hidden" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+              <View style={{ width: 4, backgroundColor: STATUS_COLOR.red }} />
+              <Pressable onPress={() => onPressTask(t)} className="flex-1 flex-row items-center gap-2.5 px-3 py-2.5">
+                <Pressable
+                  onPress={() => onComplete(t)}
+                  hitSlop={8}
+                  accessibilityLabel="Mark complete"
+                  className="rounded-full items-center justify-center"
+                  style={{ width: 26, height: 26, backgroundColor: "#EAF1E3" }}
+                >
+                  <CheckCircle2 size={17} color={STATUS_COLOR.green} />
+                </Pressable>
+                <View className="flex-1 min-w-0">
+                  <Text className="text-[14px] font-semibold text-stone-900" numberOfLines={1}>{t.title}</Text>
+                  {sys && <Text className="text-[12px] text-stone-400">{systemName(sys)}</Text>}
+                </View>
+                <Text className="text-[12px] font-semibold pl-2" style={{ color: STATUS_COLOR.red }}>
+                  {days}d overdue
+                </Text>
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export default function HomeScreen({
+  upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask, onEditTask,
+}) {
+  const [taskMenuTask, setTaskMenuTask] = useState(null);
+
+  function handleTaskMenuSelect(value) {
+    const t = taskMenuTask;
+    setTaskMenuTask(null);
+    if (!t) return;
+    if (value === "complete") onCompleteTask(t);
+    else onEditTask(t);
+  }
+
   const activeSystems = systems.filter((s) => !s.archived);
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const isThisMonth = (dueDate) => {
     const d = new Date(`${dueDate}T00:00:00`);
     return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth();
   };
-  const thisMonthTasks = upcomingTasks.filter((t) => isThisMonth(t.dueDate));
+  // Mutually exclusive with the overdue list below: a task already overdue
+  // shows there instead, even if its due date also falls in this month.
+  const thisMonthTasks = upcomingTasks.filter((t) => isThisMonth(t.dueDate) && daysUntil(t.dueDate) >= 0);
+  const overdueTasks = upcomingTasks.filter((t) => daysUntil(t.dueDate) < 0);
   // The "To-do" count: this month's tasks plus anything overdue (which may
   // be from an earlier month) — not every open task regardless of when
   // it's due.
-  const todoCount = upcomingTasks.filter((t) => isThisMonth(t.dueDate) || daysUntil(t.dueDate) < 0).length;
+  const todoCount = thisMonthTasks.length + overdueTasks.length;
 
   const systemsValue = activeSystems.reduce((s, sys) => s + (sys.replacementCost || 0), 0);
   const estimatedValue = profile.propertyValue != null ? profile.propertyValue + systemsValue : null;
@@ -220,7 +293,17 @@ export default function HomeScreen({ upcomingTasks, systemById, systems, tasks, 
           </View>
         )}
 
-        <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onComplete={onCompleteTask} />
+        <UpcomingTasksList tasks={thisMonthTasks} systemById={systemById} onComplete={onCompleteTask} onPressTask={setTaskMenuTask} />
+        <OverdueTasksList tasks={overdueTasks} systemById={systemById} onComplete={onCompleteTask} onPressTask={setTaskMenuTask} />
+
+        <SelectModal
+          visible={!!taskMenuTask}
+          title={taskMenuTask?.title || "Task"}
+          options={TASK_MENU_OPTIONS}
+          selectedValue={null}
+          onSelect={handleTaskMenuSelect}
+          onClose={() => setTaskMenuTask(null)}
+        />
       </View>
     </ScrollView>
   );
