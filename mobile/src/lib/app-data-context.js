@@ -15,7 +15,7 @@ import {
   loadReportPurchases,
   loadEnergyChecks,
   updateEnergyCheckStatus,
-  removeStoredManual,
+  removeStoredPhoto,
 } from "./db.js";
 import { useSession } from "./auth-context.js";
 
@@ -192,7 +192,7 @@ export function AppDataProvider({ children }) {
       // its own "Maintenance Invoices" document category rather than
       // "Receipt", since it's evidence of a job done, not a purchase.
       if (cost.receiptPhotoUrl) {
-        await addDocument(t?.title ? `${t.title} Invoice` : "Maintenance Invoice", "Maintenance Invoice", t?.systemId || null, cost.receiptPhotoUrl);
+        await addDocument(t?.title ? `${t.title} Invoice` : "Maintenance Invoice", "Maintenance Invoice", t?.systemId || null, cost.receiptPhotoUrl, id);
       }
     }
     await toggleTask(id, date);
@@ -216,6 +216,34 @@ export function AppDataProvider({ children }) {
     setTasks((ts) => ts.filter((t) => t.id !== id));
   }
 
+  // Removing a completed task from the Completed tab means "this didn't
+  // happen" — it reopens the task (restoring its original, now-overdue due
+  // date) rather than just deleting the log entry. For a recurring task,
+  // completing it already spawned its next occurrence as a separate row
+  // (see toggleTask), so that spawned row is deleted too — otherwise
+  // reopening the original would leave both sitting in the open list at once.
+  async function undoTaskCompletion(id) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) return;
+    if (t.recurrence) {
+      const nextDueDate = advanceDueDate(t.dueDate, t.recurrence);
+      const spawned = tasks.find(
+        (x) => x.id !== id && !x.completed && x.title === t.title && x.systemId === t.systemId && x.recurrence === t.recurrence && x.dueDate === nextDueDate
+      );
+      if (spawned) await deleteTask(spawned.id);
+    }
+    // Reverts whatever completing it logged: the expense (parts/labor/time
+    // or vendor cost) and any receipt photo filed as a Maintenance Invoice —
+    // undoing the completion should leave no trace it happened.
+    for (const e of expenses.filter((x) => x.taskId === id)) {
+      await deleteExpense(e.id);
+    }
+    for (const d of documents.filter((x) => x.taskId === id)) {
+      await deleteDocument(d.id);
+    }
+    await toggleTask(id);
+  }
+
   async function addExpense(amount, category, note, systemId) {
     const created = await db.expenses.add({ amount, category, note, systemId, date: TODAY.toISOString().slice(0, 10) });
     setExpenses((es) => [...es, created]);
@@ -234,8 +262,8 @@ export function AppDataProvider({ children }) {
     setExpenses((es) => es.filter((e) => e.id !== id));
   }
 
-  async function addDocument(label, type, systemId, photoUrl) {
-    const created = await db.documents.add({ label, type, systemId, photoUrl: photoUrl || null });
+  async function addDocument(label, type, systemId, photoUrl, taskId) {
+    const created = await db.documents.add({ label, type, systemId, photoUrl: photoUrl || null, taskId: taskId || null });
     setDocuments((ds) => [...ds, created]);
     return created;
   }
@@ -251,8 +279,9 @@ export function AppDataProvider({ children }) {
     const doc = documents.find((d) => d.id === id);
     await db.documents.remove(id);
     setDocuments((ds) => ds.filter((d) => d.id !== id));
-    // A manual PDF saved to the user's storage goes with its document.
-    await removeStoredManual(doc?.photoUrl);
+    // A manual PDF or an uploaded photo saved to the user's storage goes
+    // with its document.
+    await removeStoredPhoto(doc?.photoUrl);
   }
 
   async function addWarranty(systemId, type, expirationDate, estimated) {
@@ -427,6 +456,7 @@ export function AppDataProvider({ children }) {
     addTask,
     updateTask,
     deleteTask,
+    undoTaskCompletion,
     addExpense,
     updateExpense,
     deleteExpense,

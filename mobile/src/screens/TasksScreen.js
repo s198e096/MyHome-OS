@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Plus, Check, Repeat, Pencil, CheckCircle2, Trash2 } from "lucide-react-native";
+import { Plus, Check, Repeat, Pencil, CheckCircle2, Undo2 } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, systemShortName } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
@@ -49,6 +49,7 @@ export default function TasksScreen({ tasks, completed, systemById, onRemoveComp
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState("open");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [confirmingUndoId, setConfirmingUndoId] = useState(null);
 
   const openGroups = groupBySystem(tasks, systemById);
   const completedGroups = groupBySystem(completed, systemById);
@@ -57,6 +58,18 @@ export default function TasksScreen({ tasks, completed, systemById, onRemoveComp
     setAddMenuOpen(false);
     if (value === "import") onImportTasks();
     else onAddManual();
+  }
+
+  // Undoing a completion reverts its logged cost and receipt too, so it
+  // needs the same "tap again to confirm" guard as the other delete-like
+  // actions in this app, rather than firing on a single tap.
+  function handleUndo(t) {
+    if (confirmingUndoId !== t.id) {
+      setConfirmingUndoId(t.id);
+      return;
+    }
+    setConfirmingUndoId(null);
+    onRemoveCompleted(t);
   }
 
   return (
@@ -147,21 +160,26 @@ export default function TasksScreen({ tasks, completed, systemById, onRemoveComp
                 {groupTasks.map((t, i) => (
                   <View
                     key={t.id}
-                    className="flex-row items-center gap-2.5 py-2.5"
+                    className="py-2.5"
                     style={{ borderBottomWidth: i < groupTasks.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
                   >
-                    <Check size={15} color={STATUS_COLOR.green} />
-                    <Text className="text-[13px] text-stone-400 flex-1 min-w-0" numberOfLines={1} style={{ textDecorationLine: "line-through" }}>
-                      {t.title}
-                    </Text>
-                    {!!t.completedDate && (
-                      <Text className="text-[11px] text-stone-400">
-                        {new Date(`${t.completedDate}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    <View className="flex-row items-center gap-2.5 mb-1.5">
+                      <Check size={15} color={STATUS_COLOR.green} />
+                      <Text className="text-[13px] text-stone-400 flex-1 min-w-0" numberOfLines={1} style={{ textDecorationLine: "line-through" }}>
+                        {t.title}
                       </Text>
-                    )}
-                    <Pressable onPress={() => onRemoveCompleted(t)} hitSlop={8} className="p-1">
-                      <Trash2 size={14} color="#B8B4A8" />
-                    </Pressable>
+                      {!!t.completedDate && (
+                        <Text className="text-[11px] text-stone-400">
+                          {new Date(`${t.completedDate}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </Text>
+                      )}
+                    </View>
+                    <RowButton
+                      icon={Undo2}
+                      label={confirmingUndoId === t.id ? "Tap again to confirm" : "Mark as not done"}
+                      color={confirmingUndoId === t.id ? STATUS_COLOR.red : undefined}
+                      onPress={() => handleUndo(t)}
+                    />
                   </View>
                 ))}
               </View>

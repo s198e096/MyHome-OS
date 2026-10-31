@@ -1,7 +1,7 @@
 import * as Linking from "expo-linking";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { supabase } from "./supabase.js";
-import { storedManualPath } from "./manual-links.js";
+import { storedPhotoPath } from "./manual-links.js";
 
 const rowToSystem = (r) => ({
   id: r.id,
@@ -94,6 +94,7 @@ const expenseToRow = (e) => ({
 const rowToDocument = (r) => ({
   id: r.id,
   systemId: r.system_id,
+  taskId: r.task_id,
   type: r.type,
   label: r.label,
   photoUrl: r.photo_url,
@@ -101,6 +102,7 @@ const rowToDocument = (r) => ({
 
 const documentToRow = (d) => ({
   system_id: d.systemId || null,
+  task_id: d.taskId || null,
   type: d.type,
   label: d.label,
   photo_url: d.photoUrl || null,
@@ -287,13 +289,13 @@ export async function uploadPhoto(asset) {
   return supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
 }
 
-// Removes the manual PDF a label scan saved to the user's own storage folder
-// when its document is deleted, so the file doesn't pile up unreferenced.
-// Any other URL (a ManualsLib link, an uploaded photo) has no such file and
-// is left alone. Best-effort and never throws: the document is already gone
-// either way, and a leftover file is harmless.
-export async function removeStoredManual(url) {
-  const path = storedManualPath(url);
+// Removes a file (a scanned manual PDF, or a photo uploaded through
+// PhotoPicker) from our own storage when its document is deleted, so it
+// doesn't pile up unreferenced. Any other URL (a ManualsLib link) has no
+// such file and is left alone. Best-effort and never throws: the document
+// is already gone either way, and a leftover file is harmless.
+export async function removeStoredPhoto(url) {
+  const path = storedPhotoPath(url);
   if (!path) return;
   try {
     await supabase.storage.from("photos").remove([path]);
