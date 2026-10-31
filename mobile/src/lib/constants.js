@@ -1,5 +1,5 @@
 import {
-  Home, Wind, Droplet, Droplets, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Grid2x2, Trees, Toilet, Faucet, PlugZap, Sun, EvCharger,
+  Home, Wind, Droplet, Droplets, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Warehouse, Grid2x2, Trees, Toilet, Faucet, PlugZap, Sun, EvCharger,
   Refrigerator, WashingMachine, Microwave, Flame, Snowflake, Trash2, Fan, UtensilsCrossed,
 } from "lucide-react-native";
 
@@ -48,6 +48,7 @@ export const CATEGORY_META = {
   appliance: { label: "Appliance", icon: Wrench },
   windows: { label: "Windows", icon: AppWindow },
   exterior: { label: "Exterior / Paint", icon: PaintBucket },
+  garage_door: { label: "Garage Door", icon: Warehouse },
   balcony: { label: "Balcony", icon: DoorOpen },
   deck: { label: "Deck", icon: Grid2x2 },
   garden: { label: "Garden / Backyard", icon: Trees },
@@ -88,6 +89,7 @@ export const DEFAULT_LIFE_YEARS = {
   ev_charger: 10, // not in the NACHI table — this app's own estimate
   windows: 14, // Double-Pane: 8-20 years
   exterior: 9, // Paint (exterior): 7-10 years
+  garage_door: 23, // Garage Doors: 20-25 years
   balcony: 20, // not in the NACHI table — using Deck's "Structural Wood" as an analog
   deck: 20, // Structural Wood: 10-30 years
   garden: 20, // not in the NACHI table — using Wood Fencing as a proxy

@@ -1397,6 +1397,46 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
   );
 }
 
+// A garage door is always a single unit with nothing to pick a type of, so
+// unlike HVAC/water heater there's no "know your type?" sub-step — "Yes"
+// adds it straight away.
+function GarageOnboardingStep({ hasExisting, onBack, onDone }) {
+  const { addSystem } = useAppData();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleYes() {
+    if (hasExisting) return onDone();
+    setSaving(true);
+    setError("");
+    try {
+      await addSystem({ category: "garage_door", brand: null, model: null, location: "" });
+      onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <OnboardingGuideScreen title="Garage door" skipSubject="the garage door" onBackPress={onBack} onSkip={onDone}>
+      <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have a garage?</Text>
+      <Pressable
+        onPress={handleYes}
+        disabled={saving}
+        className="w-full py-2.5 rounded-lg items-center mb-2"
+        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+      >
+        <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Yes"}</Text>
+      </Pressable>
+      <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+      </Pressable>
+      {error && <Text className="text-[12px] text-center mt-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+    </OnboardingGuideScreen>
+  );
+}
+
 // A plain yes/no gate for an optional add-on step where there's no
 // meaningful "type" to guide the user toward (unlike HVAC, water heaters,
 // generators, solar, or EV chargers) — so no guided walkthrough, just one
@@ -2195,6 +2235,17 @@ export default function OnboardingScreen() {
       <WaterHeaterOnboardingStep
         hasExisting={hasExistingWaterHeater}
         onBack={() => setStep("hvac")}
+        onDone={() => setStep("garage")}
+      />
+    );
+  }
+
+  if (step === "garage") {
+    const hasExistingGarageDoor = systems.some((s) => s.category === "garage_door");
+    return (
+      <GarageOnboardingStep
+        hasExisting={hasExistingGarageDoor}
+        onBack={() => setStep("water-heater")}
         onDone={() => setStep("plumbing-fixtures-ask")}
       />
     );
@@ -2205,7 +2256,7 @@ export default function OnboardingScreen() {
       <YesNoPrompt
         title="Add plumbing fixtures?"
         question="Would you like to add toilets, faucets, or sinks?"
-        onBack={() => setStep("water-heater")}
+        onBack={() => setStep("garage")}
         onYes={() => setStep("plumbing-fixtures-add")}
         onNo={() => setStep("generator")}
       />
