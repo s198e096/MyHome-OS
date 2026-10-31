@@ -306,18 +306,23 @@ export default function ItemFields({
   return (
     <>
       {(kind === "task" || kind === "doc" || kind === "furniture") && (
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder={
-            kind === "task" ? "e.g. Replace air filter" :
-            kind === "furniture" ? "e.g. Sofa, Dining table" :
-            "e.g. Water heater receipt"
-          }
-          className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-          style={fieldStyle}
-          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-        />
+        <>
+          <Text className="text-[11px] text-stone-500 mb-1">
+            {kind === "task" ? "Task Name" : kind === "furniture" ? "Furniture name" : "Document label"}
+          </Text>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder={
+              kind === "task" ? "e.g. Replace air filter" :
+              kind === "furniture" ? "e.g. Sofa, Dining table" :
+              "e.g. Water heater receipt"
+            }
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={fieldStyle}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+          />
+        </>
       )}
 
       {kind === "task" && (
