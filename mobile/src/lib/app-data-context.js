@@ -398,7 +398,10 @@ export function AppDataProvider({ children }) {
 
   async function saveProfile(next) {
     const updated = await saveProfileRow(session.user.id, { ...profile, ...next });
-    setProfile((p) => ({ ...p, ...updated }));
+    // email always comes from the session, never the profiles row (see the
+    // initial load below) — re-applied here too in case anything upstream
+    // ever reintroduces a stray `email` key in `updated`.
+    setProfile((p) => ({ ...p, ...updated, email: session.user.email }));
   }
 
   async function resolvePropertyValuePrompt(accept) {

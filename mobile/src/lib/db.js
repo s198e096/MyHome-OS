@@ -159,7 +159,10 @@ const ENERGY_CHECK_SEEDS = [
 
 const rowToProfile = (r) => ({
   name: r.name,
-  email: undefined, // comes from the auth session, not this table
+  // No `email` key here at all — it comes from the auth session, not this
+  // table. An explicit `email: undefined` would still overwrite a real
+  // email when this gets spread into existing profile state (`{...a,
+  // ...b}` applies an explicit undefined, unlike a merely-absent key).
   address: r.address,
   propertyName: r.property_name || "",
   propertyValue: r.property_value,
@@ -522,10 +525,13 @@ export async function loadProfile(userId, fallbackName) {
 }
 
 export async function saveProfile(userId, profile) {
+  // Upsert rather than a plain update: an update throws when zero rows
+  // match (e.g. a profile row that's somehow missing, like a user whose
+  // first-load insert in loadProfile never landed), crashing the Edit
+  // Profile screen on save instead of just creating the row.
   const { data, error } = await supabase
     .from("profiles")
-    .update(profileToRow(profile))
-    .eq("user_id", userId)
+    .upsert({ user_id: userId, ...profileToRow(profile) }, { onConflict: "user_id" })
     .select()
     .single();
   if (error) throw error;
