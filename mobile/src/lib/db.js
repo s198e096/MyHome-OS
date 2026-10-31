@@ -192,11 +192,13 @@ const rowToProfile = (r) => ({
   hoaFee: r.hoa_fee,
   plan: r.plan,
   onboardingCompleted: r.onboarding_completed,
+  avatarType: r.avatar_type,
 });
 
 const profileToRow = (p) => ({
   name: p.name,
   address: p.address,
+  avatar_type: p.avatarType || null,
   property_name: p.propertyName || null,
   property_value: p.propertyValue ?? null,
   property_value_source: p.propertyValueSource || null,

@@ -1,17 +1,28 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { useState } from "react";
+import { View, Text, Pressable, ScrollView, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pencil, ChevronRight } from "lucide-react-native";
-import { PRIMARY, STATUS_COLOR, PLANS } from "../lib/constants.js";
+import { PRIMARY, STATUS_COLOR, PLANS, AVATAR_TYPES } from "../lib/constants.js";
 import { money } from "../lib/forecast.js";
 import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import LedgerRow from "../components/LedgerRow.js";
 import ReportsSection from "../components/ReportsSection.js";
+import Avatar from "../components/Avatar.js";
 
-export default function AccountScreen({ profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut }) {
+const AVATAR_LABEL = { initials: "Initials", man: "Man", woman: "Woman" };
+
+export default function AccountScreen({ profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut, onChangeAvatar }) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
   const insets = useSafeAreaInsets();
   const featureChips = buildFeatureSummary(profile);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const avatarType = profile.avatarType || "initials";
+
+  function selectAvatarType(type) {
+    setAvatarPickerOpen(false);
+    onChangeAvatar(type);
+  }
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -24,12 +35,45 @@ export default function AccountScreen({ profile, reports, onBuyReport, onGenerat
       </View>
 
       <View className="items-center mb-5">
-        <View className="rounded-full items-center justify-center mb-2" style={{ width: 64, height: 64, backgroundColor: PRIMARY }}>
-          <Text style={{ color: "white", fontSize: 24, fontWeight: "700" }}>{profile.name.charAt(0).toUpperCase()}</Text>
-        </View>
+        <Pressable onPress={() => setAvatarPickerOpen(true)} accessibilityLabel="Change avatar" className="mb-2">
+          <Avatar profile={profile} size={64} />
+        </Pressable>
         <Text className="text-[15px] font-semibold text-stone-900">{profile.name}</Text>
         <Text className="text-[12.5px] text-stone-400">{profile.email}</Text>
       </View>
+
+      <Modal transparent visible={avatarPickerOpen} animationType="fade" onRequestClose={() => setAvatarPickerOpen(false)}>
+        <Pressable
+          onPress={() => setAvatarPickerOpen(false)}
+          style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)", alignItems: "center", justifyContent: "center", padding: 28 }}
+        >
+          <Pressable
+            onPress={() => {}}
+            className="bg-white rounded-2xl p-4"
+            style={{ width: "100%", maxWidth: 340, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
+          >
+            <Text className="text-[15px] font-semibold text-stone-900 mb-3">Choose an avatar</Text>
+            <View className="flex-row justify-center gap-4">
+              {AVATAR_TYPES.map(({ key }) => {
+                const selected = key === avatarType;
+                return (
+                  <Pressable key={key} onPress={() => selectAvatarType(key)} className="items-center gap-1.5">
+                    <View
+                      className="rounded-full items-center justify-center"
+                      style={{ width: 56, height: 56, borderWidth: selected ? 3 : 0, borderColor: PRIMARY }}
+                    >
+                      <Avatar profile={{ ...profile, avatarType: key }} size={selected ? 50 : 56} />
+                    </View>
+                    <Text className="text-[11.5px]" style={{ color: selected ? PRIMARY : "#78716c", fontWeight: selected ? "700" : "400" }}>
+                      {AVATAR_LABEL[key]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Text className="text-[12px] font-semibold text-stone-500 mb-1">
         {fmtPropertyName(profile.propertyName) || "Home"}

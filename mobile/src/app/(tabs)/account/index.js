@@ -14,7 +14,7 @@ export default function Account() {
   const router = useRouter();
   const {
     profile, systems, tasks, expenses, documents, warranties, furniture,
-    activeReportPurchase, buyReport, refreshReportPurchases,
+    activeReportPurchase, buyReport, refreshReportPurchases, saveProfile,
   } = useAppData();
   const { signOut } = useSession();
 
@@ -95,6 +95,7 @@ export default function Account() {
         onEdit={() => router.push("/account/edit")}
         onManagePlan={() => router.push("/account/plan")}
         onSignOut={signOut}
+        onChangeAvatar={(type) => saveProfile({ avatarType: type })}
       />
     </AnimatedTabScreen>
   );

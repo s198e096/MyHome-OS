@@ -8,6 +8,14 @@ export const HERO_BG_TOP = "#D3ECBC";
 export const HERO_BG_BOTTOM = "#BEE1A5";
 export const ACCENT_YELLOW = "#F3EA6B";
 
+// Standard avatar options: the default is the user's initial; "man" and
+// "woman" are simple emoji avatars needing no custom art.
+export const AVATAR_TYPES = [
+  { key: "initials", emoji: null },
+  { key: "man", emoji: "👨" },
+  { key: "woman", emoji: "👩" },
+];
+
 export const TAB_ORDER = ["home", "furniture", "systems", "tasks", "costs", "docs", "account"];
 
 export const FREE_SYSTEM_LIMIT = 10;

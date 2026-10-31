@@ -8,6 +8,7 @@ import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "
 import { TODAY, daysUntil, money } from "../lib/forecast.js";
 import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import SelectModal from "../components/SelectModal.js";
+import Avatar from "../components/Avatar.js";
 
 // Where "Source: RentCast" on the property value card links to: RentCast's
 // property data page, which describes the value estimates the number comes from.
@@ -47,12 +48,8 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
             {fmtPropertyName(profile.propertyName) || "Home"}
           </Text>
         </View>
-        <Pressable
-          onPress={onOpenAccount}
-          className="rounded-full items-center justify-center"
-          style={{ width: 32, height: 32, backgroundColor: PRIMARY }}
-        >
-          <Text style={{ color: "white", fontSize: 13, fontWeight: "700" }}>{profile.name.charAt(0).toUpperCase()}</Text>
+        <Pressable onPress={onOpenAccount}>
+          <Avatar profile={profile} size={32} />
         </Pressable>
       </View>
 
