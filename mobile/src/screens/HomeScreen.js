@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import { Clock, CheckCircle2 } from "lucide-react-native";
 import { PRIMARY, HERO_BG_TOP, HERO_BG_BOTTOM, STATUS_COLOR, systemName } from "../lib/constants.js";
-import { TODAY, daysUntil, money } from "../lib/forecast.js";
+import { CURRENT_YEAR, CURRENT_MONTH, daysUntil, money } from "../lib/forecast.js";
 import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import SelectModal from "../components/SelectModal.js";
 import Avatar from "../components/Avatar.js";
@@ -232,7 +232,7 @@ export default function HomeScreen({
   const overdueCount = tasks.filter((t) => !t.completed && daysUntil(t.dueDate) < 0).length;
   const isThisMonth = (dueDate) => {
     const d = new Date(`${dueDate}T00:00:00`);
-    return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth();
+    return d.getFullYear() === CURRENT_YEAR && d.getMonth() === CURRENT_MONTH;
   };
   // Mutually exclusive with the overdue list below: a task already overdue
   // shows there instead, even if its due date also falls in this month.

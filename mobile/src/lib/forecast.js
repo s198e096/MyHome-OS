@@ -7,9 +7,11 @@ import { parseIso } from "./reports/format.js";
 const now = new Date();
 export const TODAY = new Date(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10));
 
-// This year's number. Read from TODAY's UTC fields: its local-time year is a
-// year behind on Jan 1 in US time zones, since TODAY is UTC midnight.
+// This year's and month's numbers (month is 0-11). Read from TODAY's UTC
+// fields: its local-time ones are a day behind in US time zones, since TODAY is
+// UTC midnight, so on the 1st of a month they still say the previous month.
 export const CURRENT_YEAR = TODAY.getUTCFullYear();
+export const CURRENT_MONTH = TODAY.getUTCMonth();
 
 // The calendar year of a stored "YYYY-MM-DD" date, read from the text rather
 // than through new Date(), which would land a Jan 1 date in the previous year
@@ -116,7 +118,7 @@ export function replacementPlan(sys) {
 
   if (sys.purchaseDate && sys.expectedLifeYears != null) {
     const year = estimatedReplacementYear(sys);
-    const months = Math.max(1, (year - TODAY.getFullYear()) * 12 - TODAY.getMonth());
+    const months = Math.max(1, (year - CURRENT_YEAR) * 12 - CURRENT_MONTH);
     return { year, months, monthly: Math.round(sys.replacementCost / months) };
   }
 

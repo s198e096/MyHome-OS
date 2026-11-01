@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { ChevronLeft, ChevronRight, Repeat } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, systemShortName, recurrenceLabel } from "../lib/constants.js";
-import { TODAY, daysUntil, futureOccurrences } from "../lib/forecast.js";
+import { TODAY, CURRENT_YEAR, CURRENT_MONTH, daysUntil, futureOccurrences } from "../lib/forecast.js";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -16,12 +16,15 @@ function toDateKey(year, month, day) {
 // date it repeats on (a hollow dot, "Monthly" etc. in the list), so paging
 // ahead shows it as recurring; the repeats are worked out here, not stored.
 export default function TaskCalendar({ tasks, systemById, onEditTask }) {
-  const [viewDate, setViewDate] = useState(() => new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
+  const [viewDate, setViewDate] = useState(() => new Date(CURRENT_YEAR, CURRENT_MONTH, 1));
   const [selectedDate, setSelectedDate] = useState(() => TODAY.toISOString().slice(0, 10));
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const todayKey = TODAY.toISOString().slice(0, 10);
+  // The "Today" button shows whenever the view has moved off today: another
+  // month paged to, or another day (or none) selected in this one.
+  const awayFromToday = year !== CURRENT_YEAR || month !== CURRENT_MONTH || selectedDate !== todayKey;
 
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -48,18 +51,35 @@ export default function TaskCalendar({ tasks, systemById, onEditTask }) {
     setSelectedDate(null);
   }
 
+  function goToToday() {
+    setViewDate(new Date(CURRENT_YEAR, CURRENT_MONTH, 1));
+    setSelectedDate(todayKey);
+  }
+
   const selectedTasks = selectedDate ? tasksByDate[selectedDate] || [] : [];
 
   return (
     <View>
-      <View className="flex-row items-center justify-between mb-3">
+      <View className="flex-row items-center mb-3">
+        <Text className="flex-1 text-[14.5px] font-semibold text-stone-900">
+          {viewDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+        </Text>
+        {awayFromToday && (
+          <Pressable
+            onPress={goToToday}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Go to today"
+            className="rounded-full px-2.5 py-1 mr-2"
+            style={{ backgroundColor: "#EAF1E3" }}
+          >
+            <Text className="text-[12px] font-semibold" style={{ color: PRIMARY }}>Today</Text>
+          </Pressable>
+        )}
         <Pressable onPress={() => changeMonth(-1)} hitSlop={8} className="p-1">
           <ChevronLeft size={18} color="#78716c" />
         </Pressable>
-        <Text className="text-[14.5px] font-semibold text-stone-900">
-          {viewDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-        </Text>
-        <Pressable onPress={() => changeMonth(1)} hitSlop={8} className="p-1">
+        <Pressable onPress={() => changeMonth(1)} hitSlop={8} className="p-1 ml-1">
           <ChevronRight size={18} color="#78716c" />
         </Pressable>
       </View>
