@@ -18,6 +18,12 @@ export function fmtDate(value) {
   return p ? `${MONTHS[p.m - 1]} ${p.d}, ${p.y}` : "—";
 }
 
+// "Oct 5" — for lists where every entry is from the current year.
+export function fmtMonthDay(value) {
+  const p = parseIso(value);
+  return p ? `${MONTHS[p.m - 1]} ${p.d}` : "—";
+}
+
 export function fmtMonthYear(value) {
   const p = parseIso(value);
   return p ? `${MONTHS[p.m - 1]} ${p.y}` : "—";

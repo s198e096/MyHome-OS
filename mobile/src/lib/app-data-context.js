@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName, defaultExpectedLifeYears } from "./constants.js";
-import { TODAY, daysUntil, computeForecast, nextDueAfterCompletion } from "./forecast.js";
+import { TODAY, CURRENT_YEAR, yearOf, daysUntil, computeForecast, nextDueAfterCompletion } from "./forecast.js";
 import { isManualsLibUrl, MANUALSLIB_NAME } from "./manual-links.js";
 import { syncTaskNotifications, clearTaskNotifications } from "./notifications.js";
 import {
@@ -115,7 +115,7 @@ export function AppDataProvider({ children }) {
   );
 
   const spentThisYear = expenses
-    .filter((e) => new Date(e.date).getFullYear() === TODAY.getFullYear())
+    .filter((e) => yearOf(e.date) === CURRENT_YEAR)
     .reduce((s, e) => s + e.amount, 0);
 
   const forecast = useMemo(() => computeForecast(systems, expenses), [systems, expenses]);
@@ -246,8 +246,8 @@ export function AppDataProvider({ children }) {
     await toggleTask(id);
   }
 
-  async function addExpense(amount, category, note, systemId) {
-    const created = await db.expenses.add({ amount, category, note, systemId, date: TODAY.toISOString().slice(0, 10) });
+  async function addExpense(amount, category, note, systemId, date) {
+    const created = await db.expenses.add({ amount, category, note, systemId, date: date || TODAY.toISOString().slice(0, 10) });
     setExpenses((es) => [...es, created]);
     return created;
   }

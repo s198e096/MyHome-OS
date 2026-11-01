@@ -4,6 +4,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, CATEGORY_META, ROOMS, FILTER_OPTIONS, RECURRENCE_OPTIONS, EXPENSE_CATEGORIES, isBillCategory, systemName } from "../lib/constants.js";
+import { TODAY } from "../lib/forecast.js";
 import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled, MANUFACTURE_DATE_NOTE } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
@@ -66,10 +67,12 @@ export function initWarrantyRow(w, purchaseDate) {
   return { id: w.id, type: w.type, expirationDate: w.expirationDate || "", estimated: w.estimated, durationValue: value, durationUnit: unit };
 }
 
-export function DateField({ label, value, onChange, optional }) {
+// `maxDate` ("YYYY-MM-DD", optional) is the latest date the picker lets you choose.
+export function DateField({ label, value, onChange, optional, maxDate }) {
   const [active, setActive] = useState(!optional || !!value);
   const [androidOpen, setAndroidOpen] = useState(false);
   const dateObj = value ? new Date(`${value}T00:00:00`) : new Date();
+  const maximumDate = maxDate ? new Date(`${maxDate}T00:00:00`) : undefined;
 
   function handleChange(event, selected) {
     if (Platform.OS === "android") setAndroidOpen(false);
@@ -116,6 +119,7 @@ export function DateField({ label, value, onChange, optional }) {
         <DateTimePicker
           value={dateObj}
           mode="date"
+          maximumDate={maximumDate}
           display={Platform.OS === "ios" ? "compact" : "default"}
           onChange={handleChange}
           style={Platform.OS === "ios" ? { alignSelf: "flex-start" } : undefined}
@@ -132,6 +136,7 @@ export default function ItemFields({
   recurrence, setRecurrence,
   amount, setAmount,
   amountCheck,
+  expenseDate, setExpenseDate,
   category, setCategory,
   systemId, setSystemId,
   docType, setDocType,
@@ -386,6 +391,7 @@ export default function ItemFields({
             }}
             onClose={() => setExpenseCategoryDropdownOpen(false)}
           />
+          <DateField label="Date" value={expenseDate} onChange={setExpenseDate} maxDate={TODAY.toISOString().slice(0, 10)} />
           <Text className="text-[11px] text-stone-500 mb-1">Note</Text>
           <TextInput
             value={title}

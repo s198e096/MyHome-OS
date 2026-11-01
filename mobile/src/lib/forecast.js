@@ -1,9 +1,22 @@
+import { parseIso } from "./reports/format.js";
+
 // Today's local calendar date, parsed the same way every other date string
 // in this app is (new Date("YYYY-MM-DD"), which JS treats as UTC midnight)
 // so day-based comparisons against dueDate/purchaseDate/etc. line up
 // without a timezone-offset skew at day boundaries.
 const now = new Date();
 export const TODAY = new Date(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10));
+
+// This year's number. Read from TODAY's UTC fields: its local-time year is a
+// year behind on Jan 1 in US time zones, since TODAY is UTC midnight.
+export const CURRENT_YEAR = TODAY.getUTCFullYear();
+
+// The calendar year of a stored "YYYY-MM-DD" date, read from the text rather
+// than through new Date(), which would land a Jan 1 date in the previous year
+// in US time zones.
+export function yearOf(dateStr) {
+  return parseIso(dateStr)?.y;
+}
 
 export function daysUntil(dateStr) {
   const d = new Date(dateStr);
@@ -132,7 +145,7 @@ export function systemStatus(sys, tasks) {
 // Years that have at least one expense, newest first — populates the year
 // picker above the per-system breakdown charts.
 export function expenseYears(expenses) {
-  return [...new Set(expenses.map((e) => new Date(e.date).getFullYear()))].sort((a, b) => b - a);
+  return [...new Set(expenses.map((e) => yearOf(e.date)))].sort((a, b) => b - a);
 }
 
 // One chosen year's expenses, grouped by system ("general" for none) and
@@ -140,7 +153,7 @@ export function expenseYears(expenses) {
 export function expensesBySystemForYear(expenses, year) {
   const totals = {};
   for (const e of expenses) {
-    if (new Date(e.date).getFullYear() !== year) continue;
+    if (yearOf(e.date) !== year) continue;
     const key = e.systemId || "general";
     totals[key] = (totals[key] || 0) + e.amount;
   }
@@ -153,7 +166,7 @@ export function expensesBySystemForYear(expenses, year) {
 export function timeSpentBySystemForYear(expenses, year) {
   const totals = {};
   for (const e of expenses) {
-    if (!e.timeSpentHours || new Date(e.date).getFullYear() !== year) continue;
+    if (!e.timeSpentHours || yearOf(e.date) !== year) continue;
     const key = e.systemId || "general";
     totals[key] = (totals[key] || 0) + e.timeSpentHours;
   }
@@ -163,12 +176,12 @@ export function timeSpentBySystemForYear(expenses, year) {
 }
 
 export function computeForecast(systems, expenses) {
-  const currentYear = TODAY.getFullYear();
+  const currentYear = CURRENT_YEAR;
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
 
   const totalsByYear = {};
   for (const e of expenses) {
-    const y = new Date(e.date).getFullYear();
+    const y = yearOf(e.date);
     totalsByYear[y] = (totalsByYear[y] || 0) + e.amount;
   }
 

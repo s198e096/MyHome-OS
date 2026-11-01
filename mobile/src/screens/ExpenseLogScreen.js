@@ -2,8 +2,13 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, X } from "lucide-react-native";
 import { systemName, systemShortName } from "../lib/constants.js";
-import { money } from "../lib/forecast.js";
+import { CURRENT_YEAR, money, yearOf } from "../lib/forecast.js";
+import { fmtDate, fmtMonthDay } from "../lib/reports/format.js";
 import LedgerRow from "../components/LedgerRow.js";
+
+// "Oct 5" for this year's expenses, "Oct 5, 2025" for older ones (dates can be
+// backdated, so the year matters once an entry isn't from this year).
+const dateLabel = (date) => (yearOf(date) === CURRENT_YEAR ? fmtMonthDay(date) : fmtDate(date));
 
 // Reached by tapping the "Expense log" row on the Costs tab, or a slice of
 // one of its pie charts — the full flat list lives on its own page so the
@@ -18,7 +23,7 @@ export default function ExpenseLogScreen({ expenses, systemById, filterSystemId,
       const key = e.systemId || "general";
       if (key !== filterSystemId) return false;
     }
-    if (filterYear != null && new Date(e.date).getFullYear() !== filterYear) return false;
+    if (filterYear != null && yearOf(e.date) !== filterYear) return false;
     return true;
   });
   const filterLabel = filterSystemId === "general" ? "General" : filterSystemId ? systemShortName(systemById(filterSystemId)) : "";
@@ -52,14 +57,14 @@ export default function ExpenseLogScreen({ expenses, systemById, filterSystemId,
         )}
         {filtered
           .slice()
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .sort((a, b) => b.date.localeCompare(a.date))
           .map((e) => {
             const sys = systemById(e.systemId);
             return (
               <LedgerRow
                 key={e.id}
                 label={e.note}
-                sub={`${e.category}${sys ? " · " + systemName(sys) : ""} · ${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}${e.vendor ? " · " + e.vendor : ""}`}
+                sub={`${e.category}${sys ? " · " + systemName(sys) : ""} · ${dateLabel(e.date)}${e.vendor ? " · " + e.vendor : ""}`}
                 value={money(e.amount)}
                 onPress={() => onEdit(e)}
               />

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
+import { TODAY } from "../lib/forecast.js";
 import { opensInBrowser } from "../lib/manual-links.js";
 import { checkExpense } from "../lib/expense-check.js";
 import { checkLifeYears } from "../lib/life-check.js";
@@ -33,6 +34,8 @@ export default function ItemFormScreen({
     kind === "expense" ? item?.note || "" : kind === "furniture" ? item?.name || "" : item?.title || item?.label || ""
   );
   const [dueDate, setDueDate] = useState(item?.dueDate || "2026-10-01");
+  // When the expense happened: today for a new one, editable (e.g. to log an older receipt).
+  const [expenseDate, setExpenseDate] = useState(item?.date || TODAY.toISOString().slice(0, 10));
   const [recurrence, setRecurrence] = useState(item?.recurrence || "");
   const [amount, setAmount] = useState(
     kind === "furniture"
@@ -132,8 +135,8 @@ export default function ItemFormScreen({
         if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
         if (amountCheck?.level === "blocked") return setError(amountCheck.message);
         const note = title.trim() || category;
-        if (isEdit) await onUpdateExpense(item.id, { amount: num, category, note, systemId: finalSystemId });
-        else await onAddExpense(num, category, note, finalSystemId);
+        if (isEdit) await onUpdateExpense(item.id, { amount: num, category, note, systemId: finalSystemId, date: expenseDate });
+        else await onAddExpense(num, category, note, finalSystemId, expenseDate);
         // A photo of the receipt, if one was taken — filed under its own
         // "Maintenance Invoices" document category, same as the one
         // attachable when completing a task.
@@ -309,6 +312,7 @@ export default function ItemFormScreen({
         recurrence={recurrence} setRecurrence={setRecurrence}
         amount={amount} setAmount={setAmount}
         amountCheck={amountCheck}
+        expenseDate={expenseDate} setExpenseDate={setExpenseDate}
         category={category} setCategory={setCategory}
         systemId={systemId} setSystemId={setSystemId}
         docType={docType} setDocType={setDocType}

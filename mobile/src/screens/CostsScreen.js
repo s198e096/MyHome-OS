@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight, ChevronDown } from "lucide-react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { PRIMARY, systemShortName } from "../lib/constants.js";
-import { TODAY, money, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
+import { CURRENT_YEAR, money, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
 
 // Validated 8-slot categorical palette (see the dataviz skill) — passes
@@ -147,7 +147,7 @@ function PieChart({ rows, labelFor, formatValue, emptyText, onSlicePress }) {
 export default function CostsScreen({ expenses, systemById, spentThisYear, next12mo, monthlyReserve, onAdd, onViewLog }) {
   const insets = useSafeAreaInsets();
   const years = expenseYears(expenses);
-  const [selectedYear, setSelectedYear] = useState(years.includes(TODAY.getFullYear()) ? TODAY.getFullYear() : years[0]);
+  const [selectedYear, setSelectedYear] = useState(years.includes(CURRENT_YEAR) ? CURRENT_YEAR : years[0]);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
   const labelFor = (key) => (key === "general" ? "General" : systemShortName(systemById(key)));
