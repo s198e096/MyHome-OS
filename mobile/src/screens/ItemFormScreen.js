@@ -10,6 +10,7 @@ import { checkExpense } from "../lib/expense-check.js";
 import { checkLifeYears } from "../lib/life-check.js";
 
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
+const TODAY_KEY = TODAY.toISOString().slice(0, 10);
 
 export default function ItemFormScreen({
   kind, item, hint, systems, replacesSystem, onBack,
@@ -33,9 +34,9 @@ export default function ItemFormScreen({
   const [title, setTitle] = useState(
     kind === "expense" ? item?.note || "" : kind === "furniture" ? item?.name || "" : item?.title || item?.label || ""
   );
-  const [dueDate, setDueDate] = useState(item?.dueDate || "2026-10-01");
+  const [dueDate, setDueDate] = useState(item?.dueDate || TODAY_KEY);
   // When the expense happened: today for a new one, editable (e.g. to log an older receipt).
-  const [expenseDate, setExpenseDate] = useState(item?.date || TODAY.toISOString().slice(0, 10));
+  const [expenseDate, setExpenseDate] = useState(item?.date || TODAY_KEY);
   const [recurrence, setRecurrence] = useState(item?.recurrence || "");
   const [amount, setAmount] = useState(
     kind === "furniture"
@@ -223,6 +224,14 @@ export default function ItemFormScreen({
     onBack();
   }
 
+  // A task switched to Daily should start showing today, not wait for its old
+  // start date (e.g. a semiannual task that was due months from now). The Start
+  // date field updates in view, and can be changed again afterwards.
+  function handleRecurrenceChange(value) {
+    if (value === "daily" && recurrence !== "daily" && dueDate > TODAY_KEY) setDueDate(TODAY_KEY);
+    setRecurrence(value);
+  }
+
   // For an appliance, the generic category alone isn't enough to pick a
   // default life — fill it in once the user types a recognizable name
   // (e.g. "Refrigerator"), but only while they haven't entered one
@@ -309,7 +318,7 @@ export default function ItemFormScreen({
         kind={kind} systems={systems}
         title={title} setTitle={setTitle}
         dueDate={dueDate} setDueDate={setDueDate}
-        recurrence={recurrence} setRecurrence={setRecurrence}
+        recurrence={recurrence} setRecurrence={handleRecurrenceChange}
         amount={amount} setAmount={setAmount}
         amountCheck={amountCheck}
         expenseDate={expenseDate} setExpenseDate={setExpenseDate}
