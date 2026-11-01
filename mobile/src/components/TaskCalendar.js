@@ -29,13 +29,14 @@ export default function TaskCalendar({ tasks, systemById, onEditTask }) {
 
   // date -> [{ task, projected }]. A task sits on its own due date; a repeating
   // one also sits on each later repeat up to the end of the viewed month.
+  const firstDayKey = toDateKey(year, month, 1);
   const lastDayKey = toDateKey(year, month, daysInMonth);
   const tasksByDate = {};
   for (const t of tasks) {
     if (!t.dueDate) continue;
     (tasksByDate[t.dueDate] ||= []).push({ task: t, projected: false });
     if (t.recurrence) {
-      for (const date of futureOccurrences(t.dueDate, t.recurrence, lastDayKey)) {
+      for (const date of futureOccurrences(t.dueDate, t.recurrence, lastDayKey, firstDayKey)) {
         (tasksByDate[date] ||= []).push({ task: t, projected: true });
       }
     }

@@ -11,6 +11,7 @@ export function daysUntil(dateStr) {
 }
 
 const RECURRENCE_STEP = {
+  daily: { days: 1 },
   weekly: { days: 7 },
   monthly: { months: 1 },
   quarterly: { months: 3 },
@@ -40,16 +41,47 @@ export function advanceDueDate(dateStr, recurrence, steps = 1) {
   return `${ty}-${String(tm + 1).padStart(2, "0")}-${String(Math.min(d, lastDay)).padStart(2, "0")}`;
 }
 
-// The dates a repeating task falls on after its current due date, up to and
-// including `endKey` ("YYYY-MM-DD"). Used by the calendar, so a task that
-// repeats shows up on every one of its dates and not only the next one. The
-// current due date itself is not included (it is the task's own date).
-export function futureOccurrences(dueDate, recurrence, endKey, maxCount = 400) {
+// The due date of the repeat that follows completing a task. Normally one
+// period after the task's own due date. A daily task is the exception: if it
+// was completed late, "one day after the old due date" would already be in the
+// past and the new one would show up overdue, so it lands the day after it was
+// completed instead. (`completedOn` is a "YYYY-MM-DD" string.)
+export function nextDueAfterCompletion(dueDate, recurrence, completedOn) {
+  const next = advanceDueDate(dueDate, recurrence);
+  if (next && recurrence === "daily" && completedOn && next <= completedOn) return advanceDueDate(completedOn, "daily");
+  return next;
+}
+
+// The dates a repeating task falls on after its current due date, from
+// `startKey` (default: right after the due date) up to and including `endKey`
+// ("YYYY-MM-DD"). Used by the calendar, so a task that repeats shows up on
+// every one of its dates and not only the next one. The current due date itself
+// is not included (it is the task's own date). Passing the first day of the
+// month being viewed as `startKey` skips straight there, so a daily task still
+// shows years ahead instead of running out of `maxCount` first.
+export function futureOccurrences(dueDate, recurrence, endKey, startKey = "", maxCount = 400) {
+  const step = RECURRENCE_STEP[recurrence];
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dueDate || "");
   const dates = [];
-  for (let n = 1; n <= maxCount; n++) {
+  if (!step || !m) return dates;
+
+  // First repeat to look at: an estimate that never overshoots the start.
+  let n = 1;
+  const s = /^(\d{4})-(\d{2})-(\d{2})/.exec(startKey || "");
+  if (s && startKey > dueDate) {
+    if (step.days) {
+      const gapDays = Math.round((Date.UTC(+s[1], +s[2] - 1, +s[3]) - Date.UTC(+m[1], +m[2] - 1, +m[3])) / 86400000);
+      n = Math.max(1, Math.floor(gapDays / step.days) - 1);
+    } else {
+      const gapMonths = (+s[1] - +m[1]) * 12 + (+s[2] - +m[2]);
+      n = Math.max(1, Math.floor(gapMonths / step.months) - 1);
+    }
+  }
+
+  for (let count = 0; count < maxCount; count++, n++) {
     const next = advanceDueDate(dueDate, recurrence, n);
     if (!next || next > endKey) break;
-    dates.push(next);
+    if (!startKey || next >= startKey) dates.push(next);
   }
   return dates;
 }

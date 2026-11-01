@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { FREE_SYSTEM_LIMIT, FILTER_OPTIONS, systemName, defaultExpectedLifeYears } from "./constants.js";
-import { TODAY, daysUntil, computeForecast, advanceDueDate } from "./forecast.js";
+import { TODAY, daysUntil, computeForecast, nextDueAfterCompletion } from "./forecast.js";
 import { isManualsLibUrl, MANUALSLIB_NAME } from "./manual-links.js";
 import { syncTaskNotifications, clearTaskNotifications } from "./notifications.js";
 import {
@@ -148,7 +148,7 @@ export function AppDataProvider({ children }) {
     // row, rather than just pushing this one's due date forward, so it
     // still shows up under Completed as something that was actually done.
     if (completed && t.recurrence) {
-      const nextDueDate = advanceDueDate(t.dueDate, t.recurrence);
+      const nextDueDate = nextDueAfterCompletion(t.dueDate, t.recurrence, completedDate);
       if (nextDueDate) {
         const created = await db.tasks.add({
           title: t.title,
@@ -226,7 +226,9 @@ export function AppDataProvider({ children }) {
     const t = tasks.find((x) => x.id === id);
     if (!t) return;
     if (t.recurrence) {
-      const nextDueDate = advanceDueDate(t.dueDate, t.recurrence);
+      // Same inputs as when it was completed (the stored completion date), so
+      // this finds exactly the row that completing it created.
+      const nextDueDate = nextDueAfterCompletion(t.dueDate, t.recurrence, t.completedDate);
       const spawned = tasks.find(
         (x) => x.id !== id && !x.completed && x.title === t.title && x.systemId === t.systemId && x.recurrence === t.recurrence && x.dueDate === nextDueDate
       );

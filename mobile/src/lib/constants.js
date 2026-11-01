@@ -153,6 +153,7 @@ export function systemIcon(sys) {
 }
 
 export const RECURRENCE_OPTIONS = [
+  { key: "daily", label: "Daily" },
   { key: "weekly", label: "Weekly" },
   { key: "monthly", label: "Monthly" },
   { key: "quarterly", label: "Quarterly" },
