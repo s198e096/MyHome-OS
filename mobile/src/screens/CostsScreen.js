@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight, ChevronDown } from "lucide-react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { PRIMARY, systemShortName } from "../lib/constants.js";
-import { CURRENT_YEAR, money, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
+import { CURRENT_YEAR, ALL_YEARS, money, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
 
 // Validated 8-slot categorical palette (see the dataviz skill) — passes
@@ -150,10 +150,13 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
   const [selectedYear, setSelectedYear] = useState(years.includes(CURRENT_YEAR) ? CURRENT_YEAR : years[0]);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
+  const isAllYears = selectedYear === ALL_YEARS;
+
   const labelFor = (key) => (key === "general" ? "General" : systemShortName(systemById(key)));
   const expenseRows = selectedYear != null ? expensesBySystemForYear(expenses, selectedYear) : [];
   const timeRows = selectedYear != null ? timeSpentBySystemForYear(expenses, selectedYear) : [];
-  const onSlicePress = (systemKey) => onViewLog({ systemId: systemKey, year: selectedYear });
+  // The log filters by a numeric year; an empty one means every year.
+  const onSlicePress = (systemKey) => onViewLog({ systemId: systemKey, year: isAllYears ? "" : selectedYear });
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -187,13 +190,13 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
             className="flex-row items-center justify-between px-3 py-2 rounded-lg mb-3 self-start"
             style={{ borderWidth: 1, borderColor: "#E0E8D3", backgroundColor: "white", minWidth: 100 }}
           >
-            <Text className="text-[13.5px] font-semibold text-stone-800 mr-2">{selectedYear}</Text>
+            <Text className="text-[13.5px] font-semibold text-stone-800 mr-2">{isAllYears ? "All years" : selectedYear}</Text>
             <ChevronDown size={14} color="#78716c" />
           </Pressable>
           <SelectModal
             visible={yearDropdownOpen}
             title="Choose a year"
-            options={years.map((y) => ({ value: y, label: String(y) }))}
+            options={[{ value: ALL_YEARS, label: "All years" }, ...years.map((y) => ({ value: y, label: String(y) }))]}
             selectedValue={selectedYear}
             onSelect={(value) => {
               setSelectedYear(value);
@@ -208,7 +211,7 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
               rows={expenseRows}
               labelFor={labelFor}
               formatValue={money}
-              emptyText="No expenses logged for this year."
+              emptyText={isAllYears ? "No expenses logged yet." : "No expenses logged for this year."}
               onSlicePress={onSlicePress}
             />
           </View>
@@ -219,7 +222,7 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
               rows={timeRows}
               labelFor={labelFor}
               formatValue={(h) => `${h % 1 === 0 ? h : h.toFixed(1)}h`}
-              emptyText="No DIY time logged for this year."
+              emptyText={isAllYears ? "No DIY time logged yet." : "No DIY time logged for this year."}
               onSlicePress={onSlicePress}
             />
           </View>

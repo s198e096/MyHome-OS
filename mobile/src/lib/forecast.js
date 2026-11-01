@@ -150,12 +150,16 @@ export function expenseYears(expenses) {
   return [...new Set(expenses.map((e) => yearOf(e.date)))].sort((a, b) => b - a);
 }
 
-// One chosen year's expenses, grouped by system ("general" for none) and
-// summed, highest first — the pie chart's slices.
+// Pass as the `year` below to total every year's expenses together.
+export const ALL_YEARS = "all";
+const inYear = (e, year) => year === ALL_YEARS || yearOf(e.date) === year;
+
+// One chosen year's expenses (or all years', for ALL_YEARS), grouped by system
+// ("general" for none) and summed, highest first — the pie chart's slices.
 export function expensesBySystemForYear(expenses, year) {
   const totals = {};
   for (const e of expenses) {
-    if (yearOf(e.date) !== year) continue;
+    if (!inYear(e, year)) continue;
     const key = e.systemId || "general";
     totals[key] = (totals[key] || 0) + e.amount;
   }
@@ -168,7 +172,7 @@ export function expensesBySystemForYear(expenses, year) {
 export function timeSpentBySystemForYear(expenses, year) {
   const totals = {};
   for (const e of expenses) {
-    if (!e.timeSpentHours || yearOf(e.date) !== year) continue;
+    if (!e.timeSpentHours || !inYear(e, year)) continue;
     const key = e.systemId || "general";
     totals[key] = (totals[key] || 0) + e.timeSpentHours;
   }
