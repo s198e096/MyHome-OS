@@ -2,9 +2,10 @@ import { View, Text } from "react-native";
 import { TriangleAlert } from "lucide-react-native";
 import { STATUS_COLOR, STATUS_BG } from "../lib/constants.js";
 
-// The note shown under a field when checkExpense() (lib/expense-check.js) flags
-// what was typed: amber for "higher than usual", red for "very high" and for an
-// amount that can't be saved. Renders nothing when the amount looks fine.
+// The note shown under a field when checkExpense() (lib/expense-check.js) or
+// checkLifeYears() (lib/life-check.js) flags what was typed: amber for "higher
+// than usual", red for "very high" and for a value that can't be saved. Renders
+// nothing when the value looks fine.
 export default function FieldWarning({ check }) {
   if (!check) return null;
   const strong = check.level !== "check";

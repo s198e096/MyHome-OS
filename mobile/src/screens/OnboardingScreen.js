@@ -21,6 +21,7 @@ import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/
 import { manufactureDateToInstalled } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
 import { scannedModelNumber } from "../lib/scan-result.js";
+import { checkLifeYears } from "../lib/life-check.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
@@ -388,6 +389,9 @@ function SystemDetailsStep({ system, onDone }) {
 
   const meta = CATEGORY_META[system.category];
 
+  // Warns when the expected life looks unusual for this type of system.
+  const lifeCheck = checkLifeYears({ value: sysLifeYears, typicalYears: defaultExpectedLifeYears(sysCategory, sysBrand) });
+
   async function runScan() {
     setScanning(true);
     setScanError("");
@@ -502,6 +506,7 @@ function SystemDetailsStep({ system, onDone }) {
   }
 
   async function handleSaveNext() {
+    if (lifeCheck?.level === "blocked") return setError(lifeCheck.message);
     setError("");
     setSaving(true);
     try {
@@ -732,6 +737,7 @@ function SystemDetailsStep({ system, onDone }) {
           labelPurchaseDate={labelPurchaseDate}
           sysPurchasePrice={sysPurchasePrice} setSysPurchasePrice={setSysPurchasePrice}
           sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
+          lifeCheck={lifeCheck}
           sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
           sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
           warranties={warrantyList} setWarranties={setWarrantyList}
@@ -761,7 +767,7 @@ function SystemDetailsStep({ system, onDone }) {
             style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
           >
             <Text className="text-[13.5px] font-semibold text-white">
-              {saving ? "Saving..." : "Save"}
+              {saving ? "Saving..." : lifeCheck && lifeCheck.level !== "blocked" ? "Save anyway" : "Save"}
             </Text>
           </Pressable>
         </View>

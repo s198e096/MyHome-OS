@@ -145,6 +145,7 @@ export default function ItemFields({
   sysPurchaseDate, setSysPurchaseDate,
   sysPurchasePrice, setSysPurchasePrice,
   sysLifeYears, setSysLifeYears,
+  lifeCheck,
   sysReplacementCost, setSysReplacementCost,
   setSysWarranty,
   warranties, setWarranties,
@@ -646,6 +647,7 @@ export default function ItemFields({
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
           />
+          <FieldWarning check={lifeCheck} />
           <Text className="text-[11px] text-stone-500 mb-1">Estimated replacement cost ($)</Text>
           <TextInput
             value={sysReplacementCost}

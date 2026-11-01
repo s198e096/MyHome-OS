@@ -6,6 +6,7 @@ import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory,
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import { opensInBrowser } from "../lib/manual-links.js";
 import { checkExpense } from "../lib/expense-check.js";
+import { checkLifeYears } from "../lib/life-check.js";
 
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
 
@@ -93,6 +94,13 @@ export default function ItemFormScreen({
         })
       : null;
 
+  // Same for a system's expected life, judged against the usual life for its type.
+  const lifeCheck =
+    kind === "system"
+      ? checkLifeYears({ value: sysLifeYears, typicalYears: defaultExpectedLifeYears(sysCategory, sysBrand) })
+      : null;
+  const flagged = amountCheck || lifeCheck;
+
   const titles = {
     task: isEdit ? "Edit task" : "Add task",
     expense: isEdit ? "Edit expense" : "Add expense",
@@ -145,6 +153,7 @@ export default function ItemFormScreen({
       } else if (kind === "system") {
         // Nothing here is required — partial saves are expected (e.g. just
         // adding a receipt photo to a system that isn't fully filled in yet).
+        if (lifeCheck?.level === "blocked") return setError(lifeCheck.message);
         const num = (s) => (s.trim() ? parseFloat(s) : null);
         const int = (s) => (s.trim() ? parseInt(s, 10) : null);
         const payload = {
@@ -313,6 +322,7 @@ export default function ItemFormScreen({
         sysPurchaseDate={sysPurchaseDate} setSysPurchaseDate={setSysPurchaseDate}
         sysPurchasePrice={sysPurchasePrice} setSysPurchasePrice={setSysPurchasePrice}
         sysLifeYears={sysLifeYears} setSysLifeYears={setSysLifeYears}
+        lifeCheck={lifeCheck}
         sysReplacementCost={sysReplacementCost} setSysReplacementCost={setSysReplacementCost}
         sysWarranty={sysWarranty} setSysWarranty={setSysWarranty}
         warranties={warrantyList} setWarranties={setWarrantyList}
@@ -332,7 +342,7 @@ export default function ItemFormScreen({
         style={{ backgroundColor: PRIMARY }}
       >
         <Text className="text-[13.5px] font-semibold text-white">
-          {amountCheck && amountCheck.level !== "blocked" ? "Save anyway" : isEdit ? "Save changes" : "Save"}
+          {flagged && flagged.level !== "blocked" ? "Save anyway" : isEdit ? "Save changes" : "Save"}
         </Text>
       </Pressable>
 
