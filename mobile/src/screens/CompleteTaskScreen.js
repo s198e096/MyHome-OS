@@ -2,9 +2,11 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronDown } from "lucide-react-native";
-import { PRIMARY, systemName } from "../lib/constants.js";
-import { TODAY } from "../lib/forecast.js";
+import { PRIMARY, STATUS_COLOR, systemName } from "../lib/constants.js";
+import { TODAY, money } from "../lib/forecast.js";
+import { checkExpense } from "../lib/expense-check.js";
 import SelectModal from "../components/SelectModal.js";
+import FieldWarning from "../components/FieldWarning.js";
 import { DateField } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
 
@@ -56,6 +58,21 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
   const [vendor, setVendor] = useState("");
   const [receiptPhotoUrl, setReceiptPhotoUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // Warns when parts + labor add up to something unusually high for upkeep (or
+  // more than the whole system would cost to replace).
+  const costTotal = (parseFloat(partsCost) || 0) + (parseFloat(laborCost) || 0);
+  const costCheck =
+    hasCost && diy !== null
+      ? checkExpense({
+          amount: costTotal,
+          category: "Maintenance",
+          systemName: sys ? systemName(sys) : null,
+          replacementCost: sys?.replacementCost,
+          label: `Parts and labor totaling ${money(costTotal)}`,
+        })
+      : null;
 
   async function finish(cost) {
     setSaving(true);
@@ -138,6 +155,8 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                   </View>
                 </View>
 
+                <FieldWarning check={costCheck} />
+
                 {diy ? (
                   <>
                     <View className="mb-4">
@@ -205,13 +224,21 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                   </Text>
                 </View>
 
+                {!!error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+
                 <Pressable
-                  onPress={() => finish({ partsCost, laborCost, diy, timeSpentHours: toHours(timeSpent, timeUnit), vendor, receiptPhotoUrl })}
+                  onPress={() => {
+                    if (costCheck?.level === "blocked") return setError(costCheck.message);
+                    setError("");
+                    finish({ partsCost, laborCost, diy, timeSpentHours: toHours(timeSpent, timeUnit), vendor, receiptPhotoUrl });
+                  }}
                   disabled={saving}
                   className="w-full py-2.5 rounded-lg items-center mb-6"
                   style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
                 >
-                  <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Complete task"}</Text>
+                  <Text className="text-[13.5px] font-semibold text-white">
+                    {saving ? "Saving..." : costCheck && costCheck.level !== "blocked" ? "Complete anyway" : "Complete task"}
+                  </Text>
                 </Pressable>
               </>
             )}

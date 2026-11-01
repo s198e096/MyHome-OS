@@ -11,6 +11,7 @@ import { scannedModelNumber } from "../lib/scan-result.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
 import SelectModal from "./SelectModal.js";
+import FieldWarning from "./FieldWarning.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 const pickerBoxStyle = { borderWidth: 1, borderColor: "#E0E8D3", borderRadius: 8, overflow: "hidden" };
@@ -130,6 +131,7 @@ export default function ItemFields({
   dueDate, setDueDate,
   recurrence, setRecurrence,
   amount, setAmount,
+  amountCheck,
   category, setCategory,
   systemId, setSystemId,
   docType, setDocType,
@@ -362,6 +364,7 @@ export default function ItemFields({
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
           />
+          <FieldWarning check={amountCheck} />
           <Text className="text-[11px] text-stone-500 mb-1">Category</Text>
           <Pressable
             onPress={() => setExpenseCategoryDropdownOpen(true)}

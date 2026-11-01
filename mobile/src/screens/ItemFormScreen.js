@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import { opensInBrowser } from "../lib/manual-links.js";
+import { checkExpense } from "../lib/expense-check.js";
 
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
 
@@ -79,6 +80,19 @@ export default function ItemFormScreen({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const insets = useSafeAreaInsets();
 
+  // Warns (as the amount is typed) when an expense looks unusually high for its
+  // category or for the system it's against; household bills aren't tied to a system.
+  const checkedSystem = kind === "expense" && !isBillCategory(category) ? systems.find((s) => s.id === systemId) : null;
+  const amountCheck =
+    kind === "expense"
+      ? checkExpense({
+          amount: parseFloat(amount),
+          category,
+          systemName: checkedSystem ? systemName(checkedSystem) : null,
+          replacementCost: checkedSystem?.replacementCost,
+        })
+      : null;
+
   const titles = {
     task: isEdit ? "Edit task" : "Add task",
     expense: isEdit ? "Edit expense" : "Add expense",
@@ -108,6 +122,7 @@ export default function ItemFormScreen({
       } else if (kind === "expense") {
         const num = parseFloat(amount);
         if (!amount || isNaN(num) || num <= 0) return setError("Enter an amount.");
+        if (amountCheck?.level === "blocked") return setError(amountCheck.message);
         const note = title.trim() || category;
         if (isEdit) await onUpdateExpense(item.id, { amount: num, category, note, systemId: finalSystemId });
         else await onAddExpense(num, category, note, finalSystemId);
@@ -284,6 +299,7 @@ export default function ItemFormScreen({
         dueDate={dueDate} setDueDate={setDueDate}
         recurrence={recurrence} setRecurrence={setRecurrence}
         amount={amount} setAmount={setAmount}
+        amountCheck={amountCheck}
         category={category} setCategory={setCategory}
         systemId={systemId} setSystemId={setSystemId}
         docType={docType} setDocType={setDocType}
@@ -315,7 +331,9 @@ export default function ItemFormScreen({
         className="w-full py-2.5 rounded-lg items-center"
         style={{ backgroundColor: PRIMARY }}
       >
-        <Text className="text-[13.5px] font-semibold text-white">{isEdit ? "Save changes" : "Save"}</Text>
+        <Text className="text-[13.5px] font-semibold text-white">
+          {amountCheck && amountCheck.level !== "blocked" ? "Save anyway" : isEdit ? "Save changes" : "Save"}
+        </Text>
       </Pressable>
 
       {isEdit && (
