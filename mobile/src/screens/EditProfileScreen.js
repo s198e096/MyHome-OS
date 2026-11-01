@@ -3,7 +3,6 @@ import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pres
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
-import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -77,7 +76,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         placeholder="e.g. Jane Doe"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
       <Text className="text-[11px] text-stone-500 mb-1">Email</Text>
       <TextInput
@@ -86,7 +84,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         placeholder="e.g. jane@example.com"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
       <Text className="text-[11px] text-stone-500 mb-1">Property name</Text>
       <TextInput
@@ -95,7 +92,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         placeholder="e.g. Main House"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
       <Text className="text-[11px] text-stone-500 mb-1">Home address</Text>
       <TextInput
@@ -104,7 +100,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         placeholder="e.g. 123 Main St"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
       <Text className="text-[11px] text-stone-500 mb-1">Estimated property value ($)</Text>
       <TextInput
@@ -114,7 +109,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         inputMode="decimal"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
       <Text className="text-[11px] text-stone-500 mb-1">Purchase price ($)</Text>
       <TextInput
@@ -124,7 +118,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         inputMode="decimal"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
       <View className="flex-row gap-2 mb-1">
         <Text className="flex-1 text-[11px] text-stone-500">Bedrooms</Text>
@@ -138,7 +131,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
           inputMode="numeric"
           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
-          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
         <TextInput
           value={yearBuilt}
@@ -147,7 +139,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
           inputMode="numeric"
           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
-          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
       </View>
 
@@ -162,7 +153,6 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Save changes"}</Text>
       </Pressable>
     </ScrollView>
-    <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { View, Text, TextInput, Pressable, Modal, Animated } from "react-native";
 import { Check, Plus } from "lucide-react-native";
 import { PRIMARY } from "../lib/constants.js";
-import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -85,7 +84,6 @@ export default function SelectModal({
                   autoFocus
                   className="w-full px-3 py-2.5 rounded-lg text-[13.5px] mb-3"
                   style={fieldStyle}
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                   onSubmitEditing={confirmCustom}
                 />

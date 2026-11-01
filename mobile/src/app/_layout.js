@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "../lib/auth-context.js";
 import { ChatProvider } from "../lib/chat-context.js";
+import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 
 export default function RootLayout() {
   return (
@@ -12,6 +13,7 @@ export default function RootLayout() {
           <RootNavigator />
         </ChatProvider>
       </SessionProvider>
+      <KeyboardDoneBar />
     </SafeAreaProvider>
   );
 }

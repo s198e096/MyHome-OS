@@ -8,7 +8,6 @@ import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled, MANUFACTURE_DATE_NOTE } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
 import { scannedModelNumber } from "../lib/scan-result.js";
-import { KEYBOARD_ACCESSORY_ID } from "./KeyboardDoneBar.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
 import SelectModal from "./SelectModal.js";
@@ -320,7 +319,6 @@ export default function ItemFields({
             }
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
         </>
       )}
@@ -363,7 +361,6 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <Text className="text-[11px] text-stone-500 mb-1">Category</Text>
           <Pressable
@@ -392,7 +389,6 @@ export default function ItemFields({
             placeholder={isBillCategory(category) ? "e.g. October bill" : "e.g. Gutter cleaning"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           <Text className="text-[11px] text-stone-500 mb-1">Receipt photo (optional)</Text>
@@ -500,7 +496,6 @@ export default function ItemFields({
             placeholder={sysCategory === "appliance" ? "e.g. Oven, Microwave" : "e.g. Carrier"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <Text className="text-[11px] text-stone-500 mb-1">{sysCategory === "appliance" ? "Model number" : "Model"}</Text>
           <TextInput
@@ -509,7 +504,6 @@ export default function ItemFields({
             placeholder={sysCategory === "appliance" ? "e.g. LDFN454HT" : "e.g. Infinity"}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <Text className="text-[11px] text-stone-500 mb-1">Serial number (S/N)</Text>
           <TextInput
@@ -518,7 +512,6 @@ export default function ItemFields({
             placeholder="e.g. 4H67T2991"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           {!hideCategoryPicker && (
             <>
@@ -589,7 +582,6 @@ export default function ItemFields({
             placeholder="e.g. Attic, Garage, Kitchen"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           {!hidePhotoSection && (
@@ -641,7 +633,6 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <Text className="text-[11px] text-stone-500 mb-1">Expected life (years)</Text>
           <TextInput
@@ -651,7 +642,6 @@ export default function ItemFields({
             inputMode="numeric"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
           <Text className="text-[11px] text-stone-500 mb-1">Estimated replacement cost ($)</Text>
           <TextInput
@@ -661,7 +651,6 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           <View className="mb-2">
@@ -692,7 +681,6 @@ export default function ItemFields({
                     inputMode="decimal"
                     className="px-3 py-2 rounded-lg text-[13px]"
                     style={[fieldStyle, { width: 72 }]}
-                    inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   />
                   <View className="flex-row gap-1.5">
                     {["years", "months"].map((u) => {
@@ -774,7 +762,6 @@ export default function ItemFields({
             inputMode="decimal"
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />

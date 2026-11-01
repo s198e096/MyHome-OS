@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronDown } from "lucide-react-native";
 import { PRIMARY, systemName } from "../lib/constants.js";
 import { TODAY } from "../lib/forecast.js";
-import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 import SelectModal from "../components/SelectModal.js";
 import { DateField } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
@@ -124,7 +123,6 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                       inputMode="decimal"
                       className="w-full px-3 py-2 rounded-lg text-[13.5px]"
                       style={fieldStyle}
-                      inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                     />
                   </View>
                   <View className="flex-1">
@@ -136,7 +134,6 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                       inputMode="decimal"
                       className="w-full px-3 py-2 rounded-lg text-[13.5px]"
                       style={fieldStyle}
-                      inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                     />
                   </View>
                 </View>
@@ -153,7 +150,6 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                           inputMode="decimal"
                           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
                           style={fieldStyle}
-                          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                         />
                         <Pressable
                           onPress={() => setTimeUnitDropdownOpen(true)}
@@ -185,7 +181,6 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                         placeholder="e.g. Home Depot"
                         className="w-full px-3 py-2 rounded-lg text-[13.5px]"
                         style={fieldStyle}
-                        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                       />
                     </View>
                   </>
@@ -198,7 +193,6 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
                       placeholder="e.g. ABC Plumbing"
                       className="w-full px-3 py-2 rounded-lg text-[13.5px]"
                       style={fieldStyle}
-                      inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                     />
                   </View>
                 )}
@@ -224,7 +218,6 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
           </>
         )}
       </ScrollView>
-      <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }

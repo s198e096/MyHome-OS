@@ -24,7 +24,6 @@ import { scannedModelNumber } from "../lib/scan-result.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
-import KeyboardDoneBar, { KEYBOARD_ACCESSORY_ID } from "../components/KeyboardDoneBar.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
 import MultiPhotoPicker from "../components/MultiPhotoPicker.js";
@@ -201,7 +200,6 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
                   onChangeText={setName}
                   placeholder={fixedCategory ? "e.g. Refrigerator, Dishwasher" : `e.g. ${activeMeta.label}`}
                   className="flex-1 py-2 pr-3 text-[13.5px]"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                   onSubmitEditing={handleAdd}
                 />
@@ -255,7 +253,6 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
           <Text className="text-[13.5px] font-semibold text-white">{finishing ? "Saving..." : doneLabel}</Text>
         </Pressable>
       </ScrollView>
-      <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }
@@ -612,7 +609,6 @@ function SystemDetailsStep({ system, onDone }) {
             <Text className="text-[13px] font-semibold text-stone-500">Skip, I don&apos;t have a picture</Text>
           </Pressable>
         </ScrollView>
-        <KeyboardDoneBar />
       </KeyboardAvoidingView>
     );
   }
@@ -679,7 +675,6 @@ function SystemDetailsStep({ system, onDone }) {
             <Text className="text-[13px] font-semibold text-stone-500">Skip, I don&apos;t have any</Text>
           </Pressable>
         </ScrollView>
-        <KeyboardDoneBar />
       </KeyboardAvoidingView>
     );
   }
@@ -775,7 +770,6 @@ function SystemDetailsStep({ system, onDone }) {
           <Text className="text-[13.5px] font-semibold text-stone-500">Skip for now</Text>
         </Pressable>
       </ScrollView>
-      <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }
@@ -2165,7 +2159,6 @@ export default function OnboardingScreen() {
           placeholder="e.g. Main House, The Lake House"
           className="w-full mb-3 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
-          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
 
         <Text className="text-[11px] text-stone-500 mb-1">Address</Text>
@@ -2175,7 +2168,6 @@ export default function OnboardingScreen() {
           placeholder="Start typing your address..."
           className="w-full px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
-          inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         />
 
         {searching && (
@@ -2213,7 +2205,6 @@ export default function OnboardingScreen() {
           <Text className="text-[13.5px] font-semibold text-white">Find property details</Text>
         </Pressable>
       </ScrollView>
-      <KeyboardDoneBar />
       </KeyboardAvoidingView>
     );
   }
@@ -2388,7 +2379,6 @@ export default function OnboardingScreen() {
             inputMode="numeric"
             className="w-full px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
         </View>
         <View className="flex-1">
@@ -2400,7 +2390,6 @@ export default function OnboardingScreen() {
             inputMode="numeric"
             className="w-full px-3 py-2 rounded-lg text-[13.5px]"
             style={fieldStyle}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
           />
         </View>
       </View>
@@ -2413,7 +2402,6 @@ export default function OnboardingScreen() {
         inputMode="decimal"
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
       />
 
       <Text className="text-[11px] text-stone-500 mb-1">Current market value ($)</Text>
@@ -2423,7 +2411,6 @@ export default function OnboardingScreen() {
         placeholder="e.g. 425000"
         inputMode="decimal"
         className="w-full mb-4 px-3 py-2 rounded-lg text-[13.5px]"
-        inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
         style={fieldStyle}
       />
 
@@ -2438,7 +2425,6 @@ export default function OnboardingScreen() {
         <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Continue"}</Text>
       </Pressable>
     </ScrollView>
-    <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }

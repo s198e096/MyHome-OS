@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
-import KeyboardDoneBar from "../components/KeyboardDoneBar.js";
 import { opensInBrowser } from "../lib/manual-links.js";
 
 const KIND_NOUNS = { task: "task", expense: "expense", system: "system", doc: "document", furniture: "furniture item" };
@@ -337,7 +336,6 @@ export default function ItemFormScreen({
 
       <View style={{ height: 24 }} />
     </ScrollView>
-    <KeyboardDoneBar />
     </KeyboardAvoidingView>
   );
 }

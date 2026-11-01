@@ -1,17 +1,39 @@
-import { InputAccessoryView, View, Pressable, Keyboard, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Pressable, Keyboard, Platform } from "react-native";
 import { ChevronDown } from "lucide-react-native";
 import { PRIMARY } from "../lib/constants.js";
 
-// iOS's system keyboard has no built-in way to dismiss it when a TextInput
-// has no return-key action wired up, so screens with several stacked fields
-// need their own "done" bar. Android's keyboard already has a dismiss
-// affordance (the back gesture/button), so this renders nothing there.
-export const KEYBOARD_ACCESSORY_ID = "myhome-os-keyboard-done";
-
+// A single bar, mounted once at the app root, that appears right above the
+// software keyboard whenever it's open, with a button to dismiss it — so no
+// screen or field needs its own wiring, and the user never has to tap
+// elsewhere just to put the keyboard away. Tracks the keyboard directly via
+// Keyboard events (height + show/hide) rather than InputAccessoryView,
+// which is iOS-only, so this works the same on Android.
 export default function KeyboardDoneBar() {
-  if (Platform.OS !== "ios") return null;
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) => setKeyboardHeight(e.endCoordinates?.height || 0));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  if (keyboardHeight === 0) return null;
+
+  // iOS overlays the keyboard on top of the (unchanged) window, so the bar
+  // needs to be pushed up by its height manually. Android's default
+  // windowSoftInputMode ("resize") instead shrinks the window itself to
+  // exclude the keyboard, so the root view is already that much shorter —
+  // offsetting by the height again there would leave a gap above the keys.
+  const bottomOffset = Platform.OS === "ios" ? keyboardHeight : 0;
+
   return (
-    <InputAccessoryView nativeID={KEYBOARD_ACCESSORY_ID}>
+    <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: bottomOffset, zIndex: 100 }}>
       <View
         style={{
           flexDirection: "row",
@@ -27,6 +49,6 @@ export default function KeyboardDoneBar() {
           <ChevronDown size={22} color={PRIMARY} />
         </Pressable>
       </View>
-    </InputAccessoryView>
+    </View>
   );
 }
