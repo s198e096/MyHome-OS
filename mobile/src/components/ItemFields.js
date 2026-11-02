@@ -12,6 +12,7 @@ import { scannedModelNumber } from "../lib/scan-result.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
 import SelectModal from "./SelectModal.js";
+import CurrencyInput from "./CurrencyInput.js";
 import FieldWarning from "./FieldWarning.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
@@ -361,15 +362,8 @@ export default function ItemFields({
 
       {kind === "expense" && (
         <>
-          <Text className="text-[11px] text-stone-500 mb-1">Amount ($)</Text>
-          <TextInput
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="e.g. 120"
-            inputMode="decimal"
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
-          />
+          <Text className="text-[11px] text-stone-500 mb-1">Amount</Text>
+          <CurrencyInput value={amount} onChangeText={setAmount} placeholder="120" className="w-full mb-2 rounded-lg" />
           <FieldWarning check={amountCheck} />
           <Text className="text-[11px] text-stone-500 mb-1">Category</Text>
           <Pressable
@@ -635,15 +629,8 @@ export default function ItemFields({
           <DateField label="Date installed" value={sysPurchaseDate} onChange={handlePurchaseDateChange} optional />
           {dateIsFromLabel && <Text className="text-[11px] text-stone-400 mb-2">{MANUFACTURE_DATE_NOTE}</Text>}
 
-          <Text className="text-[11px] text-stone-500 mb-1">Purchase price ($)</Text>
-          <TextInput
-            value={sysPurchasePrice}
-            onChangeText={setSysPurchasePrice}
-            placeholder="e.g. 450"
-            inputMode="decimal"
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
-          />
+          <Text className="text-[11px] text-stone-500 mb-1">Purchase price</Text>
+          <CurrencyInput value={sysPurchasePrice} onChangeText={setSysPurchasePrice} placeholder="450" className="w-full mb-2 rounded-lg" />
           <Text className="text-[11px] text-stone-500 mb-1">Expected life (years)</Text>
           <TextInput
             value={sysLifeYears}
@@ -654,14 +641,12 @@ export default function ItemFields({
             style={fieldStyle}
           />
           <FieldWarning check={lifeCheck} />
-          <Text className="text-[11px] text-stone-500 mb-1">Estimated replacement cost ($)</Text>
-          <TextInput
+          <Text className="text-[11px] text-stone-500 mb-1">Estimated replacement cost</Text>
+          <CurrencyInput
             value={sysReplacementCost}
             onChangeText={setSysReplacementCost}
-            placeholder="e.g. 3500"
-            inputMode="decimal"
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
+            placeholder="3,500"
+            className="w-full mb-2 rounded-lg"
           />
 
           <View className="mb-2">
@@ -766,14 +751,7 @@ export default function ItemFields({
               ))}
             </Picker>
           </View>
-          <TextInput
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="Estimated value ($)"
-            inputMode="decimal"
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
-          />
+          <CurrencyInput value={amount} onChangeText={setAmount} placeholder="Estimated value" className="w-full mb-2 rounded-lg" />
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>

@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pres
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
+import CurrencyInput from "../components/CurrencyInput.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -101,23 +102,19 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
         style={fieldStyle}
       />
-      <Text className="text-[11px] text-stone-500 mb-1">Estimated property value ($)</Text>
-      <TextInput
+      <Text className="text-[11px] text-stone-500 mb-1">Estimated property value</Text>
+      <CurrencyInput
         value={propertyValue}
         onChangeText={setPropertyValue}
-        placeholder="e.g. 450000"
-        inputMode="decimal"
-        className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-        style={fieldStyle}
+        placeholder="450,000"
+        className="w-full mb-2 rounded-lg"
       />
-      <Text className="text-[11px] text-stone-500 mb-1">Purchase price ($)</Text>
-      <TextInput
+      <Text className="text-[11px] text-stone-500 mb-1">Purchase price</Text>
+      <CurrencyInput
         value={purchasePrice}
         onChangeText={setPurchasePrice}
-        placeholder="e.g. 380000"
-        inputMode="decimal"
-        className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-        style={fieldStyle}
+        placeholder="380,000"
+        className="w-full mb-2 rounded-lg"
       />
       <View className="flex-row gap-2 mb-1">
         <Text className="flex-1 text-[11px] text-stone-500">Bedrooms</Text>

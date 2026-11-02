@@ -9,6 +9,7 @@ import SelectModal from "../components/SelectModal.js";
 import FieldWarning from "../components/FieldWarning.js";
 import { DateField } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
+import CurrencyInput from "../components/CurrencyInput.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -132,26 +133,12 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
               <>
                 <View className="flex-row gap-2 mb-2">
                   <View className="flex-1">
-                    <Text className="text-[11px] text-stone-500 mb-1">Parts cost ($)</Text>
-                    <TextInput
-                      value={partsCost}
-                      onChangeText={setPartsCost}
-                      placeholder="0"
-                      inputMode="decimal"
-                      className="w-full px-3 py-2 rounded-lg text-[13.5px]"
-                      style={fieldStyle}
-                    />
+                    <Text className="text-[11px] text-stone-500 mb-1">Parts cost</Text>
+                    <CurrencyInput value={partsCost} onChangeText={setPartsCost} placeholder="0" className="w-full rounded-lg" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-[11px] text-stone-500 mb-1">Labor cost ($)</Text>
-                    <TextInput
-                      value={laborCost}
-                      onChangeText={setLaborCost}
-                      placeholder="0"
-                      inputMode="decimal"
-                      className="w-full px-3 py-2 rounded-lg text-[13.5px]"
-                      style={fieldStyle}
-                    />
+                    <Text className="text-[11px] text-stone-500 mb-1">Labor cost</Text>
+                    <CurrencyInput value={laborCost} onChangeText={setLaborCost} placeholder="0" className="w-full rounded-lg" />
                   </View>
                 </View>
 
