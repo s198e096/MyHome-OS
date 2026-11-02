@@ -1,6 +1,6 @@
 import { useState } from "react";
 import * as Linking from "expo-linking";
-import { View, Text, Pressable, Image, Modal, ScrollView } from "react-native";
+import { View, Text, Pressable, Image, Modal, ScrollView, FlatList, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, FileText, Receipt, Shield, BookOpen, Wrench, Pencil, ExternalLink, Trash2, X } from "lucide-react-native";
 import { STATUS_COLOR } from "../lib/constants.js";
@@ -13,16 +13,23 @@ const CATEGORY_ORDER = ["Warranty", "Receipt", "Manual", "Invoice", "Maintenance
 // Second page of Documents, reached by tapping a system (or "General") on
 // the first page. Shows that bucket's document categories first (Warranty,
 // Receipts, Manuals, Invoices, Maintenance Invoices) rather than one flat
-// list — picking a
-// category lists just its documents, and tapping one opens the full
-// image/document directly. Editing (type, photo) lives behind the Edit
-// button on that full view, not inline on the list. Manuals open straight in
-// the browser (so never reach that edit view), which means they carry their
+// list — picking a category lists just its documents, and tapping one opens
+// a full-screen viewer that can be swiped left/right between every other
+// previewable document in that same category, instead of exiting back to
+// the list to open the next one. Editing (type, photo) lives behind the
+// Edit button on that viewer, not inline on the list. Manuals open straight
+// in the browser (so never reach the viewer), which means they carry their
 // own trash button on the list, with an inline "Delete this manual?" confirm.
 export default function SystemDocsScreen({ title, documents, onBack, onEdit, onDelete }) {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [category, setCategory] = useState(null);
-  const [viewingDoc, setViewingDoc] = useState(null);
+  // The swipeable set behind the viewer: every doc in the current category
+  // with an in-app-previewable photo (so swiping never leaves the category
+  // it was opened from), plus which one is currently showing.
+  const [viewerDocs, setViewerDocs] = useState([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [confirmingId, setConfirmingId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -30,15 +37,6 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
   const known = CATEGORY_ORDER.map((type) => ({ type, docs: documents.filter((d) => d.type === type) })).filter((g) => g.docs.length > 0);
   const other = documents.filter((d) => !CATEGORY_ORDER.includes(d.type));
   const groups = other.length ? [...known, { type: "Other", docs: other }] : known;
-
-  function handlePress(d) {
-    // Manuals are often stored as a PDF link or a ManualsLib page link, not
-    // an uploaded photo — there's nothing to preview in-app, so open it
-    // directly rather than a viewer that can't show it.
-    if (opensInBrowser(d.photoUrl)) Linking.openURL(d.photoUrl);
-    else if (d.photoUrl) setViewingDoc(d);
-    else onEdit(d);
-  }
 
   function askDelete(id) {
     setDeleteError("");
@@ -103,6 +101,23 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
   }
 
   const categoryDocs = groups.find((g) => g.type === category)?.docs || [];
+  // Manuals are often stored as a PDF link or a ManualsLib page link, not an
+  // uploaded photo — nothing to preview in-app, so they're excluded from the
+  // swipeable set and just open directly in the browser instead.
+  const viewableDocs = categoryDocs.filter((d) => d.photoUrl && !opensInBrowser(d.photoUrl));
+
+  function handlePress(d) {
+    if (opensInBrowser(d.photoUrl)) {
+      Linking.openURL(d.photoUrl);
+    } else if (d.photoUrl) {
+      const idx = viewableDocs.findIndex((x) => x.id === d.id);
+      setViewerDocs(viewableDocs);
+      setViewerIndex(idx === -1 ? 0 : idx);
+      setViewerOpen(true);
+    } else {
+      onEdit(d);
+    }
+  }
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -179,22 +194,34 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
         {categoryDocs.length === 0 && <Text className="py-3 text-[13px] text-stone-400">No documents here yet.</Text>}
       </View>
 
-      <Modal transparent visible={!!viewingDoc} animationType="fade" onRequestClose={() => setViewingDoc(null)}>
+      <Modal transparent visible={viewerOpen} animationType="fade" onRequestClose={() => setViewerOpen(false)}>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.92)" }}>
-          <Pressable
-            onPress={() => setViewingDoc(null)}
-            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-          >
-            {viewingDoc && <Image source={{ uri: viewingDoc.photoUrl }} style={{ width: "92%", height: "70%" }} resizeMode="contain" />}
-          </Pressable>
-          <Pressable onPress={() => setViewingDoc(null)} hitSlop={10} style={{ position: "absolute", top: insets.top + 16, right: 20 }}>
+          <FlatList
+            data={viewerDocs}
+            keyExtractor={(d) => d.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={viewerIndex}
+            getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
+            onMomentumScrollEnd={(e) => setViewerIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => setViewerOpen(false)}
+                style={{ width: screenWidth, alignItems: "center", justifyContent: "center" }}
+              >
+                <Image source={{ uri: item.photoUrl }} style={{ width: "92%", height: "70%" }} resizeMode="contain" />
+              </Pressable>
+            )}
+          />
+          <Pressable onPress={() => setViewerOpen(false)} hitSlop={10} style={{ position: "absolute", top: insets.top + 16, right: 20 }}>
             <X size={24} color="white" />
           </Pressable>
           <Pressable
             onPress={() => {
-              const d = viewingDoc;
-              setViewingDoc(null);
-              onEdit(d);
+              const d = viewerDocs[viewerIndex];
+              setViewerOpen(false);
+              if (d) onEdit(d);
             }}
             hitSlop={10}
             className="flex-row items-center gap-1"
@@ -203,14 +230,18 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
             <Pencil size={16} color="white" />
             <Text className="text-[13px] font-semibold" style={{ color: "white" }}>Edit</Text>
           </Pressable>
-          {!!viewingDoc && (
-            <Text
-              numberOfLines={1}
-              className="text-[12.5px] font-semibold text-center"
-              style={{ color: "white", position: "absolute", bottom: insets.bottom + 20, left: 20, right: 20 }}
-            >
-              {viewingDoc.label}{isManualsLibUrl(viewingDoc.photoUrl) ? ` · opens on ${MANUALSLIB_NAME}` : ""}
-            </Text>
+          {!!viewerDocs[viewerIndex] && (
+            <View style={{ position: "absolute", bottom: insets.bottom + 20, left: 20, right: 20, alignItems: "center" }}>
+              <Text numberOfLines={1} className="text-[12.5px] font-semibold text-center" style={{ color: "white" }}>
+                {viewerDocs[viewerIndex].label}
+                {isManualsLibUrl(viewerDocs[viewerIndex].photoUrl) ? ` · opens on ${MANUALSLIB_NAME}` : ""}
+              </Text>
+              {viewerDocs.length > 1 && (
+                <Text className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  {viewerIndex + 1} of {viewerDocs.length}
+                </Text>
+              )}
+            </View>
           )}
         </View>
       </Modal>
