@@ -17,7 +17,18 @@ export default function Costs() {
         monthlyReserve={monthlyReserve}
         onAdd={() => router.push("/costs/new")}
         onViewLog={(filter) =>
-          router.push(filter ? { pathname: "/costs/log", params: { systemId: filter.systemId, year: filter.year } } : "/costs/log")
+          router.push(
+            filter
+              ? {
+                  pathname: "/costs/log",
+                  // Omit keys the filter doesn't set (rather than pass them as
+                  // `undefined`), so there's no stray "systemId=undefined" in
+                  // the URL for a year-only filter — that would otherwise read
+                  // back as a truthy string and filter everything out.
+                  params: { ...(filter.systemId ? { systemId: filter.systemId } : {}), ...(filter.year ? { year: filter.year } : {}) },
+                }
+              : "/costs/log"
+          )
         }
       />
     </AnimatedTabScreen>

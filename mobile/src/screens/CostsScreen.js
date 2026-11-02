@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight, ChevronDown } from "lucide-react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { PRIMARY, systemShortName } from "../lib/constants.js";
-import { CURRENT_YEAR, ALL_YEARS, money, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
+import { CURRENT_YEAR, ALL_YEARS, money, yearOf, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
 
 // Validated 8-slot categorical palette (see the dataviz skill) — passes
@@ -157,6 +157,7 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
   const timeRows = selectedYear != null ? timeSpentBySystemForYear(expenses, selectedYear) : [];
   // The log filters by a numeric year; an empty one means every year.
   const onSlicePress = (systemKey) => onViewLog({ systemId: systemKey, year: isAllYears ? "" : selectedYear });
+  const yearFilteredExpenses = isAllYears ? expenses : expenses.filter((e) => yearOf(e.date) === selectedYear);
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -232,13 +233,16 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
       )}
 
       <Pressable
-        onPress={() => onViewLog(null)}
+        onPress={() => onViewLog(selectedYear != null && !isAllYears ? { year: selectedYear } : null)}
         className="rounded-xl bg-white p-3 mb-6 flex-row items-center justify-between"
         style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
       >
         <View>
           <Text className="text-[13.5px] font-semibold text-stone-900">Expense log</Text>
-          <Text className="text-[11.5px] text-stone-400">{expenses.length} entr{expenses.length === 1 ? "y" : "ies"}</Text>
+          <Text className="text-[11.5px] text-stone-400">
+            {yearFilteredExpenses.length} entr{yearFilteredExpenses.length === 1 ? "y" : "ies"}
+            {isAllYears || selectedYear == null ? "" : ` in ${selectedYear}`}
+          </Text>
         </View>
         <ChevronRight size={16} color="#B8B4A8" />
       </Pressable>

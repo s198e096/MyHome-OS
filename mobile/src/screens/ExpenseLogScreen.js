@@ -17,16 +17,21 @@ const dateLabel = (date) => (yearOf(date) === CURRENT_YEAR ? fmtMonthDay(date) :
 // (and year); the filter shows as a clearable chip up top.
 export default function ExpenseLogScreen({ expenses, systemById, filterSystemId, filterYear, onBack, onEdit, onClearFilter }) {
   const insets = useSafeAreaInsets();
-  const hasFilter = !!filterSystemId;
+  const hasFilter = !!filterSystemId || filterYear != null;
   const filtered = expenses.filter((e) => {
-    if (hasFilter) {
+    if (filterSystemId) {
       const key = e.systemId || "general";
       if (key !== filterSystemId) return false;
     }
     if (filterYear != null && yearOf(e.date) !== filterYear) return false;
     return true;
   });
-  const filterLabel = filterSystemId === "general" ? "General" : filterSystemId ? systemShortName(systemById(filterSystemId)) : "";
+  const filterLabel = [
+    filterSystemId === "general" ? "General" : filterSystemId ? systemShortName(systemById(filterSystemId)) : null,
+    filterYear != null ? String(filterYear) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -42,9 +47,7 @@ export default function ExpenseLogScreen({ expenses, systemById, filterSystemId,
           className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 mb-3"
           style={{ backgroundColor: "white", borderWidth: 1, borderColor: "#E0E8D3" }}
         >
-          <Text className="text-[12.5px] font-semibold text-stone-700">
-            {filterLabel}{filterYear != null ? ` · ${filterYear}` : ""}
-          </Text>
+          <Text className="text-[12.5px] font-semibold text-stone-700">{filterLabel}</Text>
           <X size={13} color="#78716c" />
         </Pressable>
       )}
