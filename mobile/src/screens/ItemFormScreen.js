@@ -144,6 +144,7 @@ export default function ItemFormScreen({
         if (expenseReceiptUrl) await onAddDocument(`${note} Invoice`, "Maintenance Invoice", finalSystemId, expenseReceiptUrl);
       } else if (kind === "doc") {
         if (!title.trim()) return setError("Enter a document label.");
+        if (!isEdit && !photoUrl) return setError("Add a photo of the document.");
         if (isEdit) await onUpdateDocument(item.id, { label: title.trim(), type: docType, systemId: finalSystemId, photoUrl: photoUrl || null });
         else await onAddDocument(title.trim(), docType, finalSystemId, photoUrl);
       } else if (kind === "furniture") {

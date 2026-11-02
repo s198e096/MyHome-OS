@@ -425,6 +425,7 @@ export default function ItemFields({
             onClose={() => setDocTypeDropdownOpen(false)}
           />
 
+          <Text className="text-[11px] text-stone-500 mb-1">Photo (required)</Text>
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
         </>
       )}
