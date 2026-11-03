@@ -5,7 +5,7 @@ import CostsScreen from "../../../screens/CostsScreen.js";
 
 export default function Costs() {
   const router = useRouter();
-  const { expenses, systemById, spentThisYear, next12mo, monthlyReserve } = useAppData();
+  const { expenses, systemById, spentThisYear, next12mo, next12moBreakdown, monthlyReserve, monthlyReserveBreakdown } = useAppData();
 
   return (
     <AnimatedTabScreen tabKey="costs">
@@ -14,7 +14,9 @@ export default function Costs() {
         systemById={systemById}
         spentThisYear={spentThisYear}
         next12mo={next12mo}
+        next12moBreakdown={next12moBreakdown}
         monthlyReserve={monthlyReserve}
+        monthlyReserveBreakdown={monthlyReserveBreakdown}
         onAdd={() => router.push("/costs/new")}
         onViewLog={(filter) =>
           router.push(

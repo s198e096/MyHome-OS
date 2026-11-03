@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Plus, ChevronRight, ChevronDown } from "lucide-react-native";
+import { Plus, ChevronRight, ChevronDown, Info, X } from "lucide-react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { PRIMARY, systemShortName } from "../lib/constants.js";
 import { CURRENT_YEAR, ALL_YEARS, money, yearOf, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
@@ -144,11 +144,67 @@ function PieChart({ rows, labelFor, formatValue, emptyText, onSlicePress }) {
   );
 }
 
-export default function CostsScreen({ expenses, systemById, spentThisYear, next12mo, monthlyReserve, onAdd, onViewLog }) {
+// One of the two years blended into the "Next 12 months" estimate: an
+// everyday-spending base (actual so far this year, or a typical year's
+// average), plus any big system replacements due that year.
+function YearBlock({ label, weight, baseLabel, data }) {
+  const bigTotal = data.replacements.reduce((s, r) => s + r.cost, 0);
+  return (
+    <View className="rounded-lg mb-2 p-2.5" style={{ backgroundColor: "#F5F8F0" }}>
+      <View className="flex-row items-center justify-between mb-1">
+        <Text className="text-[12px] font-semibold text-stone-700">{label}</Text>
+        <Text className="text-[11px] text-stone-400">{weight} weight</Text>
+      </View>
+      <Text className="text-[12px] text-stone-600">{baseLabel}: {money(Math.round(data.base))}</Text>
+      {data.replacements.length > 0 && (
+        <Text className="text-[12px] text-stone-600">
+          + {money(bigTotal)} replacing {data.replacements.map((r) => r.name).join(", ")}
+        </Text>
+      )}
+      <Text className="text-[13px] font-semibold text-stone-900 mt-1">= {money(Math.round(data.amount))}</Text>
+    </View>
+  );
+}
+
+// One row of the 5-year window the monthly reserve is averaged across —
+// surfaces which years carry a big system replacement, since those are
+// what make the recommended amount more than just "typical spending ÷ 12".
+function ReserveYearRow({ data, isFirst }) {
+  return (
+    <View
+      className="flex-row items-center justify-between py-1.5"
+      style={{ borderTopWidth: isFirst ? 0 : 1, borderTopColor: "#E7EEDB" }}
+    >
+      <View className="flex-1 min-w-0 pr-2">
+        <Text className="text-[12px] text-stone-700">{data.year}{isFirst ? " (this year)" : ""}</Text>
+        {data.replacements.length > 0 && (
+          <Text className="text-[10.5px] text-stone-400" numberOfLines={1}>
+            Replacing {data.replacements.map((r) => r.name).join(", ")}
+          </Text>
+        )}
+      </View>
+      <Text className="text-[12.5px] font-semibold text-stone-800">{money(Math.round(data.amount))}</Text>
+    </View>
+  );
+}
+
+export default function CostsScreen({
+  expenses,
+  systemById,
+  spentThisYear,
+  next12mo,
+  next12moBreakdown,
+  monthlyReserve,
+  monthlyReserveBreakdown,
+  onAdd,
+  onViewLog,
+}) {
   const insets = useSafeAreaInsets();
   const years = expenseYears(expenses);
   const [selectedYear, setSelectedYear] = useState(years.includes(CURRENT_YEAR) ? CURRENT_YEAR : years[0]);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [next12moExplainOpen, setNext12moExplainOpen] = useState(false);
+  const [reserveExplainOpen, setReserveExplainOpen] = useState(false);
 
   const isAllYears = selectedYear === ALL_YEARS;
 
@@ -170,19 +226,37 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
 
       <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>
       <View className="flex-row gap-2 mb-2">
-        <View className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+        <Pressable
+          onPress={() => onViewLog({ year: CURRENT_YEAR })}
+          className="flex-1 rounded-xl bg-white p-3"
+          style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+        >
           <Text className="text-[11px] text-stone-400">Spent this year</Text>
           <Text className="text-[18px] font-semibold text-stone-900">{money(spentThisYear)}</Text>
-        </View>
-        <View className="flex-1 rounded-xl bg-white p-3" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-          <Text className="text-[11px] text-stone-400">Next 12 months</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setNext12moExplainOpen(true)}
+          className="flex-1 rounded-xl bg-white p-3"
+          style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+        >
+          <View className="flex-row items-center gap-1">
+            <Text className="text-[11px] text-stone-400">Next 12 months</Text>
+            <Info size={11} color="#B8B4A8" />
+          </View>
           <Text className="text-[18px] font-semibold text-stone-900">{money(Math.round(next12mo))}</Text>
+        </Pressable>
+      </View>
+      <Pressable
+        onPress={() => setReserveExplainOpen(true)}
+        className="rounded-xl bg-white p-3 mb-4"
+        style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+      >
+        <View className="flex-row items-center gap-1">
+          <Text className="text-[11px] text-stone-400">Recommended monthly reserve</Text>
+          <Info size={11} color="#B8B4A8" />
         </View>
-      </View>
-      <View className="rounded-xl bg-white p-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-        <Text className="text-[11px] text-stone-400">Recommended monthly reserve</Text>
         <Text className="text-[18px] font-semibold text-stone-900">{money(monthlyReserve)}/mo</Text>
-      </View>
+      </Pressable>
 
       {selectedYear != null ? (
         <>
@@ -246,6 +320,89 @@ export default function CostsScreen({ expenses, systemById, spentThisYear, next1
         </View>
         <ChevronRight size={16} color="#B8B4A8" />
       </Pressable>
+
+      <Modal transparent visible={next12moExplainOpen} animationType="fade" onRequestClose={() => setNext12moExplainOpen(false)}>
+        <Pressable
+          onPress={() => setNext12moExplainOpen(false)}
+          style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)", alignItems: "center", justifyContent: "center", padding: 28 }}
+        >
+          <Pressable
+            onPress={() => {}}
+            className="bg-white rounded-2xl p-4 w-full"
+            style={{ maxWidth: 340, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
+          >
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-[15px] font-semibold text-stone-900">Next 12 months</Text>
+              <Pressable onPress={() => setNext12moExplainOpen(false)} hitSlop={8}>
+                <X size={18} color="#78716c" />
+              </Pressable>
+            </View>
+            <Text className="text-[12.5px] text-stone-600 mb-3">
+              {money(Math.round(next12mo))} blends this year&apos;s pace with next year&apos;s typical spending — weighted toward
+              next year since it&apos;s a full 12 months, while this year only has what&apos;s left of it.
+            </Text>
+            {!!next12moBreakdown?.thisYear && (
+              <YearBlock label={`${next12moBreakdown.thisYear.year} (this year)`} weight="40%" baseLabel="Spent so far" data={next12moBreakdown.thisYear} />
+            )}
+            {!!next12moBreakdown?.nextYear && (
+              <YearBlock label={`${next12moBreakdown.nextYear.year}`} weight="60%" baseLabel="Typical year" data={next12moBreakdown.nextYear} />
+            )}
+            <Pressable
+              onPress={() => setNext12moExplainOpen(false)}
+              className="w-full py-2.5 rounded-lg items-center mt-1"
+              style={{ backgroundColor: PRIMARY }}
+            >
+              <Text className="text-[13px] font-semibold text-white">Got it</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={reserveExplainOpen} animationType="fade" onRequestClose={() => setReserveExplainOpen(false)}>
+        <Pressable
+          onPress={() => setReserveExplainOpen(false)}
+          style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)", alignItems: "center", justifyContent: "center", padding: 28 }}
+        >
+          <Pressable
+            onPress={() => {}}
+            className="bg-white rounded-2xl p-4 w-full"
+            style={{ maxWidth: 340, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
+          >
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-[15px] font-semibold text-stone-900">Monthly reserve</Text>
+              <Pressable onPress={() => setReserveExplainOpen(false)} hitSlop={8}>
+                <X size={18} color="#78716c" />
+              </Pressable>
+            </View>
+            {!!monthlyReserveBreakdown?.years?.length && (
+              <>
+                <Text className="text-[12.5px] text-stone-600 mb-3">
+                  {money(monthlyReserve)}/mo covers your typical spending plus any upcoming system replacements, spread
+                  evenly across the next {monthlyReserveBreakdown.years.length} years ({monthlyReserveBreakdown.years[0].year}
+                  –{monthlyReserveBreakdown.years[monthlyReserveBreakdown.years.length - 1].year}) instead of landing as one
+                  big hit the year a system actually needs replacing.
+                </Text>
+                <View className="rounded-lg mb-3 px-2.5" style={{ backgroundColor: "#F5F8F0" }}>
+                  {monthlyReserveBreakdown.years.map((y, i) => (
+                    <ReserveYearRow key={y.year} data={y} isFirst={i === 0} />
+                  ))}
+                </View>
+                <Text className="text-[11.5px] text-stone-400 mb-3">
+                  {money(Math.round(monthlyReserveBreakdown.totalAmount))} total ÷ {monthlyReserveBreakdown.months} months
+                  = {money(monthlyReserve)}/mo
+                </Text>
+              </>
+            )}
+            <Pressable
+              onPress={() => setReserveExplainOpen(false)}
+              className="w-full py-2.5 rounded-lg items-center"
+              style={{ backgroundColor: PRIMARY }}
+            >
+              <Text className="text-[13px] font-semibold text-white">Got it</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }

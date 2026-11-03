@@ -123,6 +123,31 @@ export function AppDataProvider({ children }) {
   const next12mo = forecast[0].amount * 0.4 + (forecast[1] ? forecast[1].amount * 0.6 : 0);
   const monthlyReserve = Math.round(forecast.reduce((s, f) => s + f.amount, 0) / (forecast.length * 12));
 
+  // Plain-language breakdown behind the "Next 12 months" figure above: each
+  // of the two years it blends, split into its everyday-spending base (this
+  // year's actual total so far, or the typical-year average for next year)
+  // versus any big system replacements due that year.
+  function yearBreakdown(f) {
+    if (!f) return null;
+    const bigCost = f.systems.reduce((s, sys) => s + sys.replacementCost, 0);
+    return {
+      year: f.year,
+      amount: f.amount,
+      base: f.amount - bigCost,
+      replacements: f.systems.map((sys) => ({ id: sys.id, name: systemName(sys), cost: sys.replacementCost })),
+    };
+  }
+  const next12moBreakdown = { thisYear: yearBreakdown(forecast[0]), nextYear: yearBreakdown(forecast[1]) };
+
+  // Same per-year breakdown, but for every year the monthly reserve spreads
+  // across — so the explanation can show which of those years carry a big
+  // system replacement, rather than just the one averaged-out number.
+  const monthlyReserveBreakdown = {
+    years: forecast.map(yearBreakdown),
+    totalAmount: forecast.reduce((s, f) => s + f.amount, 0),
+    months: forecast.length * 12,
+  };
+
   async function updateEnergyCheck(id, status) {
     const updated = await updateEnergyCheckStatus(id, status);
     setEnergyChecks((cs) => cs.map((c) => (c.id === id ? updated : c)));
@@ -452,7 +477,9 @@ export function AppDataProvider({ children }) {
     spentThisYear,
     forecast,
     next12mo,
+    next12moBreakdown,
     monthlyReserve,
+    monthlyReserveBreakdown,
     addSystemAtLimit,
     updateEnergyCheck,
     createQuickTask,
