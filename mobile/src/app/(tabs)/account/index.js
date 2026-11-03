@@ -49,8 +49,11 @@ export default function Account() {
           ? { error: "", paymentPending: false }
           : { error: "We haven't received your payment yet. If you completed it, it can take a minute to arrive.", paymentPending: true }
       );
-    } catch {
-      patch(type, { error: "Couldn't start checkout. Try again." });
+    } catch (err) {
+      // Surfaces the server's actual reason (e.g. "This report isn't
+      // available for purchase yet") instead of a one-size-fits-all
+      // message that hides what's actually wrong.
+      patch(type, { error: err?.message || "Couldn't start checkout. Try again." });
     } finally {
       patch(type, { busy: false, status: "" });
     }

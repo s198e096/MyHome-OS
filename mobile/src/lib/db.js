@@ -375,7 +375,7 @@ export async function createCheckoutSession(planId) {
   const { data, error } = await supabase.functions.invoke("create-checkout-session", {
     body: { planId, origin },
   });
-  if (error) throw error;
+  if (error) throw await describeFunctionError(error);
   return data.url;
 }
 
@@ -387,7 +387,7 @@ export async function createReportCheckoutSession(reportType) {
   const { data, error } = await supabase.functions.invoke("create-checkout-session", {
     body: { reportType, origin },
   });
-  if (error) throw error;
+  if (error) throw await describeFunctionError(error);
   return data.url;
 }
 
@@ -411,7 +411,7 @@ export async function createPortalSession() {
   const { data, error } = await supabase.functions.invoke("create-portal-session", {
     body: { origin },
   });
-  if (error) throw error;
+  if (error) throw await describeFunctionError(error);
   return data.url;
 }
 
