@@ -25,7 +25,11 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!session && !passwordRecovery}>
+      {/* redirectTo is explicit rather than relying on the default
+          anchor-route fallback: signing out from a screen nested several
+          navigators deep (tabs > its own stack > a screen) was landing on
+          the "Unmatched route" page instead of sign-in. */}
+      <Stack.Protected guard={!!session && !passwordRecovery} redirectTo="/sign-in">
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="ask" />
       </Stack.Protected>
