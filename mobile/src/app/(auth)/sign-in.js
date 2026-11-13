@@ -1,13 +1,42 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Home } from "lucide-react-native";
+import { Home, Eye, EyeOff } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../../lib/constants.js";
 import { supabase } from "../../lib/supabase.js";
+
+const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
+
+// A password TextInput with a show/hide toggle — its own independent
+// visibility state, so toggling the password field never also reveals
+// confirm-password.
+function PasswordField({ value, onChangeText, placeholder, textContentType, className }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <View className={className} style={[{ flexDirection: "row", alignItems: "center" }, fieldStyle]}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        secureTextEntry={!visible}
+        autoCapitalize="none"
+        textContentType={textContentType}
+        className="flex-1 px-3 py-2.5 text-[13.5px]"
+      />
+      <Pressable onPress={() => setVisible((v) => !v)} hitSlop={8} style={{ paddingHorizontal: 10 }}>
+        {visible ? <EyeOff size={17} color="#78716c" /> : <Eye size={17} color="#78716c" />}
+      </Pressable>
+    </View>
+  );
+}
 
 export default function SignIn() {
   const [mode, setMode] = useState("signin"); // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,11 +62,22 @@ export default function SignIn() {
 
     if (!password) return setError("Enter your password.");
 
+    if (mode === "signup") {
+      if (!firstName.trim()) return setError("Enter your first name.");
+      if (!lastName.trim()) return setError("Enter your last name.");
+      if (!phone.trim()) return setError("Enter your phone number.");
+      if (password !== confirmPassword) return setError("Passwords don't match.");
+    }
+
     setLoading(true);
     const { error: authError } =
       mode === "signin"
         ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        : await supabase.auth.signUp({ email: email.trim(), password });
+        : await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: { data: { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim() } },
+          });
     setLoading(false);
 
     if (authError) return setError(authError.message);
@@ -59,6 +99,34 @@ export default function SignIn() {
             <Text className="text-[13.5px] text-stone-400 mt-1">{titles[mode]}</Text>
           </View>
 
+          {mode === "signup" && (
+            <View className="flex-row gap-2 mb-2">
+              <View className="flex-1">
+                <Text className="text-[11px] text-stone-500 mb-1">First name</Text>
+                <TextInput
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="First name"
+                  textContentType="givenName"
+                  className="w-full px-3 py-2.5 rounded-lg text-[13.5px]"
+                  style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[11px] text-stone-500 mb-1">Last name</Text>
+                <TextInput
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Last name"
+                  textContentType="familyName"
+                  className="w-full px-3 py-2.5 rounded-lg text-[13.5px]"
+                  style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+                />
+              </View>
+            </View>
+          )}
+
+          <Text className="text-[11px] text-stone-500 mb-1">Email</Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -69,17 +137,43 @@ export default function SignIn() {
             className="w-full mb-2 px-3 py-2.5 rounded-lg text-[13.5px]"
             style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
           />
+          {mode === "signup" && (
+            <>
+              <Text className="text-[11px] text-stone-500 mb-1">Phone number</Text>
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Phone number"
+                keyboardType="phone-pad"
+                textContentType="telephoneNumber"
+                className="w-full mb-2 px-3 py-2.5 rounded-lg text-[13.5px]"
+                style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+              />
+            </>
+          )}
           {mode !== "forgot" && (
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              secureTextEntry
-              autoCapitalize="none"
-              textContentType={mode === "signin" ? "password" : "newPassword"}
-              className="w-full mb-3 px-3 py-2.5 rounded-lg text-[13.5px]"
-              style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
-            />
+            <>
+              <Text className="text-[11px] text-stone-500 mb-1">Password</Text>
+              <PasswordField
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Password"
+                textContentType={mode === "signin" ? "password" : "newPassword"}
+                className="w-full mb-3 rounded-lg"
+              />
+            </>
+          )}
+          {mode === "signup" && (
+            <>
+              <Text className="text-[11px] text-stone-500 mb-1">Confirm password</Text>
+              <PasswordField
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm password"
+                textContentType="newPassword"
+                className="w-full mb-3 rounded-lg"
+              />
+            </>
           )}
 
           {mode === "signin" && (

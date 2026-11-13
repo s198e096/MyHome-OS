@@ -64,9 +64,14 @@ export function AppDataProvider({ children }) {
     let cancelled = false;
     (async () => {
       const fallbackName = session.user.email?.split("@")[0] || "New user";
+      // Set via `options.data` on supabase.auth.signUp — travels with the
+      // user object regardless of email-confirmation status, unlike a
+      // profiles-table write (which needs a session the user doesn't have yet).
+      const meta = session.user.user_metadata || {};
+      const signupMeta = { firstName: meta.first_name, lastName: meta.last_name, phone: meta.phone };
       const [all, profileRow, checksResult, purchasesResult] = await Promise.all([
         loadAllData(),
-        loadProfile(session.user.id, fallbackName),
+        loadProfile(session.user.id, fallbackName, signupMeta),
         loadEnergyChecks().catch((err) => {
           console.error("Failed to load energy checks:", err);
           return [];

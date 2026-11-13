@@ -163,6 +163,9 @@ const rowToProfile = (r) => ({
   // table. An explicit `email: undefined` would still overwrite a real
   // email when this gets spread into existing profile state (`{...a,
   // ...b}` applies an explicit undefined, unlike a merely-absent key).
+  firstName: r.first_name,
+  lastName: r.last_name,
+  phone: r.phone,
   address: r.address,
   propertyName: r.property_name || "",
   propertyValue: r.property_value,
@@ -200,6 +203,9 @@ const rowToProfile = (r) => ({
 
 const profileToRow = (p) => ({
   name: p.name,
+  first_name: p.firstName ?? null,
+  last_name: p.lastName ?? null,
+  phone: p.phone ?? null,
   address: p.address,
   avatar_type: p.avatarType || null,
   property_name: p.propertyName || null,
@@ -510,14 +516,28 @@ export const db = {
   },
 };
 
-export async function loadProfile(userId, fallbackName) {
+// `signupMeta` (first/last name, phone) comes from the auth session's
+// user_metadata, set at sign-up time — used only for this first-ever insert,
+// since every later load finds the row already there.
+export async function loadProfile(userId, fallbackName, signupMeta) {
   const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
   if (error) throw error;
   if (data) return rowToProfile(data);
 
+  const firstName = signupMeta?.firstName || "";
+  const lastName = signupMeta?.lastName || "";
+  const name = firstName ? `${firstName} ${lastName}`.trim() : fallbackName;
   const { data: created, error: insertError } = await supabase
     .from("profiles")
-    .insert({ user_id: userId, name: fallbackName, address: "", plan: "free" })
+    .insert({
+      user_id: userId,
+      name,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      phone: signupMeta?.phone || null,
+      address: "",
+      plan: "free",
+    })
     .select()
     .single();
   if (insertError) throw insertError;

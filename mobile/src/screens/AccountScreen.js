@@ -40,6 +40,7 @@ export default function AccountScreen({ profile, reports, onBuyReport, onGenerat
         </Pressable>
         <Text className="text-[15px] font-semibold text-stone-900">{profile.name}</Text>
         <Text className="text-[12.5px] text-stone-400">{profile.email}</Text>
+        {!!profile.phone && <Text className="text-[12.5px] text-stone-400">{profile.phone}</Text>}
       </View>
 
       <Modal transparent visible={avatarPickerOpen} animationType="fade" onRequestClose={() => setAvatarPickerOpen(false)}>
