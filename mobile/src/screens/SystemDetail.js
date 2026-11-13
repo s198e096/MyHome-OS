@@ -2,7 +2,7 @@ import { useState, createElement } from "react";
 import { View, Text, Pressable, Image, Modal, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronLeft, ChevronRight, Pencil, Shield, ShieldCheck, Clock, FileText, Image as ImageIcon, X } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Pencil, Shield, ShieldCheck, Clock, FileText, Image as ImageIcon, X, AlertTriangle } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName, systemIcon } from "../lib/constants.js";
 import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, systemStatus } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
@@ -29,7 +29,7 @@ function SpecTile({ label, value, valueColor, mono }) {
   );
 }
 
-export default function SystemDetail({ sys, tasks, documents, warranties, onBack, onEdit }) {
+export default function SystemDetail({ sys, tasks, documents, warranties, problems, onBack, onEdit }) {
   const meta = CATEGORY_META[sys.category];
   const Icon = systemIcon(sys);
   const hasEstimate = !!sys.purchaseDate && sys.expectedLifeYears != null && sys.replacementCost != null;
@@ -206,6 +206,22 @@ export default function SystemDetail({ sys, tasks, documents, warranties, onBack
         {tasks.length === 0 && <Text className="py-3 text-[13px] text-stone-400">No tasks scheduled.</Text>}
         {tasks.map((t) => (
           <LedgerRow key={t.id} label={t.title} value={new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
+        ))}
+      </View>
+
+      <View className="flex-row items-center gap-1.5 mb-1">
+        <AlertTriangle size={13} color="#78716c" />
+        <Text className="text-[12px] font-semibold text-stone-500">Reported problems{problems.length > 0 ? ` (${problems.length})` : ""}</Text>
+      </View>
+      <View className="rounded-xl bg-white px-3 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+        {problems.length === 0 && <Text className="py-3 text-[13px] text-stone-400">No problems reported yet.</Text>}
+        {problems.map((p) => (
+          <LedgerRow
+            key={p.id}
+            label={p.description}
+            sub={p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
+            value=""
+          />
         ))}
       </View>
 

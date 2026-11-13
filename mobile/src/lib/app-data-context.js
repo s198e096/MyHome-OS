@@ -40,6 +40,7 @@ export function AppDataProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [warranties, setWarranties] = useState([]);
+  const [systemProblems, setSystemProblems] = useState([]);
   const [furniture, setFurniture] = useState([]);
   const [energyChecks, setEnergyChecks] = useState([]);
   const [reportPurchases, setReportPurchases] = useState([]);
@@ -54,6 +55,7 @@ export function AppDataProvider({ children }) {
       setExpenses([]);
       setDocuments([]);
       setWarranties([]);
+      setSystemProblems([]);
       setFurniture([]);
       setEnergyChecks([]);
       setProfile(null);
@@ -87,6 +89,7 @@ export function AppDataProvider({ children }) {
       setExpenses(all.expenses);
       setDocuments(all.documents);
       setWarranties(all.warranties);
+      setSystemProblems(all.systemProblems);
       setFurniture(all.furniture);
       setEnergyChecks(checksResult);
       setProfile({ ...profileRow, email: session.user.email });
@@ -334,6 +337,12 @@ export function AppDataProvider({ children }) {
     setWarranties((ws) => ws.filter((w) => w.id !== id));
   }
 
+  async function addSystemProblem(systemId, description) {
+    const created = await db.systemProblems.add({ systemId, description });
+    setSystemProblems((ps) => [...ps, created]);
+    return created;
+  }
+
   async function addFurniture(item) {
     const created = await db.furniture.add(item);
     setFurniture((fs) => [...fs, created]);
@@ -474,6 +483,7 @@ export function AppDataProvider({ children }) {
     expenses,
     documents,
     warranties,
+    systemProblems,
     furniture,
     energyChecks,
     profile,
@@ -503,6 +513,7 @@ export function AppDataProvider({ children }) {
     addWarranty,
     updateWarranty,
     deleteWarranty,
+    addSystemProblem,
     addFurniture,
     updateFurniture,
     deleteFurniture,

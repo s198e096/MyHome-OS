@@ -22,7 +22,11 @@ const CORS_HEADERS = {
 
 const MAX_MESSAGES = 20;
 
-function describeSystem(s: Record<string, unknown>) {
+// `problems` and `completedTasks` are this one system's rows only (grouped
+// by buildHomeContext below) — past problem reports and finished maintenance
+// work, so the assistant has history the next time the user brings this
+// system up, instead of starting from zero every conversation.
+function describeSystem(s: Record<string, unknown>, problems: Record<string, unknown>[], completedTasks: Record<string, unknown>[]) {
   const parts = [`${s.brand || "Unknown brand"} ${s.model || ""}`.trim(), `category: ${s.category}`];
   if (s.location) parts.push(`location: ${s.location}`);
   if (s.purchase_date) parts.push(`installed: ${s.purchase_date}`);
@@ -30,10 +34,26 @@ function describeSystem(s: Record<string, unknown>) {
   if (s.replacement_cost) parts.push(`est. replacement cost: $${s.replacement_cost}`);
   if (s.warranty_expiration) parts.push(`warranty until: ${s.warranty_expiration}`);
   if (s.filter_size) parts.push(`filter size: ${s.filter_size}`);
-  return `- ${parts.join(", ")}`;
+  let line = `- ${parts.join(", ")}`;
+  if (problems.length) {
+    line += `\n  Reported problems (${problems.length}): ${problems
+      .map((p) => `"${p.description}"${p.created_at ? ` (${String(p.created_at).slice(0, 10)})` : ""}`)
+      .join("; ")}`;
+  }
+  if (completedTasks.length) {
+    line += `\n  Completed maintenance: ${completedTasks
+      .map((t) => `${t.title}${t.completed_date ? ` (${t.completed_date})` : ""}`)
+      .join("; ")}`;
+  }
+  return line;
 }
 
-function buildHomeContext(profile: Record<string, unknown> | null, systems: Record<string, unknown>[], tasks: Record<string, unknown>[]) {
+function buildHomeContext(
+  profile: Record<string, unknown> | null,
+  systems: Record<string, unknown>[],
+  tasks: Record<string, unknown>[],
+  systemProblems: Record<string, unknown>[]
+) {
   const lines: string[] = [];
   // Overdue/upcoming is computed here, not left for the model to work out —
   // an LLM has no reliable notion of "today" (it isn't told, and would
@@ -67,7 +87,25 @@ function buildHomeContext(profile: Record<string, unknown> | null, systems: Reco
     if (profile.property_value) lines.push(`Estimated value: $${profile.property_value}`);
   }
 
-  lines.push(systems.length ? `\nSystems (${systems.length}):\n${systems.map(describeSystem).join("\n")}` : "\nNo systems logged yet.");
+  const problemsBySystem = new Map<string, Record<string, unknown>[]>();
+  for (const p of systemProblems) {
+    const key = String(p.system_id);
+    (problemsBySystem.get(key) || problemsBySystem.set(key, []).get(key)!).push(p);
+  }
+  const completedBySystem = new Map<string, Record<string, unknown>[]>();
+  for (const t of tasks) {
+    if (!t.completed || !t.system_id) continue;
+    const key = String(t.system_id);
+    (completedBySystem.get(key) || completedBySystem.set(key, []).get(key)!).push(t);
+  }
+
+  lines.push(
+    systems.length
+      ? `\nSystems (${systems.length}):\n${systems
+          .map((s) => describeSystem(s, problemsBySystem.get(String(s.id)) || [], completedBySystem.get(String(s.id)) || []))
+          .join("\n")}`
+      : "\nNo systems logged yet."
+  );
 
   const openTasks = tasks.filter((t) => !t.completed);
   // String comparison works here since due_date is a plain "YYYY-MM-DD".
@@ -120,13 +158,14 @@ Deno.serve(async (req) => {
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const [{ data: profile }, { data: systems }, { data: tasks }] = await Promise.all([
+    const [{ data: profile }, { data: systems }, { data: tasks }, { data: systemProblems }] = await Promise.all([
       supabaseAuthed.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabaseAuthed.from("systems").select("*").order("created_at", { ascending: true }),
       supabaseAuthed.from("tasks").select("*").order("due_date", { ascending: true }),
+      supabaseAuthed.from("system_problems").select("*").order("created_at", { ascending: true }),
     ]);
 
-    const homeContext = buildHomeContext(profile, systems || [], tasks || []);
+    const homeContext = buildHomeContext(profile, systems || [], tasks || [], systemProblems || []);
     const systemPrompt = `You are the in-app assistant for MyHome OS, a home-maintenance tracking app. Answer the user's question helpfully and concisely (2-4 sentences unless they ask for more detail), grounded in their actual home data below when relevant. If something isn't in their data, say so rather than guessing specifics about their property, and suggest they log it in the app if that would help. You can also answer general home-maintenance questions not tied to their specific data.
 
 Their home:

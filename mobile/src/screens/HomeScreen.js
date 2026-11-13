@@ -17,7 +17,7 @@ const LINK_BLUE = "#2563EB";
 
 const HOME_ACTIONS = [
   { value: "chat", label: "Chat with an AI agent about your home" },
-  { value: "problem", label: "Chat about a problem" },
+  { value: "problem", label: "Report a problem in a system" },
   { value: "expense", label: "Report an expense" },
   { value: "upgrade", label: "Upgrade a system" },
 ];
@@ -29,7 +29,7 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
 
   function handleAction(value) {
     setActionsOpen(false);
-    if (value === "problem") onOpenAssistant("I need help with a problem: ");
+    if (value === "problem") onNavigate("/report-problem");
     else if (value === "expense") onNavigate("/costs/new");
     else if (value === "upgrade") onNavigate("/systems/upgrade");
     else onOpenAssistant();

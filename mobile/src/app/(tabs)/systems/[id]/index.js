@@ -6,7 +6,7 @@ import SystemDetail from "../../../../screens/SystemDetail.js";
 export default function SystemDetailRoute() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { systemById, tasks, documents, warranties } = useAppData();
+  const { systemById, tasks, documents, warranties, systemProblems } = useAppData();
   const sys = systemById(id);
 
   if (!sys) {
@@ -23,6 +23,7 @@ export default function SystemDetailRoute() {
       tasks={tasks.filter((t) => t.systemId === sys.id)}
       documents={documents.filter((d) => d.systemId === sys.id)}
       warranties={warranties.filter((w) => w.systemId === sys.id)}
+      problems={systemProblems.filter((p) => p.systemId === sys.id).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt))}
       onBack={() => router.back()}
       onEdit={() => router.push(`/systems/${sys.id}/edit`)}
     />

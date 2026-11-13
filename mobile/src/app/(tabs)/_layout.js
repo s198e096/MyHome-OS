@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Home, Wrench, CalendarCheck, Banknote, FileText, User } from "lucide-react-native";
 import { PRIMARY } from "../../lib/constants.js";
-import { AppDataProvider, useAppData } from "../../lib/app-data-context.js";
+import { useAppData } from "../../lib/app-data-context.js";
 import { TabTransitionProvider } from "../../lib/tab-transition.js";
 import OnboardingScreen from "../../screens/OnboardingScreen.js";
 import PropertyValuePrompt from "../../components/PropertyValuePrompt.js";
@@ -43,9 +43,5 @@ function TabsNavigator() {
 }
 
 export default function TabsLayout() {
-  return (
-    <AppDataProvider>
-      <TabsNavigator />
-    </AppDataProvider>
-  );
+  return <TabsNavigator />;
 }

@@ -110,10 +110,10 @@ function ConversationDrawer({ visible, conversations, activeId, onSelect, onNew,
   );
 }
 
-export default function AskAssistantScreen({ onBack, initialInput, name }) {
+export default function AskAssistantScreen({ onBack, initialInput, name, autoSend, startNew }) {
   const insets = useSafeAreaInsets();
   const { messages, setMessages, conversations, activeId, startNewConversation, switchConversation, deleteConversation } = useChat();
-  const [input, setInput] = useState(initialInput || "");
+  const [input, setInput] = useState(autoSend ? "" : initialInput || "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -124,6 +124,15 @@ export default function AskAssistantScreen({ onBack, initialInput, name }) {
   useEffect(() => {
     if (messages.length > 0) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: later message-count changes are handled by the scrolls in send()
+  }, []);
+
+  // Reached from "Report a problem": starts a fresh conversation (so the
+  // report doesn't land inside whatever chat was last open) and sends the
+  // pre-built message immediately, rather than just prefilling the box.
+  useEffect(() => {
+    if (startNew) startNewConversation();
+    if (autoSend && initialInput) send(initialInput, { fresh: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
   }, []);
 
   function handleSelectConversation(id) {
@@ -141,12 +150,17 @@ export default function AskAssistantScreen({ onBack, initialInput, name }) {
     setDrawerOpen(false);
   }
 
-  async function send(text) {
+  // `fresh` skips the current `messages` (used when starting a brand new
+  // conversation in the same tick as startNewConversation(), since that
+  // resets the active conversation via a ref synchronously but this
+  // component won't re-render with the now-empty `messages` until after
+  // this function already needs it).
+  async function send(text, { fresh = false } = {}) {
     const question = text.trim();
     if (!question || sending) return;
     setError("");
     setInput("");
-    const next = [...messages, { role: "user", content: question }];
+    const next = fresh ? [{ role: "user", content: question }] : [...messages, { role: "user", content: question }];
     setMessages(next);
     setSending(true);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));

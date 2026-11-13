@@ -123,6 +123,18 @@ const warrantyToRow = (w) => ({
   estimated: !!w.estimated,
 });
 
+const rowToSystemProblem = (r) => ({
+  id: r.id,
+  systemId: r.system_id,
+  description: r.description,
+  createdAt: r.created_at,
+});
+
+const systemProblemToRow = (p) => ({
+  system_id: p.systemId,
+  description: p.description,
+});
+
 const rowToFurniture = (r) => ({
   id: r.id,
   name: r.name,
@@ -446,15 +458,16 @@ export async function updateEnergyCheckStatus(id, status) {
 }
 
 export async function loadAllData() {
-  const [systems, tasks, expenses, documents, furniture, warranties] = await Promise.all([
+  const [systems, tasks, expenses, documents, furniture, warranties, systemProblems] = await Promise.all([
     loadTable("systems", rowToSystem),
     loadTable("tasks", rowToTask),
     loadTable("expenses", rowToExpense),
     loadTable("documents", rowToDocument),
     loadTable("furniture", rowToFurniture),
     loadTable("warranties", rowToWarranty).catch(() => []),
+    loadTable("system_problems", rowToSystemProblem),
   ]);
-  return { systems, tasks, expenses, documents, furniture, warranties };
+  return { systems, tasks, expenses, documents, furniture, warranties, systemProblems };
 }
 
 export const db = {
@@ -508,6 +521,9 @@ export const db = {
     add: (w) => insertRow("warranties", warrantyToRow(w), rowToWarranty),
     update: (id, patch) => updateRow("warranties", id, warrantyToRow(patch), rowToWarranty),
     remove: (id) => deleteRow("warranties", id),
+  },
+  systemProblems: {
+    add: (p) => insertRow("system_problems", systemProblemToRow(p), rowToSystemProblem),
   },
   furniture: {
     add: (f) => insertRow("furniture", furnitureToRow(f), rowToFurniture),
