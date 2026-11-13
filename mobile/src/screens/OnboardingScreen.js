@@ -258,11 +258,13 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
   );
 }
 
-// A system counts as "completed" for the walkthrough once it has any detail
-// beyond what quick-add sets (category/brand/empty location) — i.e. the user
-// has actually been through SystemDetailsStep and saved something for it.
+// A system counts as "completed" for the walkthrough once its two required
+// identifying details are filled in: brand and model. Everything else
+// SystemDetailsStep collects (photo, dates, cost, expected life — the last of
+// which quick-add already defaults from the category, so it can't be used as
+// a "did the user fill this in" signal) is optional.
 function systemHasDetails(s) {
-  return !!(s.model || s.photoUrl || s.purchaseDate || s.warrantyExpiration || s.replacementCost || s.expectedLifeYears || s.purchasePrice || s.filterSize);
+  return !!(s.brand && s.model);
 }
 
 // Full-screen hub listing every added system with its completion status —
@@ -805,9 +807,9 @@ const LEGACY_HVAC_LABELS = [
 // outdoor unit) — the real brand/model are left for the user to fill in
 // later via the regular details walkthrough, but `brand` holds the default
 // name ("HVAC - Indoor Unit" / "HVAC - Outdoor Unit"). Deliberately not
-// `model`: that field is what systemHasDetails() checks to mark a system
-// "Completed", so a placeholder there would make picking a type alone look
-// like a finished walkthrough.
+// `model`: systemHasDetails() requires both brand and model before marking a
+// system "Completed", so leaving model unset here (as every quick-add path
+// does) keeps picking a type alone from looking like a finished walkthrough.
 const HVAC_TYPES = {
   furnace_ac: {
     label: "Gas Furnace + Central AC",
