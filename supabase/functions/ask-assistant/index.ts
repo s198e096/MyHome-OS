@@ -35,6 +35,13 @@ function describeSystem(s: Record<string, unknown>) {
 
 function buildHomeContext(profile: Record<string, unknown> | null, systems: Record<string, unknown>[], tasks: Record<string, unknown>[]) {
   const lines: string[] = [];
+  // Overdue/upcoming is computed here, not left for the model to work out —
+  // an LLM has no reliable notion of "today" (it isn't told, and would
+  // otherwise guess from training data), so without this every open task
+  // just got lumped under "Upcoming tasks" regardless of its due date,
+  // making overdue ones invisible to questions like "what's overdue?".
+  const today = new Date().toISOString().slice(0, 10);
+  lines.push(`Today's date: ${today}`);
 
   if (profile) {
     lines.push(`Property: ${profile.property_name || "Unnamed"} at ${profile.address || "address not set"}`);
@@ -63,10 +70,19 @@ function buildHomeContext(profile: Record<string, unknown> | null, systems: Reco
   lines.push(systems.length ? `\nSystems (${systems.length}):\n${systems.map(describeSystem).join("\n")}` : "\nNo systems logged yet.");
 
   const openTasks = tasks.filter((t) => !t.completed);
+  // String comparison works here since due_date is a plain "YYYY-MM-DD".
+  const overdueTasks = openTasks.filter((t) => typeof t.due_date === "string" && t.due_date < today);
+  const upcomingTasks = openTasks.filter((t) => !(typeof t.due_date === "string" && t.due_date < today));
+
   lines.push(
-    openTasks.length
-      ? `\nUpcoming tasks:\n${openTasks.map((t) => `- ${t.title}${t.due_date ? ` (due ${t.due_date})` : ""}`).join("\n")}`
-      : "\nNo open tasks."
+    overdueTasks.length
+      ? `\nOverdue tasks (${overdueTasks.length}):\n${overdueTasks.map((t) => `- ${t.title} (was due ${t.due_date})`).join("\n")}`
+      : "\nNo overdue tasks."
+  );
+  lines.push(
+    upcomingTasks.length
+      ? `\nUpcoming tasks:\n${upcomingTasks.map((t) => `- ${t.title}${t.due_date ? ` (due ${t.due_date})` : ""}`).join("\n")}`
+      : "\nNo other upcoming tasks."
   );
 
   return lines.join("\n");
