@@ -95,7 +95,7 @@ export default function SignIn() {
             <View className="rounded-2xl items-center justify-center mb-3" style={{ width: 56, height: 56, backgroundColor: PRIMARY }}>
               <Home size={26} color="white" />
             </View>
-            <Text className="text-[22px] font-bold text-stone-900">MyHome OS</Text>
+            <Text className="text-[22px] font-bold text-stone-900">MyHouse OS</Text>
             <Text className="text-[13.5px] text-stone-400 mt-1">{titles[mode]}</Text>
           </View>
 

@@ -1,4 +1,4 @@
--- MyHome OS: per-user data tables with Row Level Security.
+-- MyHouse OS: per-user data tables with Row Level Security.
 -- Run this once in the Supabase SQL Editor (Project -> SQL Editor -> New query).
 
 create table if not exists public.profiles (

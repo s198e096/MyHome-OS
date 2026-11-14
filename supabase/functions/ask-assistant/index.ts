@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
     ]);
 
     const homeContext = buildHomeContext(profile, systems || [], tasks || [], systemProblems || []);
-    const systemPrompt = `You are the in-app assistant for MyHome OS, a home-maintenance tracking app. Answer the user's question helpfully and concisely (2-4 sentences unless they ask for more detail), grounded in their actual home data below when relevant. If something isn't in their data, say so rather than guessing specifics about their property, and suggest they log it in the app if that would help. You can also answer general home-maintenance questions not tied to their specific data.
+    const systemPrompt = `You are the in-app assistant for MyHouse OS, a home-maintenance tracking app. Answer the user's question helpfully and concisely (2-4 sentences unless they ask for more detail), grounded in their actual home data below when relevant. If something isn't in their data, say so rather than guessing specifics about their property, and suggest they log it in the app if that would help. You can also answer general home-maintenance questions not tied to their specific data.
 
 Their home:
 ${homeContext}`;

@@ -29,7 +29,7 @@ export default function ResetPassword() {
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }} keyboardShouldPersistTaps="handled">
         <View className="px-6">
           <Text className="text-[17px] font-semibold text-stone-900 mb-1">Set a new password</Text>
-          <Text className="text-[12.5px] text-stone-400 mb-4">MyHome OS</Text>
+          <Text className="text-[12.5px] text-stone-400 mb-4">MyHouse OS</Text>
 
           <TextInput
             value={password}

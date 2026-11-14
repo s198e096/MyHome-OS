@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["apple-touch-icon.png"],
       manifest: {
-        name: "MyHome OS",
-        short_name: "MyHome OS",
+        name: "MyHouse OS",
+        short_name: "MyHouse OS",
         description: "Track your home's systems, maintenance, costs, and documents.",
         start_url: "/",
         display: "standalone",

@@ -36,7 +36,7 @@ export function buildFilterReminderIcs({ systemId, brand, model, filterLabel, da
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//MyHome OS//Filter Reminder//EN",
+    "PRODID:-//MyHouse OS//Filter Reminder//EN",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `UID:filter-reminder-${systemId}@myhome-os`,

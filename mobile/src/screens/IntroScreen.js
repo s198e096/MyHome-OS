@@ -159,7 +159,7 @@ export default function IntroScreen({ onDone }) {
             <View className="rounded-xl items-center justify-center" style={{ width: 30, height: 30, backgroundColor: PRIMARY }}>
               <CheckCircle2 size={16} color="white" />
             </View>
-            <Text className="text-[15px] font-bold" style={{ color: PRIMARY }}>MyHome OS</Text>
+            <Text className="text-[15px] font-bold" style={{ color: PRIMARY }}>MyHouse OS</Text>
           </View>
           <Pressable onPress={onDone} hitSlop={8}>
             <Text className="text-[13px] font-semibold" style={{ color: "#3B5169" }}>Skip</Text>

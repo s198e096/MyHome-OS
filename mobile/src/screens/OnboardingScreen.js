@@ -2119,7 +2119,7 @@ export default function OnboardingScreen() {
           </View>
 
           <Text className="text-[30px] font-bold text-center mb-3" style={{ color: PRIMARY, lineHeight: 36 }}>
-            Welcome to{"\n"}MyHome OS
+            Welcome to{"\n"}MyHouse OS
           </Text>
           <Text className="text-[15px] text-center mb-10 px-2" style={{ color: "#3B5169", lineHeight: 22 }}>
             Let&apos;s set up your property so we can start tracking its systems, tasks, and costs — all in one place.

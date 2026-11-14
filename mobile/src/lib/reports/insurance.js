@@ -174,13 +174,13 @@ export function buildInsuranceReport(data, h) {
     : "";
 
   const header = `<header class="report-head">
-      <div class="brand">MyHome OS · Insurance inventory</div>
+      <div class="brand">MyHouse OS · Insurance inventory</div>
       <h1>Home Inventory Report</h1>
       <div class="addr">${e(fmtPropertyName(profile.propertyName) || "Home")}${profile.address ? ` — ${e(fmtAddress(profile.address))}` : ""}</div>
       <div class="meta">Policyholder: ${e(profile.name || "—")}${profile.email ? ` · ${e(profile.email)}` : ""} · Prepared ${e(fmtLongDate(generatedOn))}</div>
     </header>`;
 
-  const footer = `<footer class="report-foot">Prepared with MyHome OS on ${e(fmtLongDate(generatedOn))} from records entered, scanned and uploaded by the homeowner. Values are owner estimates, not appraisals. Insurers’ documentation requirements vary — confirm what your policy needs.</footer>`;
+  const footer = `<footer class="report-foot">Prepared with MyHouse OS on ${e(fmtLongDate(generatedOn))} from records entered, scanned and uploaded by the homeowner. Values are owner estimates, not appraisals. Insurers’ documentation requirements vary — confirm what your policy needs.</footer>`;
 
   const body = [
     header,

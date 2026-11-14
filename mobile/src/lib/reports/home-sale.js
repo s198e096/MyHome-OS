@@ -213,13 +213,13 @@ export function buildHomeSaleReport(data, h) {
 
   const features = buildFeatureSummary(profile);
   const header = `<header class="report-head">
-      <div class="brand">MyHome OS · Home Sale</div>
+      <div class="brand">MyHouse OS · Home Sale</div>
       <h1>Property History Report</h1>
       <div class="addr">${e(fmtPropertyName(profile.propertyName) || "Home")}${profile.address ? ` — ${e(fmtAddress(profile.address))}` : ""}</div>
       <div class="meta">Prepared ${e(fmtLongDate(generatedOn))}${features.length ? ` · ${e(features.join(" · "))}` : ""}</div>
     </header>`;
 
-  const footer = `<footer class="report-foot">Prepared with MyHome OS on ${e(fmtLongDate(generatedOn))} from records entered, scanned and uploaded by the homeowner. It is provided for information only and is not an appraisal, inspection, or warranty. Buyers should verify details independently.</footer>`;
+  const footer = `<footer class="report-foot">Prepared with MyHouse OS on ${e(fmtLongDate(generatedOn))} from records entered, scanned and uploaded by the homeowner. It is provided for information only and is not an appraisal, inspection, or warranty. Buyers should verify details independently.</footer>`;
 
   const body = [
     header,
