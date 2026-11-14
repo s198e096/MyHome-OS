@@ -31,6 +31,14 @@ async function ensureSetup() {
   await Notifications.requestPermissionsAsync();
 }
 
+// Whether the user has allowed notifications for this app. When they've said
+// no (or iOS has it denied for this app), scheduling throws for every task, so
+// the sync below checks first and simply does nothing instead.
+async function notificationsAllowed() {
+  const permissions = await Notifications.getPermissionsAsync();
+  return !!permissions.granted;
+}
+
 async function cancelOurs() {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const ours = scheduled.filter((n) => n.content.data?.type === NOTIFICATION_TYPE);
@@ -46,6 +54,9 @@ async function cancelOurs() {
 export async function syncTaskNotifications(tasks) {
   await ensureSetup();
   await cancelOurs();
+  // Permission denied: nothing can be scheduled. Any reminders left over from
+  // when it was allowed were just cleared above, so none fire unexpectedly.
+  if (!(await notificationsAllowed())) return;
 
   const now = new Date();
   for (const t of tasks) {
