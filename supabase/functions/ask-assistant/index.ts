@@ -131,6 +131,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
+  // The Free plan allows 10 questions per rolling 24 hours. The count lives in
+  // the database (claim_ai_use, migration 0031) so it can't be bypassed from
+  // the app; paid plans come back as unlimited. A use is claimed up front and
+  // handed back below if the question then fails, so errors don't cost the
+  // user one of their questions.
+  // deno-lint-ignore no-explicit-any
+  let admin: any = null;
+  let claimId: string | null = null;
+
   try {
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
@@ -157,6 +166,23 @@ Deno.serve(async (req) => {
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY is not configured");
+
+    admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: claim, error: claimError } = await admin.rpc("claim_ai_use", { p_user_id: user.id, p_kind: "chat" });
+    if (claimError) throw new Error(`Could not check your plan: ${claimError.message}`);
+    if (!claim.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: `You've used your ${claim.limit} free questions for today.`,
+          code: "limit_reached",
+          kind: "chat",
+          limit: claim.limit,
+          resetsAt: claim.resetsAt,
+        }),
+        { status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+    claimId = claim.claimId ?? null;
 
     const [{ data: profile }, { data: systems }, { data: tasks }, { data: systemProblems }] = await Promise.all([
       supabaseAuthed.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
@@ -200,6 +226,7 @@ ${homeContext}`;
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (admin && claimId) await admin.from("ai_usage").delete().eq("id", claimId);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

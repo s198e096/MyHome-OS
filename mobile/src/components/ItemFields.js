@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, Platform } from "react-native";
+import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { Sparkles, Calculator, X, Plus, ChevronDown } from "lucide-react-native";
@@ -9,6 +10,8 @@ import { scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
 import { manufactureDateToInstalled, MANUFACTURE_DATE_NOTE } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
 import { scannedModelNumber } from "../lib/scan-result.js";
+import { useAiFill } from "../lib/ai-fill.js";
+import AiFillNote from "./AiFillNote.js";
 import PhotoPicker from "./PhotoPicker.js";
 import MultiPhotoPicker from "./MultiPhotoPicker.js";
 import SelectModal from "./SelectModal.js";
@@ -167,6 +170,11 @@ export default function ItemFields({
   // note below the field shows only while the field still holds that date.
   labelPurchaseDate,
 }) {
+  const router = useRouter();
+  // Free plan: 10 AI auto-fills in total, shared by both buttons below.
+  const aiFill = useAiFill();
+  const [fillLimitHit, setFillLimitHit] = useState(false);
+  const fillBlocked = aiFill.isFreePlan && (aiFill.exhausted || fillLimitHit);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
   const [localLabelDate, setLocalLabelDate] = useState("");
@@ -184,6 +192,7 @@ export default function ItemFields({
   const [expenseCategoryDropdownOpen, setExpenseCategoryDropdownOpen] = useState(false);
 
   async function handleScan() {
+    if (fillBlocked) return;
     setScanning(true);
     setScanError("");
     setSysManualUrl("");
@@ -218,14 +227,17 @@ export default function ItemFields({
       if (!filledSomething) {
         setScanError("Couldn't read the label clearly. Try a closer, well-lit photo, or fill it in manually.");
       }
-    } catch {
-      setScanError("AI scan failed. You can fill in the fields manually.");
+    } catch (err) {
+      if (err?.limitReached) setFillLimitHit(true);
+      else setScanError("AI scan failed. You can fill in the fields manually.");
     } finally {
       setScanning(false);
+      aiFill.refresh();
     }
   }
 
   async function handleScanWarrantyDocs() {
+    if (fillBlocked) return;
     setScanningWarranty(true);
     setWarrantyScanError("");
     setWarrantyEstimate(null);
@@ -253,10 +265,12 @@ export default function ItemFields({
       if (!result.purchaseDate && result.purchasePrice == null && confident.length === 0 && !estimate) {
         setWarrantyScanError("Couldn't find a purchase date, price, or warranty info there. You can fill them in manually.");
       }
-    } catch {
-      setWarrantyScanError("AI scan failed. You can fill in the fields manually.");
+    } catch (err) {
+      if (err?.limitReached) setFillLimitHit(true);
+      else setWarrantyScanError("AI scan failed. You can fill in the fields manually.");
     } finally {
       setScanningWarranty(false);
+      aiFill.refresh();
     }
   }
 
@@ -469,9 +483,9 @@ export default function ItemFields({
               {photoUrl && (
                 <Pressable
                   onPress={handleScan}
-                  disabled={scanning}
+                  disabled={scanning || fillBlocked}
                   className="w-full mb-3 flex-row items-center justify-center gap-1.5 py-2 rounded-lg"
-                  style={{ backgroundColor: ACCENT_YELLOW, opacity: scanning ? 0.6 : 1 }}
+                  style={{ backgroundColor: ACCENT_YELLOW, opacity: scanning || fillBlocked ? 0.6 : 1 }}
                 >
                   <Sparkles size={15} color={PRIMARY} />
                   <Text className="text-[12.5px] font-semibold" style={{ color: PRIMARY }}>
@@ -479,6 +493,7 @@ export default function ItemFields({
                   </Text>
                 </Pressable>
               )}
+              {!!photoUrl && <AiFillNote limitHit={fillLimitHit} onUpgrade={() => router.push("/account/plan")} />}
               {scanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</Text>}
               {sysManualUrl && (
                 <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
@@ -598,15 +613,18 @@ export default function ItemFields({
               {(receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) && (
                 <Pressable
                   onPress={handleScanWarrantyDocs}
-                  disabled={scanningWarranty}
+                  disabled={scanningWarranty || fillBlocked}
                   className="w-full mb-2 flex-row items-center justify-center gap-1.5 py-2 rounded-lg"
-                  style={{ backgroundColor: ACCENT_YELLOW, opacity: scanningWarranty ? 0.6 : 1 }}
+                  style={{ backgroundColor: ACCENT_YELLOW, opacity: scanningWarranty || fillBlocked ? 0.6 : 1 }}
                 >
                   <Sparkles size={15} color={PRIMARY} />
                   <Text className="text-[12.5px] font-semibold" style={{ color: PRIMARY }}>
                     {scanningWarranty ? "Reading documents..." : "Extract purchase date, price & warranty"}
                   </Text>
                 </Pressable>
+              )}
+              {(receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) && (
+                <AiFillNote limitHit={fillLimitHit} onUpgrade={() => router.push("/account/plan")} />
               )}
               {warrantyScanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{warrantyScanError}</Text>}
               {warrantyEstimate && (

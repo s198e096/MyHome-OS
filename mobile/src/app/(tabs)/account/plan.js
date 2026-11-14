@@ -5,7 +5,7 @@ import PlanScreen from "../../../screens/PlanScreen.js";
 
 export default function Plan() {
   const router = useRouter();
-  const { profile, selectPlan, manageBilling } = useAppData();
+  const { profile, selectPlan, manageBilling, refreshPlan } = useAppData();
 
   return (
     <PlanScreen
@@ -14,10 +14,13 @@ export default function Plan() {
       onSelectPlan={async (planId) => {
         const url = await selectPlan(planId);
         if (url) await WebBrowser.openBrowserAsync(url);
+        // Back from Stripe: pick up the new plan (the webhook sets it).
+        await refreshPlan().catch(() => {});
       }}
       onManageBilling={async () => {
         const url = await manageBilling();
         if (url) await WebBrowser.openBrowserAsync(url);
+        await refreshPlan().catch(() => {});
       }}
     />
   );

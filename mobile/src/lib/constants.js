@@ -19,6 +19,11 @@ export const AVATAR_TYPES = [
 export const TAB_ORDER = ["home", "furniture", "systems", "tasks", "costs", "docs", "account"];
 
 export const FREE_SYSTEM_LIMIT = 10;
+// Free-plan AI allowances. The real limits are enforced in the database (see
+// supabase/migrations/0031_plan_gating.sql) — these only drive the wording and
+// the "N left" counters, so keep them in sync with it.
+export const FREE_AI_CHAT_LIMIT = 10; // questions per rolling 24 hours
+export const FREE_AI_FILL_LIMIT = 10; // AI auto-fills in total (label + receipt/warranty scans)
 
 export const ROOMS = ["Living Room", "Dining Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Other"];
 
@@ -257,14 +262,25 @@ export const PLANS = [
     name: "Free",
     price: "$0",
     period: "",
-    features: ["1 property", "10 appliances/systems", "Basic maintenance"],
+    features: [
+      "1 property",
+      "Up to 10 appliances/systems",
+      "10 AI questions per day",
+      "10 AI auto-fills in total",
+      "Tasks, reminders & documents",
+    ],
   },
   {
     id: "plus",
     name: "Plus",
     price: "$4.99",
     period: "/month",
-    features: ["Unlimited systems", "Unlimited documents", "Cost forecasting", "Advanced reminders", "Cloud backup"],
+    features: [
+      "Unlimited appliances/systems",
+      "Unlimited AI questions",
+      "Unlimited AI auto-fill",
+      "Costs: spending & 12-month forecast",
+    ],
   },
   {
     id: "premium",

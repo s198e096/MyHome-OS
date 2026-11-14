@@ -178,6 +178,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
+  // The Free plan gets 10 AI auto-fills in total, shared with
+  // scan-warranty-docs. The count lives in the database (claim_ai_use,
+  // migration 0031) so it can't be bypassed from the app; paid plans come back
+  // as unlimited. A use is claimed up front and handed back below if the scan
+  // then fails, so errors don't cost the user one of their auto-fills.
+  // deno-lint-ignore no-explicit-any
+  let admin: any = null;
+  let claimId: string | null = null;
+
   try {
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
@@ -204,6 +213,23 @@ Deno.serve(async (req) => {
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY is not configured");
+
+    admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: claim, error: claimError } = await admin.rpc("claim_ai_use", { p_user_id: user.id, p_kind: "fill" });
+    if (claimError) throw new Error(`Could not check your plan: ${claimError.message}`);
+    if (!claim.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: `You've used all ${claim.limit} free AI auto-fills.`,
+          code: "limit_reached",
+          kind: "fill",
+          limit: claim.limit,
+          resetsAt: claim.resetsAt,
+        }),
+        { status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+    claimId = claim.claimId ?? null;
 
     const imageResp = await fetch(photoUrl);
     if (!imageResp.ok) throw new Error("Could not fetch the photo");
@@ -270,6 +296,7 @@ Rules:
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (admin && claimId) await admin.from("ai_usage").delete().eq("id", claimId);
     console.error("scan-system-label failed:", err instanceof Error ? err.stack || err.message : err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500,

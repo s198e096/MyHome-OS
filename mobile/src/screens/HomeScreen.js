@@ -79,7 +79,8 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
         <SelectModal
           visible={actionsOpen}
           title="Actions"
-          options={HOME_ACTIONS}
+          // Expenses live in the Costs section, which is a paid-plan feature.
+          options={profile.plan === "free" ? HOME_ACTIONS.filter((a) => a.value !== "expense") : HOME_ACTIONS}
           selectedValue={null}
           onSelect={handleAction}
           onClose={() => setActionsOpen(false)}

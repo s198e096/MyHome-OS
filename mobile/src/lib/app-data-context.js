@@ -13,6 +13,8 @@ import {
   createPortalSession,
   createReportCheckoutSession,
   loadReportPurchases,
+  loadAiUsage,
+  loadPlan,
   loadEnergyChecks,
   updateEnergyCheckStatus,
   removeStoredPhoto,
@@ -32,6 +34,8 @@ export function useAppData() {
   return value;
 }
 
+const NO_AI_USAGE = { chatUsed: 0, chatResetsAt: null, fillUsed: 0 };
+
 export function AppDataProvider({ children }) {
   const { session } = useSession();
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -44,11 +48,13 @@ export function AppDataProvider({ children }) {
   const [furniture, setFurniture] = useState([]);
   const [energyChecks, setEnergyChecks] = useState([]);
   const [reportPurchases, setReportPurchases] = useState([]);
+  const [aiUsage, setAiUsage] = useState(NO_AI_USAGE);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (!session) {
       setReportPurchases([]);
+      setAiUsage(NO_AI_USAGE);
       setDataLoaded(false);
       setSystems([]);
       setTasks([]);
@@ -71,7 +77,7 @@ export function AppDataProvider({ children }) {
       // profiles-table write (which needs a session the user doesn't have yet).
       const meta = session.user.user_metadata || {};
       const signupMeta = { firstName: meta.first_name, lastName: meta.last_name, phone: meta.phone };
-      const [all, profileRow, checksResult, purchasesResult] = await Promise.all([
+      const [all, profileRow, checksResult, purchasesResult, usageResult] = await Promise.all([
         loadAllData(),
         loadProfile(session.user.id, fallbackName, signupMeta),
         loadEnergyChecks().catch((err) => {
@@ -81,9 +87,12 @@ export function AppDataProvider({ children }) {
         // Tolerates the purchases table not existing yet, so the app still
         // loads before that migration has been run.
         loadReportPurchases().catch(() => []),
+        // Same tolerance for the AI-usage table (migration 0031).
+        loadAiUsage().catch(() => NO_AI_USAGE),
       ]);
       if (cancelled) return;
       setReportPurchases(purchasesResult);
+      setAiUsage(usageResult);
       setSystems(all.systems);
       setTasks(all.tasks);
       setExpenses(all.expenses);
@@ -459,6 +468,24 @@ export function AppDataProvider({ children }) {
     return createPortalSession();
   }
 
+  // Plans change in Stripe's browser page, not in the app, and the webhook
+  // updates the profile a moment later - so re-read it once the browser closes
+  // (and whenever a limit message says "upgrade") instead of waiting for the
+  // next app launch to notice the new plan.
+  async function refreshPlan() {
+    const plan = await loadPlan(session.user.id);
+    if (plan) setProfile((p) => ({ ...p, plan }));
+    return plan;
+  }
+
+  // Free-plan AI allowance used so far (see loadAiUsage). Called after each AI
+  // question / auto-fill so the "N left" counters stay current.
+  async function refreshAiUsage() {
+    const usage = await loadAiUsage();
+    setAiUsage(usage);
+    return usage;
+  }
+
   // The current (unexpired) purchase of a paid report, or null. A purchase
   // keeps working until the expiry the server stamped on it.
   function activeReportPurchase(type) {
@@ -496,6 +523,10 @@ export function AppDataProvider({ children }) {
     monthlyReserve,
     monthlyReserveBreakdown,
     addSystemAtLimit,
+    isFreePlan: profile?.plan === "free",
+    aiUsage,
+    refreshAiUsage,
+    refreshPlan,
     updateEnergyCheck,
     createQuickTask,
     toggleTask,

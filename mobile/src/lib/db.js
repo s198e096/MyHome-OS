@@ -247,7 +247,8 @@ const profileToRow = (p) => ({
   has_fireplace: p.hasFireplace ?? null,
   fireplace_type: p.fireplaceType ?? null,
   hoa_fee: p.hoaFee ?? null,
-  plan: p.plan,
+  // No plan here on purpose: only the Stripe webhook changes it (the database
+  // ignores anything else), so sending the app's possibly stale copy is moot.
   onboarding_completed: p.onboardingCompleted,
   tutorial_completed: p.tutorialCompleted,
 });
@@ -369,8 +370,9 @@ export async function fetchPropertyDetails(address) {
 // function's own message out so the screen can say what actually went wrong.
 async function describeFunctionError(error) {
   let detail = "";
+  let body = null;
   try {
-    const body = await error.context.json();
+    body = await error.context.json();
     detail = body?.error || body?.message || JSON.stringify(body);
   } catch {
     // No readable reply body (e.g. the request never reached the function).
@@ -379,7 +381,36 @@ async function describeFunctionError(error) {
   err.status = error?.context?.status ?? null;
   err.detail = detail;
   err.network = error?.name === "FunctionsFetchError";
+  // Set by the AI functions when a Free-plan allowance is used up (as opposed
+  // to any other failure): the kind ("chat" or "fill") and when it frees up.
+  err.limitReached = body?.code === "limit_reached";
+  err.limitKind = body?.kind ?? null;
+  err.resetsAt = body?.resetsAt ?? null;
   return err;
+}
+
+// The signed-in user's current plan straight from the database - the Stripe
+// webhook changes it after checkout, so the copy the app loaded can be stale.
+export async function loadPlan(userId) {
+  const { data, error } = await supabase.from("profiles").select("plan").eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  return data?.plan ?? null;
+}
+
+// How much of the Free plan's AI allowance the signed-in user has used:
+// questions asked in the last 24 hours (and when the oldest one frees up) and
+// AI auto-fills used in total. Read-only - the edge functions write these rows,
+// and only for Free accounts, so a paid account just comes back as zeros.
+export async function loadAiUsage() {
+  const { data, error } = await supabase.from("ai_usage").select("kind, used_at").order("used_at", { ascending: true });
+  if (error) throw error;
+  const DAY = 24 * 60 * 60 * 1000;
+  const chat = data.filter((r) => r.kind === "chat" && new Date(r.used_at).getTime() > Date.now() - DAY);
+  return {
+    chatUsed: chat.length,
+    chatResetsAt: chat.length ? new Date(new Date(chat[0].used_at).getTime() + DAY).toISOString() : null,
+    fillUsed: data.filter((r) => r.kind === "fill").length,
+  };
 }
 
 export async function askAssistant(messages) {

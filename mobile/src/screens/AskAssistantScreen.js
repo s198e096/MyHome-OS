@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pressable, ActivityIndicator, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Send, Sparkles, Menu, SquarePen, Trash2, X } from "lucide-react-native";
-import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR } from "../lib/constants.js";
+import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, FREE_AI_CHAT_LIMIT } from "../lib/constants.js";
 import { askAssistant } from "../lib/db.js";
 import { useChat } from "../lib/chat-context.js";
+import { useAppData } from "../lib/app-data-context.js";
 import ChatMessageText from "../components/ChatMessageText.js";
 
 const EXAMPLE_QUESTIONS = [
@@ -25,6 +26,16 @@ function chatErrorText(err) {
   return __DEV__ && (err?.detail || err?.status)
     ? `${base}\n[${err.status ?? "no status"}] ${String(err.detail || "").slice(0, 300)}`
     : base;
+}
+
+// "in about 3 hours" - when the oldest of today's questions ages out and a
+// free question comes back.
+function resetsInText(iso) {
+  if (!iso) return "tomorrow";
+  const mins = Math.max(1, Math.round((new Date(iso).getTime() - Date.now()) / 60000));
+  if (mins < 60) return `in about ${mins} minute${mins === 1 ? "" : "s"}`;
+  const hrs = Math.round(mins / 60);
+  return `in about ${hrs} hour${hrs === 1 ? "" : "s"}`;
 }
 
 // "Hi Rami, what would you like to do?" - first name only, capitalized. The
@@ -110,14 +121,26 @@ function ConversationDrawer({ visible, conversations, activeId, onSelect, onNew,
   );
 }
 
-export default function AskAssistantScreen({ onBack, initialInput, name, autoSend, startNew }) {
+export default function AskAssistantScreen({ onBack, onUpgrade, initialInput, name, autoSend, startNew }) {
   const insets = useSafeAreaInsets();
+  const { isFreePlan, aiUsage, refreshAiUsage } = useAppData();
+  // Set when the server says the free allowance is gone, in case that is newer
+  // than the usage the app last loaded (e.g. questions asked on another device).
+  const [serverLimitResetsAt, setServerLimitResetsAt] = useState(undefined);
   const { messages, setMessages, conversations, activeId, startNewConversation, switchConversation, deleteConversation } = useChat();
   const [input, setInput] = useState(autoSend ? "" : initialInput || "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const scrollRef = useRef(null);
+
+  // Free plan: FREE_AI_CHAT_LIMIT questions per rolling 24 hours. The server is
+  // what actually enforces it; this just shows the count and stops the user
+  // typing a question that would be turned away.
+  const questionsLeft = Math.max(0, FREE_AI_CHAT_LIMIT - aiUsage.chatUsed);
+  const limitResetsAt = serverLimitResetsAt !== undefined ? serverLimitResetsAt : aiUsage.chatResetsAt;
+  const limitStillOn = !limitResetsAt || new Date(limitResetsAt).getTime() > Date.now();
+  const chatLocked = isFreePlan && limitStillOn && (serverLimitResetsAt !== undefined || questionsLeft === 0);
 
   // Jump straight to the latest message when reopening a conversation that
   // already has history, instead of landing scrolled to the top.
@@ -157,7 +180,7 @@ export default function AskAssistantScreen({ onBack, initialInput, name, autoSen
   // this function already needs it).
   async function send(text, { fresh = false } = {}) {
     const question = text.trim();
-    if (!question || sending) return;
+    if (!question || sending || chatLocked) return;
     setError("");
     setInput("");
     const next = fresh ? [{ role: "user", content: question }] : [...messages, { role: "user", content: question }];
@@ -167,8 +190,18 @@ export default function AskAssistantScreen({ onBack, initialInput, name, autoSen
     try {
       const reply = await askAssistant(next);
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
+      if (isFreePlan) refreshAiUsage().catch(() => {});
     } catch (err) {
-      setError(chatErrorText(err));
+      if (err?.limitReached) {
+        // Not an error as such: take the unanswered question back out of the
+        // conversation and show the upgrade card in place of the input.
+        setMessages(fresh ? [] : messages);
+        setInput(question);
+        setServerLimitResetsAt(err.resetsAt ?? null);
+        refreshAiUsage().catch(() => {});
+      } else {
+        setError(chatErrorText(err));
+      }
     } finally {
       setSending(false);
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
@@ -247,31 +280,58 @@ export default function AskAssistantScreen({ onBack, initialInput, name, autoSen
           )}
         </ScrollView>
 
-        {error && <Text className="text-[12px] px-4 mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+        {!!error && <Text className="text-[12px] px-4 mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 
-        <View
-          className="flex-row items-center gap-2 px-4"
-          style={{ paddingTop: 8, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: "#E0E8D3" }}
-        >
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask anything..."
-            className="flex-1 px-3.5 py-2.5 rounded-full text-[13.5px]"
-            style={{ borderWidth: 1, borderColor: "#E0E8D3", backgroundColor: "white" }}
-            returnKeyType="send"
-            onSubmitEditing={() => send(input)}
-            editable={!sending}
-          />
-          <Pressable
-            onPress={() => send(input)}
-            disabled={sending || !input.trim()}
-            className="rounded-full items-center justify-center"
-            style={{ width: 40, height: 40, backgroundColor: PRIMARY, opacity: sending || !input.trim() ? 0.5 : 1 }}
+        {chatLocked && (
+          <View
+            className="px-4"
+            style={{ paddingTop: 12, paddingBottom: insets.bottom + 12, borderTopWidth: 1, borderTopColor: "#E0E8D3" }}
           >
-            <Send size={17} color="white" />
-          </Pressable>
-        </View>
+            <View className="rounded-2xl p-3.5" style={{ backgroundColor: ACCENT_YELLOW }}>
+              <Text className="text-[13.5px] font-semibold mb-1" style={{ color: PRIMARY }}>
+                You&apos;ve used your {FREE_AI_CHAT_LIMIT} free questions for today
+              </Text>
+              <Text className="text-[12.5px] mb-3" style={{ color: PRIMARY, lineHeight: 18 }}>
+                You can ask again {resetsInText(limitResetsAt)}, or upgrade for unlimited questions.
+              </Text>
+              <Pressable onPress={onUpgrade} className="self-start rounded-full px-4 py-2" style={{ backgroundColor: PRIMARY }}>
+                <Text className="text-[12.5px] font-semibold text-white">See plans</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {isFreePlan && !chatLocked && (
+          <Text className="text-[11.5px] text-stone-400 text-center mb-1.5">
+            {questionsLeft} of {FREE_AI_CHAT_LIMIT} free questions left today
+          </Text>
+        )}
+
+        {!chatLocked && (
+          <View
+            className="flex-row items-center gap-2 px-4"
+            style={{ paddingTop: 8, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: "#E0E8D3" }}
+          >
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder="Ask anything..."
+              className="flex-1 px-3.5 py-2.5 rounded-full text-[13.5px]"
+              style={{ borderWidth: 1, borderColor: "#E0E8D3", backgroundColor: "white" }}
+              returnKeyType="send"
+              onSubmitEditing={() => send(input)}
+              editable={!sending}
+            />
+            <Pressable
+              onPress={() => send(input)}
+              disabled={sending || !input.trim()}
+              className="rounded-full items-center justify-center"
+              style={{ width: 40, height: 40, backgroundColor: PRIMARY, opacity: sending || !input.trim() ? 0.5 : 1 }}
+            >
+              <Send size={17} color="white" />
+            </Pressable>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

@@ -18,6 +18,8 @@ import {
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
+import { useAiFill } from "../lib/ai-fill.js";
+import AiFillNote from "../components/AiFillNote.js";
 import { manufactureDateToInstalled } from "../lib/manufacture-date.js";
 import { isManualsLibUrl } from "../lib/manual-links.js";
 import { scannedModelNumber } from "../lib/scan-result.js";
@@ -340,6 +342,9 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
 function SystemDetailsStep({ system, onDone }) {
   const insets = useSafeAreaInsets();
   const { updateSystem, attachManualDocument, addDocument, warranties, addWarranty, deleteWarranty } = useAppData();
+  // Free plan: 10 AI auto-fills in total. Once they're gone, photos are still
+  // saved - they just aren't read - and the note under each picker says why.
+  const aiFill = useAiFill();
   const isStructure = ONBOARDING_STRUCTURE_CATEGORIES.includes(system.category);
   // Toilets rarely have an easy-to-photograph label (it's often inside the
   // tank, if printed at all) — still try to read one if the photo happens
@@ -430,10 +435,13 @@ function SystemDetailsStep({ system, onDone }) {
       if (!filledSomething && !labelOptional) {
         setScanError("Couldn't read the label clearly. You can fill in the fields manually.");
       }
-    } catch {
-      setScanError("AI scan failed. You can fill in the fields manually.");
+    } catch (err) {
+      // A used-up allowance isn't a failure: the note under the pickers
+      // explains it once the count is re-read below.
+      if (!err?.limitReached) setScanError("AI scan failed. You can fill in the fields manually.");
     } finally {
       setScanning(false);
+      aiFill.refresh();
     }
   }
 
@@ -448,7 +456,7 @@ function SystemDetailsStep({ system, onDone }) {
     // actual manufacturer brand.
     const isGenericApplianceLabel = system.category === "appliance" && COMMON_APPLIANCES.includes(sysBrand.replace(/ \d+$/, ""));
     const hasRealBrand = sysBrand && !GENERIC_UNIT_LABELS.has(sysBrand) && !isGenericApplianceLabel;
-    if (photoUrl && !isStructure && !hasRealBrand && !sysModel) {
+    if (photoUrl && !isStructure && !hasRealBrand && !sysModel && !aiFill.exhausted) {
       await runScan();
     }
     setSubStep("receipt");
@@ -482,15 +490,16 @@ function SystemDetailsStep({ system, onDone }) {
       if (!result.purchaseDate && result.purchasePrice == null && confident.length === 0 && !estimate) {
         setWarrantyScanError("Couldn't find a purchase date, price, or warranty info there. You can fill them in manually.");
       }
-    } catch {
-      setWarrantyScanError("Couldn't read those documents. You can fill in purchase date and warranty manually.");
+    } catch (err) {
+      if (!err?.limitReached) setWarrantyScanError("Couldn't read those documents. You can fill in purchase date and warranty manually.");
     } finally {
       setScanningWarranty(false);
+      aiFill.refresh();
     }
   }
 
   async function handleDocumentsContinue() {
-    if (receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) {
+    if ((receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) && !aiFill.exhausted) {
       await runWarrantyScan();
     }
     setSubStep("fields");
@@ -594,6 +603,8 @@ function SystemDetailsStep({ system, onDone }) {
 
           <PhotoPicker photoUrl={photoUrl} onChange={setPhotoUrl} />
 
+          {!isStructure && <AiFillNote />}
+
           {scanning && (
             <View className="flex-row items-center gap-2 mb-3">
               <ActivityIndicator size="small" color={PRIMARY} />
@@ -647,6 +658,8 @@ function SystemDetailsStep({ system, onDone }) {
               <MultiPhotoPicker label="Warranty certificate" photoUrls={warrantyPhotoUrls} onChange={setWarrantyPhotoUrls} />
             </>
           )}
+
+          <AiFillNote />
 
           {scanningWarranty && (
             <View className="flex-row items-center gap-2 mb-3 mt-1">

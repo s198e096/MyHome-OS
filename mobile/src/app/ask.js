@@ -12,6 +12,7 @@ export default function Ask() {
   return (
     <AskAssistantScreen
       onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+      onUpgrade={() => router.push("/account/plan")}
       initialInput={prefill}
       name={name}
       autoSend={autoSend === "1"}
