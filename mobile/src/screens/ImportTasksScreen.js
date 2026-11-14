@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Check } from "lucide-react-native";
 import { PRIMARY, COMMON_SYSTEM_TASKS, recurrenceLabel, systemShortName, systemIcon } from "../lib/constants.js";
+import { TODAY } from "../lib/forecast.js";
 import { DateField } from "../components/ItemFields.js";
 
 // Two steps: pick a system, then pick which of its common maintenance
@@ -12,7 +13,12 @@ export default function ImportTasksScreen({ systems, tasks, onBack, onImport }) 
   const insets = useSafeAreaInsets();
   const [sys, setSys] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
-  const [startDate, setStartDate] = useState("");
+  // The date is effectively required (the Import button stays disabled
+  // without one), so it starts out already set to today rather than using
+  // DateField's "optional" collapsed state — that only shows today as a
+  // visual default without committing it until the user touches the picker,
+  // which left the button disabled until you changed the date once.
+  const [startDate, setStartDate] = useState(() => TODAY.toISOString().slice(0, 10));
   const [importing, setImporting] = useState(false);
 
   function toggle(title) {
@@ -111,7 +117,7 @@ export default function ImportTasksScreen({ systems, tasks, onBack, onImport }) 
             })}
           </View>
 
-          <DateField label="Start date" value={startDate} onChange={setStartDate} optional />
+          <DateField label="Start date" value={startDate} onChange={setStartDate} />
 
           <Pressable
             onPress={handleImport}

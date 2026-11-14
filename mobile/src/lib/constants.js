@@ -180,11 +180,13 @@ export const COMMON_SYSTEM_TASKS = {
   water_heater: [
     { title: "Flush water heater tank", recurrence: "annually" },
     { title: "Test temperature & pressure relief valve", recurrence: "annually" },
+    { title: "Inspect anode rod", recurrence: "annually" },
   ],
   roof: [
     { title: "Inspect roof for damage", recurrence: "annually" },
     { title: "Clean gutters", recurrence: "semiannually" },
   ],
+  garage_door: [{ title: "Lubricate rollers, bearings, hinges as specified by manufacturer", recurrence: "annually" }],
   plumbing: [
     { title: "Inspect for leaks", recurrence: "semiannually" },
     { title: "Check water pressure", recurrence: "annually" },
