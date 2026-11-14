@@ -1,11 +1,13 @@
 import { useRouter } from "expo-router";
 import { useAppData } from "../../../lib/app-data-context.js";
+import { useTutorial } from "../../../lib/tutorial-context.js";
 import AnimatedTabScreen from "../../../components/AnimatedTabScreen.js";
 import CostsScreen from "../../../screens/CostsScreen.js";
 
 export default function Costs() {
   const router = useRouter();
   const { expenses, systemById, spentThisYear, next12mo, next12moBreakdown, monthlyReserve, monthlyReserveBreakdown } = useAppData();
+  const tutorial = useTutorial();
 
   return (
     <AnimatedTabScreen tabKey="costs">
@@ -17,6 +19,7 @@ export default function Costs() {
         next12moBreakdown={next12moBreakdown}
         monthlyReserve={monthlyReserve}
         monthlyReserveBreakdown={monthlyReserveBreakdown}
+        tutorial={tutorial?.step === 2 ? tutorial : null}
         onAdd={() => router.push("/costs/new")}
         onViewLog={(filter) =>
           router.push(

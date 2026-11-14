@@ -210,6 +210,7 @@ const rowToProfile = (r) => ({
   hoaFee: r.hoa_fee,
   plan: r.plan,
   onboardingCompleted: r.onboarding_completed,
+  tutorialCompleted: r.tutorial_completed,
   avatarType: r.avatar_type,
 });
 
@@ -248,6 +249,7 @@ const profileToRow = (p) => ({
   hoa_fee: p.hoaFee ?? null,
   plan: p.plan,
   onboarding_completed: p.onboardingCompleted,
+  tutorial_completed: p.tutorialCompleted,
 });
 
 async function loadTable(table, mapper) {

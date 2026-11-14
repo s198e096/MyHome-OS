@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useAppData } from "../../../lib/app-data-context.js";
 import { useSession } from "../../../lib/auth-context.js";
+import { useTutorial } from "../../../lib/tutorial-context.js";
 import { REPORT_CATALOG } from "../../../lib/reports/catalog.js";
 import { createReportPdf, shareReportPdf } from "../../../lib/reports/generate.js";
 import AnimatedTabScreen from "../../../components/AnimatedTabScreen.js";
@@ -17,6 +18,7 @@ export default function Account() {
     activeReportPurchase, buyReport, refreshReportPurchases, saveProfile,
   } = useAppData();
   const { signOut } = useSession();
+  const tutorial = useTutorial();
 
   // Per-report screen state: { busy, status, error, paymentPending }
   const [ui, setUi] = useState({});
@@ -99,6 +101,7 @@ export default function Account() {
         onManagePlan={() => router.push("/account/plan")}
         onSignOut={signOut}
         onChangeAvatar={(type) => saveProfile({ avatarType: type })}
+        tutorial={tutorial?.step === 4 ? tutorial : null}
       />
     </AnimatedTabScreen>
   );

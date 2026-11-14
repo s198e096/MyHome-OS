@@ -3,11 +3,12 @@ import { Home, Wrench, CalendarCheck, Banknote, FileText, User } from "lucide-re
 import { PRIMARY } from "../../lib/constants.js";
 import { useAppData } from "../../lib/app-data-context.js";
 import { TabTransitionProvider } from "../../lib/tab-transition.js";
+import { TutorialProvider } from "../../lib/tutorial-context.js";
 import OnboardingScreen from "../../screens/OnboardingScreen.js";
 import PropertyValuePrompt from "../../components/PropertyValuePrompt.js";
 
 function TabsNavigator() {
-  const { dataLoaded, profile, resolvePropertyValuePrompt } = useAppData();
+  const { dataLoaded, profile, resolvePropertyValuePrompt, saveProfile } = useAppData();
   if (!dataLoaded) return null;
   if (!profile.onboardingCompleted) return <OnboardingScreen />;
 
@@ -21,23 +22,25 @@ function TabsNavigator() {
           onAccept={() => resolvePropertyValuePrompt(true)}
         />
       )}
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: PRIMARY,
-          tabBarInactiveTintColor: "#9C978C",
-          tabBarLabelStyle: { fontSize: 10 },
-        }}
-      >
-        <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ color, size }) => <Home size={size} color={color} /> }} />
-        <Tabs.Screen name="systems" options={{ title: "Systems", tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} /> }} />
-        <Tabs.Screen name="tasks" options={{ title: "Tasks", tabBarIcon: ({ color, size }) => <CalendarCheck size={size} color={color} /> }} />
-        <Tabs.Screen name="costs" options={{ title: "Costs", tabBarIcon: ({ color, size }) => <Banknote size={size} color={color} /> }} />
-        <Tabs.Screen name="docs" options={{ title: "Docs", tabBarIcon: ({ color, size }) => <FileText size={size} color={color} /> }} />
-        <Tabs.Screen name="account" options={{ title: "Account", tabBarIcon: ({ color, size }) => <User size={size} color={color} /> }} />
-        <Tabs.Screen name="furniture" options={{ href: null }} />
-        <Tabs.Screen name="energy-audit" options={{ href: null }} />
-      </Tabs>
+      <TutorialProvider active={!profile.tutorialCompleted} onFinish={() => saveProfile({ tutorialCompleted: true })}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarActiveTintColor: PRIMARY,
+            tabBarInactiveTintColor: "#9C978C",
+            tabBarLabelStyle: { fontSize: 10 },
+          }}
+        >
+          <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ color, size }) => <Home size={size} color={color} /> }} />
+          <Tabs.Screen name="systems" options={{ title: "Systems", tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} /> }} />
+          <Tabs.Screen name="tasks" options={{ title: "Tasks", tabBarIcon: ({ color, size }) => <CalendarCheck size={size} color={color} /> }} />
+          <Tabs.Screen name="costs" options={{ title: "Costs", tabBarIcon: ({ color, size }) => <Banknote size={size} color={color} /> }} />
+          <Tabs.Screen name="docs" options={{ title: "Docs", tabBarIcon: ({ color, size }) => <FileText size={size} color={color} /> }} />
+          <Tabs.Screen name="account" options={{ title: "Account", tabBarIcon: ({ color, size }) => <User size={size} color={color} /> }} />
+          <Tabs.Screen name="furniture" options={{ href: null }} />
+          <Tabs.Screen name="energy-audit" options={{ href: null }} />
+        </Tabs>
+      </TutorialProvider>
     </TabTransitionProvider>
   );
 }

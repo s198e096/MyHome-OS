@@ -1,11 +1,13 @@
 import { useRouter } from "expo-router";
 import { useAppData } from "../../lib/app-data-context.js";
+import { useTutorial } from "../../lib/tutorial-context.js";
 import AnimatedTabScreen from "../../components/AnimatedTabScreen.js";
 import HomeScreen from "../../screens/HomeScreen.js";
 
 export default function Home() {
   const router = useRouter();
   const data = useAppData();
+  const tutorial = useTutorial();
 
   return (
     <AnimatedTabScreen tabKey="home">
@@ -22,6 +24,7 @@ export default function Home() {
       onNavigate={(path) => router.push(path)}
       onCompleteTask={(t) => router.push(`/tasks/${t.id}/complete`)}
       onEditTask={(t) => router.push(`/tasks/${t.id}/edit`)}
+      tutorial={tutorial?.step === 0 ? tutorial : null}
     />
     </AnimatedTabScreen>
   );

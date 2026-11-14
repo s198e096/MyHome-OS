@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, ScrollView, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pencil, ChevronRight } from "lucide-react-native";
@@ -9,15 +9,25 @@ import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import LedgerRow from "../components/LedgerRow.js";
 import ReportsSection from "../components/ReportsSection.js";
 import Avatar from "../components/Avatar.js";
+import TutorialTip, { Spotlight } from "../components/TutorialTip.js";
 
 const AVATAR_LABEL = { initials: "Initials", man: "Man", woman: "Woman" };
 
-export default function AccountScreen({ profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut, onChangeAvatar }) {
+export default function AccountScreen({
+  profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut, onChangeAvatar, tutorial,
+}) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
   const insets = useSafeAreaInsets();
   const featureChips = buildFeatureSummary(profile);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const avatarType = profile.avatarType || "initials";
+  const scrollRef = useRef(null);
+
+  // Reports sits near the bottom of the page — scrolls it into view when
+  // this step becomes active, rather than leaving the highlight off-screen.
+  useEffect(() => {
+    if (tutorial) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+  }, [tutorial]);
 
   function selectAvatarType(type) {
     setAvatarPickerOpen(false);
@@ -25,7 +35,7 @@ export default function AccountScreen({ profile, reports, onBuyReport, onGenerat
   }
 
   return (
-    <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-[17px] font-semibold text-stone-900">Account</Text>
         <Pressable onPress={onEdit} className="flex-row items-center gap-1">
@@ -123,7 +133,20 @@ export default function AccountScreen({ profile, reports, onBuyReport, onGenerat
         </>
       )}
 
-      <ReportsSection reports={reports} onBuy={onBuyReport} onGenerate={onGenerateReport} onRecheck={onRecheckReport} />
+      <Spotlight active={!!tutorial}>
+        <ReportsSection reports={reports} onBuy={onBuyReport} onGenerate={onGenerateReport} onRecheck={onRecheckReport} />
+      </Spotlight>
+
+      {!!tutorial && (
+        <TutorialTip
+          step={tutorial.step}
+          total={tutorial.total}
+          text="Generate a Home Sale or Insurance Inventory PDF report anytime, pulling in everything you've logged so far."
+          onNext={tutorial.next}
+          onSkip={tutorial.skip}
+          className="mb-4"
+        />
+      )}
 
       <Pressable onPress={onSignOut} className="w-full py-2.5 rounded-lg items-center mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         <Text className="text-[13.5px] font-semibold" style={{ color: STATUS_COLOR.red }}>Sign out</Text>

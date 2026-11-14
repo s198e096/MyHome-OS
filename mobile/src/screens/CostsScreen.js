@@ -6,6 +6,7 @@ import Svg, { Path, Circle } from "react-native-svg";
 import { PRIMARY, systemShortName } from "../lib/constants.js";
 import { CURRENT_YEAR, ALL_YEARS, money, yearOf, expenseYears, expensesBySystemForYear, timeSpentBySystemForYear } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
+import TutorialTip, { Spotlight } from "../components/TutorialTip.js";
 
 // Validated 8-slot categorical palette (see the dataviz skill) — passes
 // adjacent-pair colorblind-safety checks in this fixed order, which is
@@ -198,6 +199,7 @@ export default function CostsScreen({
   monthlyReserveBreakdown,
   onAdd,
   onViewLog,
+  tutorial,
 }) {
   const insets = useSafeAreaInsets();
   const years = expenseYears(expenses);
@@ -225,38 +227,53 @@ export default function CostsScreen({
       </View>
 
       <Text className="text-[12px] font-semibold text-stone-500 mb-1">Financial outlook</Text>
-      <View className="flex-row gap-2 mb-2">
-        <Pressable
-          onPress={() => onViewLog({ year: CURRENT_YEAR })}
-          className="flex-1 rounded-xl bg-white p-3"
-          style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
-        >
-          <Text className="text-[11px] text-stone-400">Spent this year</Text>
-          <Text className="text-[18px] font-semibold text-stone-900">{money(spentThisYear)}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setNext12moExplainOpen(true)}
-          className="flex-1 rounded-xl bg-white p-3"
-          style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
-        >
-          <View className="flex-row items-center gap-1">
-            <Text className="text-[11px] text-stone-400">Next 12 months</Text>
-            <Info size={11} color="#B8B4A8" />
+      <Spotlight active={!!tutorial}>
+        <View>
+          <View className="flex-row gap-2 mb-2">
+            <Pressable
+              onPress={() => onViewLog({ year: CURRENT_YEAR })}
+              className="flex-1 rounded-xl bg-white p-3"
+              style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+            >
+              <Text className="text-[11px] text-stone-400">Spent this year</Text>
+              <Text className="text-[18px] font-semibold text-stone-900">{money(spentThisYear)}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setNext12moExplainOpen(true)}
+              className="flex-1 rounded-xl bg-white p-3"
+              style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+            >
+              <View className="flex-row items-center gap-1">
+                <Text className="text-[11px] text-stone-400">Next 12 months</Text>
+                <Info size={11} color="#B8B4A8" />
+              </View>
+              <Text className="text-[18px] font-semibold text-stone-900">{money(Math.round(next12mo))}</Text>
+            </Pressable>
           </View>
-          <Text className="text-[18px] font-semibold text-stone-900">{money(Math.round(next12mo))}</Text>
-        </Pressable>
-      </View>
-      <Pressable
-        onPress={() => setReserveExplainOpen(true)}
-        className="rounded-xl bg-white p-3 mb-4"
-        style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
-      >
-        <View className="flex-row items-center gap-1">
-          <Text className="text-[11px] text-stone-400">Recommended monthly reserve</Text>
-          <Info size={11} color="#B8B4A8" />
+          <Pressable
+            onPress={() => setReserveExplainOpen(true)}
+            className="rounded-xl bg-white p-3 mb-4"
+            style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+          >
+            <View className="flex-row items-center gap-1">
+              <Text className="text-[11px] text-stone-400">Recommended monthly reserve</Text>
+              <Info size={11} color="#B8B4A8" />
+            </View>
+            <Text className="text-[18px] font-semibold text-stone-900">{money(monthlyReserve)}/mo</Text>
+          </Pressable>
         </View>
-        <Text className="text-[18px] font-semibold text-stone-900">{money(monthlyReserve)}/mo</Text>
-      </Pressable>
+      </Spotlight>
+
+      {!!tutorial && (
+        <TutorialTip
+          step={tutorial.step}
+          total={tutorial.total}
+          text="See what you've spent this year, a 12-month forecast, and how much to set aside monthly for upcoming replacements."
+          onNext={tutorial.next}
+          onSkip={tutorial.skip}
+          className="mb-4"
+        />
+      )}
 
       {selectedYear != null ? (
         <>

@@ -2,11 +2,12 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, ChevronRight, FileText } from "lucide-react-native";
 import { PRIMARY, systemShortName, systemIcon } from "../lib/constants.js";
+import TutorialTip, { Spotlight } from "../components/TutorialTip.js";
 
 // First page of Documents: a system per row (only systems that actually
 // have documents), tap through to see that system's documents — rather
 // than one flat list of every document across every system.
-export default function DocsScreen({ documents, systems, onSelectSystem, onSelectGeneral, onAdd }) {
+export default function DocsScreen({ documents, systems, onSelectSystem, onSelectGeneral, onAdd, tutorial }) {
   const insets = useSafeAreaInsets();
 
   const groups = systems
@@ -19,10 +20,23 @@ export default function DocsScreen({ documents, systems, onSelectSystem, onSelec
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-[17px] font-semibold text-stone-900">Documents</Text>
-        <Pressable onPress={onAdd} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
-          <Plus size={16} color="white" />
-        </Pressable>
+        <Spotlight active={!!tutorial}>
+          <Pressable onPress={onAdd} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
+            <Plus size={16} color="white" />
+          </Pressable>
+        </Spotlight>
       </View>
+
+      {!!tutorial && (
+        <TutorialTip
+          step={tutorial.step}
+          total={tutorial.total}
+          text="Tap + to store a warranty, receipt, or manual — they're organized by system automatically, so they're easy to find later."
+          onNext={tutorial.next}
+          onSkip={tutorial.skip}
+          className="mb-3"
+        />
+      )}
 
       <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         {groups.map(({ sys, count }, i) => {

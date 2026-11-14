@@ -9,6 +9,7 @@ import { CURRENT_YEAR, CURRENT_MONTH, daysUntil, money } from "../lib/forecast.j
 import { fmtAddress, fmtPropertyName } from "../lib/address-format.js";
 import SelectModal from "../components/SelectModal.js";
 import Avatar from "../components/Avatar.js";
+import TutorialTip, { Spotlight } from "../components/TutorialTip.js";
 
 // Where "Source: RentCast" on the property value card links to: RentCast's
 // property data page, which describes the value estimates the number comes from.
@@ -22,7 +23,7 @@ const HOME_ACTIONS = [
   { value: "upgrade", label: "Upgrade a system" },
 ];
 
-function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate }) {
+function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate, tutorial }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   const insets = useSafeAreaInsets();
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -68,11 +69,13 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
         </View>
       )}
 
-      <View className="items-center mb-4">
-        <Pressable onPress={() => setActionsOpen(true)} className="flex-row items-center justify-center gap-2 bg-white rounded-2xl px-5 py-3">
-          <Text className="text-[15.5px] font-semibold" style={{ color: PRIMARY }}>What would you like to do?</Text>
-          <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
-        </Pressable>
+      <View className="items-center mb-4" style={{ paddingHorizontal: 16, width: "100%" }}>
+        <Spotlight active={!!tutorial}>
+          <Pressable onPress={() => setActionsOpen(true)} className="flex-row items-center justify-center gap-2 bg-white rounded-2xl px-5 py-3">
+            <Text className="text-[15.5px] font-semibold" style={{ color: PRIMARY }}>What would you like to do?</Text>
+            <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#F472B6" }} />
+          </Pressable>
+        </Spotlight>
         <SelectModal
           visible={actionsOpen}
           title="Actions"
@@ -81,6 +84,16 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
           onSelect={handleAction}
           onClose={() => setActionsOpen(false)}
         />
+        {!!tutorial && (
+          <TutorialTip
+            step={tutorial.step}
+            total={tutorial.total}
+            text="Tap here anytime to report a problem with a system, log an expense, upgrade a system, or chat with an AI that knows your home."
+            onNext={tutorial.next}
+            onSkip={tutorial.skip}
+            className="w-full mt-3"
+          />
+        )}
       </View>
 
       <View style={{ paddingHorizontal: 16 }}>
@@ -216,7 +229,7 @@ function OverdueTasksList({ tasks, systemById, onComplete, onPressTask }) {
 }
 
 export default function HomeScreen({
-  upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask, onEditTask,
+  upcomingTasks, systemById, systems, tasks, profile, onOpenAccount, onOpenAssistant, onNavigate, onCompleteTask, onEditTask, tutorial,
 }) {
   const [taskMenuTask, setTaskMenuTask] = useState(null);
 
@@ -257,6 +270,7 @@ export default function HomeScreen({
         onOpenAccount={onOpenAccount}
         onOpenAssistant={onOpenAssistant}
         onNavigate={onNavigate}
+        tutorial={tutorial}
       />
 
       <View className="px-4">

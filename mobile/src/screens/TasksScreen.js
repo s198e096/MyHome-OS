@@ -6,6 +6,7 @@ import { PRIMARY, STATUS_COLOR, systemShortName } from "../lib/constants.js";
 import { daysUntil } from "../lib/forecast.js";
 import SelectModal from "../components/SelectModal.js";
 import TaskCalendar from "../components/TaskCalendar.js";
+import TutorialTip, { Spotlight } from "../components/TutorialTip.js";
 
 const ADD_OPTIONS = [
   { value: "manual", label: "Add task manually" },
@@ -45,7 +46,7 @@ function RowButton({ icon: Icon, label, color, onPress }) {
   );
 }
 
-export default function TasksScreen({ tasks, completed, systemById, onRemoveCompleted, onComplete, onEdit, onAddManual, onImportTasks }) {
+export default function TasksScreen({ tasks, completed, systemById, onRemoveCompleted, onComplete, onEdit, onAddManual, onImportTasks, tutorial }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState("open");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -76,10 +77,23 @@ export default function TasksScreen({ tasks, completed, systemById, onRemoveComp
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-[17px] font-semibold text-stone-900">Tasks</Text>
-        <Pressable onPress={() => setAddMenuOpen(true)} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
-          <Plus size={16} color="white" />
-        </Pressable>
+        <Spotlight active={!!tutorial}>
+          <Pressable onPress={() => setAddMenuOpen(true)} className="rounded-full p-1.5" style={{ backgroundColor: PRIMARY }}>
+            <Plus size={16} color="white" />
+          </Pressable>
+        </Spotlight>
       </View>
+
+      {!!tutorial && (
+        <TutorialTip
+          step={tutorial.step}
+          total={tutorial.total}
+          text="Tap + to add a task yourself, or import common maintenance tasks for one of your systems automatically."
+          onNext={tutorial.next}
+          onSkip={tutorial.skip}
+          className="mb-3"
+        />
+      )}
 
       <SelectModal
         visible={addMenuOpen}
