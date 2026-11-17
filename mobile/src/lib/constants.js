@@ -59,18 +59,29 @@ export const CATEGORY_META = {
   garden: { label: "Garden / Backyard", icon: Trees },
 };
 
-// Display name for a system. Onboarding can create systems with only a
-// category (brand/model empty), so fall back to the category label.
+// Display name for a system: what it is, then its brand - "Water heater
+// (Rheem)". The model number is no longer part of the name (it still has its
+// own field and shows on the system's page).
+//  - An appliance's `brand` holds the appliance's own name ("Dishwasher"), so
+//    that alone is the name - "Appliance (Dishwasher)" would say it twice.
+//  - Onboarding writes placeholder text into `brand` ("HVAC - Indoor Unit",
+//    "Conventional tank water heater") until the user enters a real brand.
+//    When the brand already contains the type's name it stands on its own.
+//  - A system with no brand yet is just its type.
 export function systemName(sys) {
-  const name = [sys.brand, sys.model].filter(Boolean).join(" ");
-  return name || CATEGORY_META[sys.category]?.label || "System";
+  const label = CATEGORY_META[sys.category]?.label || "System";
+  const brand = (sys.brand || "").trim();
+  if (!brand) return label;
+  if (sys.category === "appliance") return brand;
+  if (brand.toLowerCase().includes(label.toLowerCase())) return brand;
+  return `${label} (${brand})`;
 }
 
-// Short label for list rows — brand (or the category label if there's no
-// brand) without the model, since brand+model can run long enough to wrap
-// and clutter a list. The full name still shows on the system's own page.
+// List rows and pickers use the same name now that the model is out of it -
+// it's no longer long enough to need a shorter form. Kept as its own export so
+// callers read the same as before.
 export function systemShortName(sys) {
-  return sys.brand || CATEGORY_META[sys.category]?.label || "System";
+  return systemName(sys);
 }
 
 // Default "expected life" years per category, sourced from InterNACHI's

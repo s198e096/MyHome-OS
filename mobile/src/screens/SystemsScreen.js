@@ -42,7 +42,12 @@ export default function SystemsScreen({ systems, tasks, onSelect, onAdd, atLimit
                 </View>
                 <View className="flex-1 min-w-0">
                   <Text className="text-[13.5px] text-stone-800" numberOfLines={1}>{systemShortName(s)}</Text>
-                  <Text className="text-[11.5px] text-stone-400" numberOfLines={1}>{meta.label} · {s.location}</Text>
+                  {/* The title already says what it is (and its brand), so the
+                      line under it is just where it lives. An appliance's title
+                      is only its own name, so that keeps the type in front. */}
+                  <Text className="text-[11.5px] text-stone-400" numberOfLines={1}>
+                    {[s.category === "appliance" ? meta.label : "", s.location].filter(Boolean).join(" · ")}
+                  </Text>
                 </View>
               </View>
               <View className="flex-row items-center gap-2 pl-2">

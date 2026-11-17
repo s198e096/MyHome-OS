@@ -164,6 +164,9 @@ export default function ItemFields({
   receiptPhotoUrls, setReceiptPhotoUrls,
   warrantyPhotoUrls, setWarrantyPhotoUrls,
   hideCategoryPicker,
+  // With the picker hidden: what tapping the (read-only) System row does -
+  // the add page uses it to go back and pick a different type.
+  onChangeSystemType,
   hidePhotoSection,
   // Set by a parent that runs its own label scan (onboarding); otherwise the
   // add/edit form tracks it here. The label-derived "Date installed", so the
@@ -505,37 +508,15 @@ export default function ItemFields({
             </>
           )}
 
-          {/* Appliances share one category, so their first field is what the
-              appliance IS (Oven, Microwave), not the maker — two appliances
-              from the same manufacturer would otherwise look identical in
-              every list. The second field is just the model number. */}
-          <Text className="text-[11px] text-stone-500 mb-1">{sysCategory === "appliance" ? "Appliance" : "Brand"}</Text>
-          <TextInput
-            value={sysBrand}
-            onChangeText={setSysBrand}
-            placeholder={sysCategory === "appliance" ? "e.g. Oven, Microwave" : "e.g. Carrier"}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
-          />
-          <Text className="text-[11px] text-stone-500 mb-1">{sysCategory === "appliance" ? "Model number" : "Model"}</Text>
-          <TextInput
-            value={sysModel}
-            onChangeText={setSysModel}
-            placeholder={sysCategory === "appliance" ? "e.g. LDFN454HT" : "e.g. Infinity"}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
-          />
-          <Text className="text-[11px] text-stone-500 mb-1">Serial number (S/N)</Text>
-          <TextInput
-            value={sysSerial}
-            onChangeText={setSysSerial}
-            placeholder="e.g. 4H67T2991"
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
-            style={fieldStyle}
-          />
+          {/* A system is identified by what it is and who made it, in that
+              order - the same order its name reads in every list ("Water
+              heater (Rheem)"). The type comes first: a dropdown when editing,
+              and, while adding (the type was just picked on the previous
+              page), a row that goes back to that page. Onboarding supplies
+              neither, since its step already says what the system is. */}
           {!hideCategoryPicker && (
             <>
-              <Text className="text-[11px] text-stone-500 mb-1">System type</Text>
+              <Text className="text-[11px] text-stone-500 mb-1">System</Text>
               <Pressable
                 onPress={() => setCategoryDropdownOpen(true)}
                 className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
@@ -546,7 +527,7 @@ export default function ItemFields({
               </Pressable>
               <SelectModal
                 visible={categoryDropdownOpen}
-                title="System type"
+                title="System"
                 options={Object.entries(CATEGORY_META)
                   .filter(([key]) => key !== "hvac")
                   .map(([key, meta]) => ({ value: key, label: meta.label }))}
@@ -559,7 +540,48 @@ export default function ItemFields({
               />
             </>
           )}
+          {hideCategoryPicker && !!onChangeSystemType && (
+            <>
+              <Text className="text-[11px] text-stone-500 mb-1">System</Text>
+              <Pressable
+                onPress={onChangeSystemType}
+                className="w-full mb-2 flex-row items-center justify-between px-3 py-2.5 rounded-lg"
+                style={fieldStyle}
+              >
+                <Text className="text-[13.5px] text-stone-800">{CATEGORY_META[sysCategory]?.label || "Select type"}</Text>
+                <ChevronDown size={14} color="#78716c" />
+              </Pressable>
+            </>
+          )}
 
+          {/* Appliances share one category, so what the appliance IS (Oven,
+              Microwave) goes in this field instead of the maker - two
+              appliances from the same manufacturer would otherwise look
+              identical in every list. */}
+          <Text className="text-[11px] text-stone-500 mb-1">{sysCategory === "appliance" ? "Appliance name" : "Brand"}</Text>
+          <TextInput
+            value={sysBrand}
+            onChangeText={setSysBrand}
+            placeholder={sysCategory === "appliance" ? "e.g. Oven, Microwave" : "e.g. Carrier"}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={fieldStyle}
+          />
+          <Text className="text-[11px] text-stone-500 mb-1">Model number</Text>
+          <TextInput
+            value={sysModel}
+            onChangeText={setSysModel}
+            placeholder={sysCategory === "appliance" ? "e.g. LDFN454HT" : "e.g. 24ACC636"}
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={fieldStyle}
+          />
+          <Text className="text-[11px] text-stone-500 mb-1">Serial number (S/N)</Text>
+          <TextInput
+            value={sysSerial}
+            onChangeText={setSysSerial}
+            placeholder="e.g. 4H67T2991"
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13.5px]"
+            style={fieldStyle}
+          />
           {sysCategory === "hvac_indoor" && (
             <View className="rounded-xl bg-white p-3 mb-2" style={fieldStyle}>
               <Text className="text-[13px] font-semibold text-stone-800 mb-2">Filter size</Text>

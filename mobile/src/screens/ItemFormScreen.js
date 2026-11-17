@@ -339,6 +339,7 @@ export default function ItemFormScreen({
         receiptPhotoUrls={receiptPhotoUrls} setReceiptPhotoUrls={setReceiptPhotoUrls}
         warrantyPhotoUrls={warrantyPhotoUrls} setWarrantyPhotoUrls={setWarrantyPhotoUrls}
         hideCategoryPicker={kind === "system" && !isEdit}
+        onChangeSystemType={() => setCategoryChosen(false)}
       />
 
       {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}

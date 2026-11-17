@@ -5,7 +5,7 @@ const blank = (v) => v == null || (typeof v === "string" && !v.trim());
 
 const REQUIRED_FIELDS = [
   { label: "Brand", key: "brand" },
-  { label: "Model", key: "model" },
+  { label: "Model number", key: "model" },
   { label: "Location", key: "location" },
   { label: "Date installed", key: "purchaseDate" },
   { label: "Purchase price", key: "purchasePrice" },
