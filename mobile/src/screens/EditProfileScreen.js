@@ -3,7 +3,10 @@ import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pres
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
+import { CURRENT_YEAR } from "../lib/forecast.js";
 import CurrencyInput from "../components/CurrencyInput.js";
+
+const MIN_YEAR_BUILT = CURRENT_YEAR - 150;
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -29,6 +32,14 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
       if (isNaN(num) || num < 0) return setError("Enter a valid property value.");
       value = num;
     }
+    let yearBuiltValue = null;
+    if (yearBuilt.trim()) {
+      const year = parseInt(yearBuilt, 10);
+      if (isNaN(year) || year < MIN_YEAR_BUILT || year > CURRENT_YEAR) {
+        return setError(`Enter a valid year built (${MIN_YEAR_BUILT}–${CURRENT_YEAR}).`);
+      }
+      yearBuiltValue = year;
+    }
     // Flags it as a manual override only when the number actually changed,
     // so the monthly RentCast refresh knows to protect it going forward.
     // Numeric columns come back from Supabase as strings, so both sides are
@@ -46,7 +57,7 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         propertyValue: value,
         ...(valueChanged ? { propertyValueSource: "Manual" } : {}),
         bedrooms: bedrooms.trim() ? parseInt(bedrooms, 10) : null,
-        yearBuilt: yearBuilt.trim() ? parseInt(yearBuilt, 10) : null,
+        yearBuilt: yearBuiltValue,
         purchasePrice: purchasePrice.trim() ? parseFloat(purchasePrice) : null,
       });
     } catch {
@@ -134,6 +145,7 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
           onChangeText={setYearBuilt}
           placeholder="e.g. 1998"
           inputMode="numeric"
+          maxLength={4}
           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
         />
