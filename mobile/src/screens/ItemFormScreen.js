@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable, Image } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import { TODAY } from "../lib/forecast.js";
-import { opensInBrowser } from "../lib/manual-links.js";
 import { checkExpense } from "../lib/expense-check.js";
 import { checkLifeYears } from "../lib/life-check.js";
 
@@ -300,12 +299,6 @@ export default function ItemFormScreen({
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">{kind === "system" && !isEdit ? "Change type" : backLabels[kind]}</Text>
       </Pressable>
-
-      {photoUrl && !opensInBrowser(photoUrl) && (kind === "system" || kind === "furniture" || kind === "doc") && (
-        <View className="rounded-xl bg-white p-2 mb-4" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
-          <Image source={{ uri: photoUrl }} style={{ width: "100%", height: 180, borderRadius: 8 }} resizeMode="cover" />
-        </View>
-      )}
 
       {hint && (
         <View className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: "#EAF1F8" }}>
