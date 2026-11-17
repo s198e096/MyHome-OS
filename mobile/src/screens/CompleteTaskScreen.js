@@ -29,6 +29,34 @@ function toHours(value, unit) {
   return n;
 }
 
+// Shared by both the "No cost" and "I did it myself" branches — logging
+// time spent doesn't actually depend on there being a cost to go with it.
+function TimeSpentField({ value, onChangeText, unit, onOpenUnitPicker }) {
+  return (
+    <View className="mb-4">
+      <Text className="text-[11px] text-stone-500 mb-1">Time spent (optional)</Text>
+      <View className="flex-row gap-2">
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder="e.g. 2"
+          inputMode="decimal"
+          className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
+          style={fieldStyle}
+        />
+        <Pressable
+          onPress={onOpenUnitPicker}
+          className="flex-row items-center justify-between px-3 py-2 rounded-lg"
+          style={[fieldStyle, { width: 120 }]}
+        >
+          <Text className="text-[13.5px] text-stone-800">{TIME_UNITS.find((u) => u.value === unit)?.label}</Text>
+          <ChevronDown size={14} color="#78716c" />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function ChoicePressable({ label, active, onPress, disabled }) {
   return (
     <Pressable
@@ -77,8 +105,16 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
 
   async function finish(cost) {
     setSaving(true);
+    setError("");
     try {
       await onComplete(cost, completedDate);
+    } catch (err) {
+      // Without this, a failure here left the screen just sitting there with
+      // no feedback — looking "stuck" on the same form, since the screen
+      // only navigates back (in the route file) after onComplete resolves.
+      // The real reason is shown underneath in dev, so it's not a mystery
+      // next time — a shipped build only shows the friendly line.
+      setError(__DEV__ && err?.message ? `Couldn't complete the task.\n${err.message}` : "Couldn't complete the task. Try again.");
     } finally {
       setSaving(false);
     }
@@ -111,14 +147,28 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
         </View>
 
         {hasCost === false && (
-          <Pressable
-            onPress={() => finish(null)}
-            disabled={saving}
-            className="w-full py-2.5 rounded-lg items-center mb-6"
-            style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
-          >
-            <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Complete task"}</Text>
-          </Pressable>
+          <>
+            <TimeSpentField
+              value={timeSpent}
+              onChangeText={setTimeSpent}
+              unit={timeUnit}
+              onOpenUnitPicker={() => setTimeUnitDropdownOpen(true)}
+            />
+
+            {!!error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+
+            <Pressable
+              onPress={() => {
+                const timeSpentHours = toHours(timeSpent, timeUnit);
+                finish(timeSpentHours ? { diy: true, timeSpentHours, partsCost: null, laborCost: null, vendor: null } : null);
+              }}
+              disabled={saving}
+              className="w-full py-2.5 rounded-lg items-center mb-6"
+              style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+            >
+              <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Complete task"}</Text>
+            </Pressable>
+          </>
         )}
 
         {hasCost === true && (
@@ -146,38 +196,12 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
 
                 {diy ? (
                   <>
-                    <View className="mb-4">
-                      <Text className="text-[11px] text-stone-500 mb-1">Time spent</Text>
-                      <View className="flex-row gap-2">
-                        <TextInput
-                          value={timeSpent}
-                          onChangeText={setTimeSpent}
-                          placeholder="e.g. 2"
-                          inputMode="decimal"
-                          className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
-                          style={fieldStyle}
-                        />
-                        <Pressable
-                          onPress={() => setTimeUnitDropdownOpen(true)}
-                          className="flex-row items-center justify-between px-3 py-2 rounded-lg"
-                          style={[fieldStyle, { width: 120 }]}
-                        >
-                          <Text className="text-[13.5px] text-stone-800">{TIME_UNITS.find((u) => u.value === timeUnit)?.label}</Text>
-                          <ChevronDown size={14} color="#78716c" />
-                        </Pressable>
-                      </View>
-                      <SelectModal
-                        visible={timeUnitDropdownOpen}
-                        title="Time unit"
-                        options={TIME_UNITS}
-                        selectedValue={timeUnit}
-                        onSelect={(value) => {
-                          setTimeUnit(value);
-                          setTimeUnitDropdownOpen(false);
-                        }}
-                        onClose={() => setTimeUnitDropdownOpen(false)}
-                      />
-                    </View>
+                    <TimeSpentField
+                      value={timeSpent}
+                      onChangeText={setTimeSpent}
+                      unit={timeUnit}
+                      onOpenUnitPicker={() => setTimeUnitDropdownOpen(true)}
+                    />
 
                     <View className="mb-4">
                       <Text className="text-[11px] text-stone-500 mb-1">Parts vendor</Text>
@@ -231,6 +255,18 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
             )}
           </>
         )}
+
+        <SelectModal
+          visible={timeUnitDropdownOpen}
+          title="Time unit"
+          options={TIME_UNITS}
+          selectedValue={timeUnit}
+          onSelect={(value) => {
+            setTimeUnit(value);
+            setTimeUnitDropdownOpen(false);
+          }}
+          onClose={() => setTimeUnitDropdownOpen(false)}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
