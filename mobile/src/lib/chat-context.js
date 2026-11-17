@@ -12,6 +12,14 @@ export function useChat() {
 
 const storageKey = (userId) => `chat_conversations_${userId}`;
 
+// Removes a user's saved conversations from this phone. Used when their
+// account is deleted: the chats live only on the device, so nothing on the
+// server would ever clear them. Call it after signing out, so the provider
+// (which writes every change back to storage) has already let go of them.
+export function clearStoredChats(userId) {
+  return AsyncStorage.removeItem(storageKey(userId)).catch(() => {});
+}
+
 // Short title from the first user message — same idea as ChatGPT's
 // auto-titling, just without a second AI call to generate it.
 function titleFrom(messages) {

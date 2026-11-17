@@ -14,7 +14,7 @@ import TutorialTip, { Spotlight } from "../components/TutorialTip.js";
 const AVATAR_LABEL = { initials: "Initials", man: "Man", woman: "Woman" };
 
 export default function AccountScreen({
-  profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut, onChangeAvatar, tutorial,
+  profile, reports, onBuyReport, onGenerateReport, onRecheckReport, onEdit, onManagePlan, onSignOut, onDeleteAccount, onChangeAvatar, tutorial,
 }) {
   const planName = PLANS.find((p) => p.id === profile.plan)?.name || "Free";
   const insets = useSafeAreaInsets();
@@ -148,8 +148,14 @@ export default function AccountScreen({
         />
       )}
 
-      <Pressable onPress={onSignOut} className="w-full py-2.5 rounded-lg items-center mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
+      <Pressable onPress={onSignOut} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
         <Text className="text-[13.5px] font-semibold" style={{ color: STATUS_COLOR.red }}>Sign out</Text>
+      </Pressable>
+
+      {/* Deliberately quiet: leads to a screen that explains what is lost and
+          asks for a typed confirmation, so there's no accidental path to it. */}
+      <Pressable onPress={onDeleteAccount} hitSlop={6} className="w-full py-2.5 items-center mb-6">
+        <Text className="text-[12.5px]" style={{ color: "#9C978C" }}>Delete account</Text>
       </Pressable>
     </ScrollView>
   );

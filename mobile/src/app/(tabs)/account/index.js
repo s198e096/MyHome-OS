@@ -100,6 +100,7 @@ export default function Account() {
         onEdit={() => router.push("/account/edit")}
         onManagePlan={() => router.push("/account/plan")}
         onSignOut={signOut}
+        onDeleteAccount={() => router.push("/account/delete")}
         onChangeAvatar={(type) => saveProfile({ avatarType: type })}
         tutorial={tutorial?.step === 4 ? tutorial : null}
       />

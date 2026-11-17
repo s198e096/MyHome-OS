@@ -457,6 +457,20 @@ export async function loadReportPurchases() {
   return data.map(rowToReportPurchase);
 }
 
+// Permanently deletes the signed-in user's account and everything in it. The
+// delete-account function does the real work (cancels any Stripe subscription,
+// removes the uploaded files, deletes the user and, by cascade, all their
+// rows); it re-checks the typed confirmation itself. Afterwards the session on
+// this phone is dead weight, so it is dropped locally (a normal sign-out would
+// ask the server to revoke a user that no longer exists).
+export async function deleteAccount() {
+  const { error } = await supabase.functions.invoke("delete-account", {
+    body: { confirm: "delete" },
+  });
+  if (error) throw await describeFunctionError(error);
+  await supabase.auth.signOut({ scope: "local" });
+}
+
 export async function createPortalSession() {
   const origin = Linking.createURL("/");
   const { data, error } = await supabase.functions.invoke("create-portal-session", {
