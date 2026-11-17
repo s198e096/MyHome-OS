@@ -17,6 +17,7 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
   const [address, setAddress] = useState(profile.address || "");
   const [propertyValue, setPropertyValue] = useState(profile.propertyValue != null ? String(profile.propertyValue) : "");
   const [bedrooms, setBedrooms] = useState(profile.bedrooms != null ? String(profile.bedrooms) : "");
+  const [bathrooms, setBathrooms] = useState(profile.bathrooms != null ? String(profile.bathrooms) : "");
   const [yearBuilt, setYearBuilt] = useState(profile.yearBuilt != null ? String(profile.yearBuilt) : "");
   const [purchasePrice, setPurchasePrice] = useState(profile.purchasePrice != null ? String(profile.purchasePrice) : "");
   const [error, setError] = useState("");
@@ -57,6 +58,7 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         propertyValue: value,
         ...(valueChanged ? { propertyValueSource: "Manual" } : {}),
         bedrooms: bedrooms.trim() ? parseInt(bedrooms, 10) : null,
+        bathrooms: bathrooms.trim() ? parseFloat(bathrooms) : null,
         yearBuilt: yearBuiltValue,
         purchasePrice: purchasePrice.trim() ? parseFloat(purchasePrice) : null,
       });
@@ -129,6 +131,7 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
       />
       <View className="flex-row gap-2 mb-1">
         <Text className="flex-1 text-[11px] text-stone-500">Bedrooms</Text>
+        <Text className="flex-1 text-[11px] text-stone-500">Bathrooms</Text>
         <Text className="flex-1 text-[11px] text-stone-500">Year built</Text>
       </View>
       <View className="flex-row gap-2 mb-3">
@@ -137,6 +140,14 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
           onChangeText={setBedrooms}
           placeholder="e.g. 3"
           inputMode="numeric"
+          className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
+          style={fieldStyle}
+        />
+        <TextInput
+          value={bathrooms}
+          onChangeText={setBathrooms}
+          placeholder="e.g. 2.5"
+          inputMode="decimal"
           className="flex-1 px-3 py-2 rounded-lg text-[13.5px]"
           style={fieldStyle}
         />
