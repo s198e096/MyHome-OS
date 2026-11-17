@@ -4,6 +4,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Check } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, ACCENT_YELLOW, PLANS } from "../lib/constants.js";
 
+// What to tell the user when checkout / billing can't open. While developing
+// (Expo Go) the real cause is shown underneath, since the generic line alone
+// hides whether it's the session, the network or the Stripe setup.
+function billingErrorText(err) {
+  const base =
+    err?.status === 401 ? "Your session expired. Sign out and back in, then try again."
+    : err?.network ? "Couldn't reach the server. Check your connection and try again."
+    : "Something went wrong. Try again.";
+  const detail = err?.detail || err?.message;
+  return __DEV__ && detail ? `${base}
+[${err?.status ?? "no status"}] ${String(detail).slice(0, 300)}` : base;
+}
+
 export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManageBilling }) {
   const [loadingPlanId, setLoadingPlanId] = useState(null);
   const [error, setError] = useState("");
@@ -14,8 +27,8 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
     setLoadingPlanId(planId);
     try {
       await onSelectPlan(planId);
-    } catch {
-      setError("Something went wrong. Try again.");
+    } catch (err) {
+      setError(billingErrorText(err));
     } finally {
       setLoadingPlanId(null);
     }
@@ -26,8 +39,8 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
     setLoadingPlanId("manage");
     try {
       await onManageBilling();
-    } catch {
-      setError("Something went wrong. Try again.");
+    } catch (err) {
+      setError(billingErrorText(err));
     } finally {
       setLoadingPlanId(null);
     }
