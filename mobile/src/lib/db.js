@@ -342,6 +342,17 @@ export async function checkSignupAvailability(email, phone) {
   return data;
 }
 
+// Called before supabase.auth.updateUser() on the password-reset screen, so
+// re-submitting the account's current password gets a clear "can't reuse
+// your old password" message instead of silently succeeding.
+export async function checkPasswordReuse(password) {
+  const { data, error } = await supabase.functions.invoke("check-password-reuse", {
+    body: { password },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function scanSystemLabel(photoUrl) {
   const { data, error } = await supabase.functions.invoke("scan-system-label", {
     body: { photoUrl },

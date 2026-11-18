@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
 import { supabase } from "../lib/supabase.js";
+import { checkPasswordReuse } from "../lib/db.js";
 import { useSession } from "../lib/auth-context.js";
 
 export default function ResetPassword() {
@@ -17,6 +18,21 @@ export default function ResetPassword() {
     if (password !== confirm) return setError("Passwords don't match.");
 
     setLoading(true);
+
+    // updateUser() has no built-in check for this — without asking first, a
+    // password reset that just re-submits the same old password would
+    // silently "succeed" at changing nothing.
+    try {
+      const { sameAsOld } = await checkPasswordReuse(password);
+      if (sameAsOld) {
+        setLoading(false);
+        return setError("You cannot use your old password. Choose a different one.");
+      }
+    } catch {
+      setLoading(false);
+      return setError("Couldn't verify your password. Try again.");
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
