@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Home, Eye, EyeOff, ChevronDown } from "lucide-react-native";
+import * as Linking from "expo-linking";
 import { PRIMARY, STATUS_COLOR } from "../../lib/constants.js";
 import { supabase } from "../../lib/supabase.js";
 import { checkSignupAvailability } from "../../lib/db.js";
@@ -8,6 +9,11 @@ import { COUNTRY_CODES, findCountry } from "../../lib/country-codes.js";
 import SelectModal from "../../components/SelectModal.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
+
+// Sends confirmation/reset emails back into this app via its own URL scheme
+// instead of Supabase's default Site URL (the old, unmaintained web app) —
+// auth-context.js picks this back up and turns it into a real session.
+const AUTH_REDIRECT_URL = Linking.createURL("/");
 
 // A password TextInput with a show/hide toggle — its own independent
 // visibility state, so toggling the password field never also reveals
@@ -70,7 +76,9 @@ export default function SignIn() {
 
     if (mode === "forgot") {
       setLoading(true);
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim());
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: AUTH_REDIRECT_URL,
+      });
       setLoading(false);
       if (resetError) return setError(resetError.message);
       return setNotice("Check your email for a password reset link.");
@@ -114,7 +122,10 @@ export default function SignIn() {
         : await supabase.auth.signUp({
             email: email.trim(),
             password,
-            options: { data: { first_name: firstName.trim(), last_name: lastName.trim(), phone: fullPhoneNumber() } },
+            options: {
+              data: { first_name: firstName.trim(), last_name: lastName.trim(), phone: fullPhoneNumber() },
+              emailRedirectTo: AUTH_REDIRECT_URL,
+            },
           });
     setLoading(false);
 
