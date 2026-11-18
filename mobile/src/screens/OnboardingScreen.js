@@ -26,6 +26,7 @@ import { scannedModelNumber } from "../lib/scan-result.js";
 import { checkLifeYears } from "../lib/life-check.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
+import { useSession } from "../lib/auth-context.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
@@ -1963,6 +1964,7 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
 
 export default function OnboardingScreen() {
   const { saveProfile, systems } = useAppData();
+  const { signOut } = useSession();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState("welcome");
   const [propertyName, setPropertyName] = useState("");
@@ -2144,6 +2146,14 @@ export default function OnboardingScreen() {
             style={{ backgroundColor: PRIMARY }}
           >
             <Text className="text-[15px] font-semibold text-white">Get started</Text>
+          </Pressable>
+
+          {/* This is the first screen after sign-up/sign-in, with nothing
+              earlier in the stack to go "back" to — signing out is the only
+              way out if the user landed here by mistake (e.g. the wrong
+              account). */}
+          <Pressable onPress={signOut} className="mt-4 py-2" hitSlop={8}>
+            <Text className="text-[13px] font-semibold" style={{ color: "#3B5169" }}>Sign out</Text>
           </Pressable>
         </View>
       </LinearGradient>
