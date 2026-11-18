@@ -330,6 +330,18 @@ export async function removeStoredPhoto(url) {
   }
 }
 
+// Called before supabase.auth.signUp(), so a duplicate email or phone gets a
+// clear message instead of signUp()'s deliberately silent "check your email"
+// (and instead of firing off a confirmation email for an email that's
+// already registered).
+export async function checkSignupAvailability(email, phone) {
+  const { data, error } = await supabase.functions.invoke("check-signup-availability", {
+    body: { email: email || null, phone: phone || null },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function scanSystemLabel(photoUrl) {
   const { data, error } = await supabase.functions.invoke("scan-system-label", {
     body: { photoUrl },
@@ -566,12 +578,38 @@ export const db = {
 };
 
 // `signupMeta` (first/last name, phone) comes from the auth session's
-// user_metadata, set at sign-up time — used only for this first-ever insert,
-// since every later load finds the row already there.
+// user_metadata, set at sign-up time. Normally only used for the first-ever
+// insert below, since every later load finds the row already there — but if
+// an earlier load raced ahead with a session that hadn't hydrated its
+// user_metadata yet (observed in practice: the row ends up inserted with
+// first_name/last_name/phone all null even though auth.users has them), this
+// backfills those fields from signupMeta instead of leaving them stuck empty
+// forever.
 export async function loadProfile(userId, fallbackName, signupMeta) {
   const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
   if (error) throw error;
-  if (data) return rowToProfile(data);
+  if (data) {
+    const patch = {};
+    if (!data.first_name && signupMeta?.firstName) patch.first_name = signupMeta.firstName;
+    if (!data.last_name && signupMeta?.lastName) patch.last_name = signupMeta.lastName;
+    if (!data.phone && signupMeta?.phone) patch.phone = signupMeta.phone;
+    if (!Object.keys(patch).length) return rowToProfile(data);
+
+    // Only rewrites `name` too if it still looks like the untouched
+    // email-derived fallback, so a name the user already edited by hand is
+    // never silently overwritten by this backfill.
+    if ((patch.first_name || patch.last_name) && data.name === fallbackName) {
+      patch.name = `${patch.first_name || data.first_name || ""} ${patch.last_name || data.last_name || ""}`.trim();
+    }
+    const { data: patched, error: patchError } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("user_id", userId)
+      .select()
+      .single();
+    if (patchError) throw patchError;
+    return rowToProfile(patched);
+  }
 
   const firstName = signupMeta?.firstName || "";
   const lastName = signupMeta?.lastName || "";

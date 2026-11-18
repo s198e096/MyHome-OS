@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, Modal, Animated } from "react-native";
+import { View, Text, TextInput, Pressable, Modal, Animated, ScrollView } from "react-native";
 import { Check, Plus } from "lucide-react-native";
 import { PRIMARY } from "../lib/constants.js";
 
@@ -103,22 +103,28 @@ export default function SelectModal({
               </View>
             ) : (
               <>
-                {allOptions.map((opt) => {
-                  const selected = opt.value === selectedValue;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => handleSelect(opt.value)}
-                      className="flex-row items-center justify-between py-2.5 px-3 rounded-lg mb-1"
-                      style={{ backgroundColor: selected ? "#F0F5E8" : "transparent" }}
-                    >
-                      <Text className="text-[13.5px]" style={{ color: selected ? PRIMARY : "#44403c", fontWeight: selected ? "600" : "400" }}>
-                        {opt.label}
-                      </Text>
-                      {selected && <Check size={16} color={PRIMARY} />}
-                    </Pressable>
-                  );
-                })}
+                {/* Capped rather than unbounded, since a long list (e.g. a
+                    country picker) would otherwise render past the bottom
+                    of the screen with no way to reach the rest. Short lists
+                    (most callers) never hit the cap, so they're unaffected. */}
+                <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+                  {allOptions.map((opt) => {
+                    const selected = opt.value === selectedValue;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        onPress={() => handleSelect(opt.value)}
+                        className="flex-row items-center justify-between py-2.5 px-3 rounded-lg mb-1"
+                        style={{ backgroundColor: selected ? "#F0F5E8" : "transparent" }}
+                      >
+                        <Text className="text-[13.5px]" style={{ color: selected ? PRIMARY : "#44403c", fontWeight: selected ? "600" : "400" }}>
+                          {opt.label}
+                        </Text>
+                        {selected && <Check size={16} color={PRIMARY} />}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
                 {allowCustom && (
                   <Pressable onPress={() => setCustomDraft("")} className="flex-row items-center gap-1.5 py-2.5 px-3 mt-1">
                     <Plus size={14} color={PRIMARY} />

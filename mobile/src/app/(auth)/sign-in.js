@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Home, Eye, EyeOff } from "lucide-react-native";
+import { Home, Eye, EyeOff, ChevronDown } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../../lib/constants.js";
 import { supabase } from "../../lib/supabase.js";
+import { checkSignupAvailability } from "../../lib/db.js";
+import { COUNTRY_CODES, findCountry } from "../../lib/country-codes.js";
+import SelectModal from "../../components/SelectModal.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -35,6 +38,8 @@ export default function SignIn() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [countryIso2, setCountryIso2] = useState("US");
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -45,6 +50,17 @@ export default function SignIn() {
     setMode(next);
     setError("");
     setNotice("");
+  }
+
+  // Combines the picked country's dial code with the digits the user typed,
+  // so every signup's phone ends up in the same "+<dial><digits>" shape
+  // regardless of how the user formatted it — that consistency is what lets
+  // the duplicate-phone check (and any future lookup) compare numbers
+  // reliably instead of guessing at formatting.
+  function fullPhoneNumber() {
+    const digits = phone.trim().replace(/\D/g, "");
+    if (!digits) return "";
+    return `${findCountry(countryIso2).dial}${digits}`;
   }
 
   async function handleSubmit() {
@@ -70,13 +86,35 @@ export default function SignIn() {
     }
 
     setLoading(true);
+
+    if (mode === "signup") {
+      // Checked before signUp() itself, since Supabase deliberately doesn't
+      // reveal whether an email is already registered (it just succeeds
+      // silently) — so without this, a duplicate would show the same "check
+      // your email" notice without ever actually sending a new email.
+      try {
+        const { emailTaken, phoneTaken } = await checkSignupAvailability(email.trim(), fullPhoneNumber());
+        if (emailTaken) {
+          setLoading(false);
+          return setError("This email is already associated with an account.");
+        }
+        if (phoneTaken) {
+          setLoading(false);
+          return setError("This phone number is already associated with an account.");
+        }
+      } catch {
+        setLoading(false);
+        return setError("Couldn't verify your details. Try again.");
+      }
+    }
+
     const { error: authError } =
       mode === "signin"
         ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
         : await supabase.auth.signUp({
             email: email.trim(),
             password,
-            options: { data: { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim() } },
+            options: { data: { first_name: firstName.trim(), last_name: lastName.trim(), phone: fullPhoneNumber() } },
           });
     setLoading(false);
 
@@ -140,15 +178,27 @@ export default function SignIn() {
           {mode === "signup" && (
             <>
               <Text className="text-[11px] text-stone-500 mb-1">Phone number</Text>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Phone number"
-                keyboardType="phone-pad"
-                textContentType="telephoneNumber"
-                className="w-full mb-2 px-3 py-2.5 rounded-lg text-[13.5px]"
-                style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
-              />
+              <View className="flex-row gap-2 mb-2">
+                <Pressable
+                  onPress={() => setCountryPickerOpen(true)}
+                  className="flex-row items-center gap-1 px-3 rounded-lg"
+                  style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+                >
+                  <Text className="text-[13.5px]">
+                    {findCountry(countryIso2).flag} {findCountry(countryIso2).dial}
+                  </Text>
+                  <ChevronDown size={14} color="#78716c" />
+                </Pressable>
+                <TextInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Phone number"
+                  keyboardType="phone-pad"
+                  textContentType="telephoneNumber"
+                  className="flex-1 px-3 py-2.5 rounded-lg text-[13.5px]"
+                  style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+                />
+              </View>
             </>
           )}
           {mode !== "forgot" && (
@@ -209,6 +259,18 @@ export default function SignIn() {
           )}
         </View>
       </ScrollView>
+
+      <SelectModal
+        visible={countryPickerOpen}
+        title="Country"
+        options={COUNTRY_CODES.map((c) => ({ value: c.iso2, label: `${c.flag} ${c.name} (${c.dial})` }))}
+        selectedValue={countryIso2}
+        onSelect={(value) => {
+          setCountryIso2(value);
+          setCountryPickerOpen(false);
+        }}
+        onClose={() => setCountryPickerOpen(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
