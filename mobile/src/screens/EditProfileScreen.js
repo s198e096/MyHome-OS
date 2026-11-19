@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pres
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
-import { CURRENT_YEAR } from "../lib/forecast.js";
+import { CURRENT_YEAR, money } from "../lib/forecast.js";
 import CurrencyInput from "../components/CurrencyInput.js";
 
 const MIN_YEAR_BUILT = CURRENT_YEAR - 150;
@@ -23,6 +23,10 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const insets = useSafeAreaInsets();
+  // RentCast's own estimate is the source of truth while it has one — only
+  // once RentCast couldn't find a value (or a user already overrode one
+  // before this lock existed) does it become a plain user-entered number.
+  const valueLockedByRentCast = profile.propertyValueSource === "RentCast";
 
   async function handleSubmit() {
     if (!name.trim()) return setError("Enter your name.");
@@ -116,12 +120,21 @@ export default function EditProfileScreen({ profile, onBack, onSave }) {
         style={fieldStyle}
       />
       <Text className="text-[11px] text-stone-500 mb-1">Estimated property value</Text>
-      <CurrencyInput
-        value={propertyValue}
-        onChangeText={setPropertyValue}
-        placeholder="450,000"
-        className="w-full mb-2 rounded-lg"
-      />
+      {valueLockedByRentCast ? (
+        <>
+          <View className="w-full mb-1 px-3 py-2 rounded-lg" style={{ backgroundColor: "#F2F0EA", borderWidth: 1, borderColor: "#E0E8D3" }}>
+            <Text className="text-[13.5px] text-stone-500">{profile.propertyValue != null ? money(profile.propertyValue) : "—"}</Text>
+          </View>
+          <Text className="text-[11px] text-stone-400 mb-2">Pulled from RentCast — can&apos;t be edited manually.</Text>
+        </>
+      ) : (
+        <CurrencyInput
+          value={propertyValue}
+          onChangeText={setPropertyValue}
+          placeholder="450,000"
+          className="w-full mb-2 rounded-lg"
+        />
+      )}
       <Text className="text-[11px] text-stone-500 mb-1">Purchase price</Text>
       <CurrencyInput
         value={purchasePrice}
