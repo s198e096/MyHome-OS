@@ -1090,31 +1090,38 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
   const [confirmingSkip, setConfirmingSkip] = useState(false);
 
   return (
-    <ScrollView
-      className="flex-1 bg-[#F5F8F0] px-4"
-      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View className="flex-row items-center justify-between mb-3">
-        {onBackPress ? (
-          <Pressable onPress={onBackPress} className="flex-row items-center gap-1 active:opacity-60">
-            <ChevronLeft size={16} color="#78716c" />
-            <Text className="text-[13px] text-stone-500">Back</Text>
+    <>
+      <ScrollView
+        className="flex-1 bg-[#F5F8F0] px-4"
+        contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="flex-row items-center justify-between mb-3">
+          {onBackPress ? (
+            <Pressable onPress={onBackPress} className="flex-row items-center gap-1 active:opacity-60">
+              <ChevronLeft size={16} color="#78716c" />
+              <Text className="text-[13px] text-stone-500">Back</Text>
+            </Pressable>
+          ) : (
+            <View />
+          )}
+          <Pressable className="active:opacity-60" onPress={() => setConfirmingSkip(true)} hitSlop={8}>
+            <Text className="text-[13px] font-semibold text-stone-400">Skip</Text>
           </Pressable>
-        ) : (
-          <View />
-        )}
-        <Pressable className="active:opacity-60" onPress={() => setConfirmingSkip(true)} hitSlop={8}>
-          <Text className="text-[13px] font-semibold text-stone-400">Skip</Text>
-        </Pressable>
-      </View>
+        </View>
 
-      <View style={{ flex: 1, justifyContent: "center" }}>
-        <Text className="text-[17px] font-semibold text-stone-900 mb-4 text-center">{title}</Text>
-        {children}
-      </View>
+        <View style={{ flex: 1, justifyContent: "center" }}>
+          <Text className="text-[17px] font-semibold text-stone-900 mb-4 text-center">{title}</Text>
+          {children}
+        </View>
+      </ScrollView>
 
       {confirmingSkip && (
+        // A sibling of the ScrollView, not a child of it — the ScrollView's
+        // own `px-4` insets its content area, so an overlay placed inside it
+        // would only stretch edge-to-edge of that narrowed content box,
+        // leaving the screen's true left/right edges uncovered. Up here it's
+        // positioned against the full screen instead.
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} className="items-center justify-center px-6">
           <Pressable className="active:opacity-60"
             onPress={() => setConfirmingSkip(false)}
@@ -1134,7 +1141,7 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
           </View>
         </View>
       )}
-    </ScrollView>
+    </>
   );
 }
 
