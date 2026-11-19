@@ -30,6 +30,7 @@ import { useAppData } from "../lib/app-data-context.js";
 import { useSession } from "../lib/auth-context.js";
 import { requestOnboardingPermissions } from "../lib/permissions.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
+import BackButton from "../components/BackButton.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
 import MultiPhotoPicker from "../components/MultiPhotoPicker.js";
@@ -61,7 +62,7 @@ function latestExpiration(list) {
 // appliances, and house-structure items after the property step. Each add
 // persists immediately (addSystem), so nothing is lost if the app is
 // backgrounded mid-step; items can be removed again with one tap.
-function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, onDone, onBack, backLabel }) {
+function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, onDone, onBack }) {
   const insets = useSafeAreaInsets();
   const { systems, addSystem, deleteSystem } = useAppData();
   const [category, setCategory] = useState(fixedCategory || categories[0]);
@@ -119,12 +120,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {onBack && (
-          <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
-            <ChevronLeft size={16} color="#78716c" />
-            <Text className="text-[13px] text-stone-500">{backLabel}</Text>
-          </Pressable>
-        )}
+        {onBack && <BackButton onPress={onBack} className="mb-3" />}
 
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">{title}</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">{subtitle}</Text>
@@ -285,10 +281,7 @@ function SystemsOverviewStep({ systems, onSelect, onFinish, onBack }) {
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Back</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Your systems</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">
@@ -578,12 +571,7 @@ function SystemDetailsStep({ system, onDone }) {
     }
   }
 
-  const backToList = (
-    <Pressable onPress={onDone} className="flex-row items-center gap-1 mb-1 active:opacity-60">
-      <ChevronLeft size={16} color="#78716c" />
-      <Text className="text-[13px] text-stone-500">Back to list</Text>
-    </Pressable>
-  );
+  const backToList = <BackButton onPress={onDone} className="mb-1" />;
 
   if (subStep === "photo") {
     return (
@@ -1103,15 +1091,13 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row items-center justify-between mb-3">
-          {onBackPress ? (
-            <Pressable onPress={onBackPress} className="flex-row items-center gap-1 active:opacity-60">
-              <ChevronLeft size={16} color="#78716c" />
-              <Text className="text-[13px] text-stone-500">Back</Text>
-            </Pressable>
-          ) : (
-            <View />
-          )}
-          <Pressable className="active:opacity-60" onPress={() => setConfirmingSkip(true)} hitSlop={8}>
+          {onBackPress ? <BackButton onPress={onBackPress} /> : <View />}
+          <Pressable
+            onPress={() => setConfirmingSkip(true)}
+            hitSlop={8}
+            className="px-3 py-1.5 rounded-full bg-white active:opacity-60"
+            style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+          >
             <Text className="text-[13px] font-semibold text-stone-400">Skip</Text>
           </Pressable>
         </View>
@@ -1479,10 +1465,7 @@ function YesNoPrompt({ title, question, yesLabel = "Yes", noLabel = "No, skip th
       contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Back</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
 
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text className="text-[17px] font-semibold text-stone-900 mb-4 text-center">{title}</Text>
@@ -1577,10 +1560,7 @@ function ApplianceChecklistStep({ onBack, onDone }) {
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Back</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Which appliances do you have?</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">
@@ -2199,10 +2179,7 @@ export default function OnboardingScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => setStep("welcome")} className="flex-row items-center gap-1 mb-3 active:opacity-60">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Back</Text>
-        </Pressable>
+        <BackButton onPress={() => setStep("welcome")} className="mb-3" />
 
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Add your property</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">
@@ -2321,7 +2298,6 @@ export default function OnboardingScreen() {
         doneLabel="Done with fixtures"
         onDone={() => setStep("generator")}
         onBack={() => setStep("plumbing-fixtures-ask")}
-        backLabel="Back"
       />
     );
   }
@@ -2420,10 +2396,7 @@ export default function OnboardingScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Pressable onPress={() => setStep("property")} className="flex-row items-center gap-1 mb-3 active:opacity-60">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Back</Text>
-      </Pressable>
+      <BackButton onPress={() => setStep("property")} className="mb-3" />
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">{propertyName}</Text>
       <Text className="text-[12.5px] text-stone-500 mb-3">{address}</Text>

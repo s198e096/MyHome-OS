@@ -2,9 +2,10 @@ import { useState } from "react";
 import * as Linking from "expo-linking";
 import { View, Text, Pressable, Image, Modal, ScrollView, FlatList, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight, FileText, Receipt, Shield, BookOpen, Wrench, Pencil, ExternalLink, Trash2, X } from "lucide-react-native";
+import { ChevronRight, FileText, Receipt, Shield, BookOpen, Wrench, Pencil, ExternalLink, Trash2, X } from "lucide-react-native";
 import { STATUS_COLOR } from "../lib/constants.js";
 import { isManualsLibUrl, opensInBrowser, MANUALSLIB_NAME } from "../lib/manual-links.js";
+import BackButton from "../components/BackButton.js";
 
 const CATEGORY_ICON = { Warranty: Shield, Receipt: Receipt, Manual: BookOpen, Invoice: FileText, "Maintenance Invoice": Wrench };
 const CATEGORY_LABEL = { Receipt: "Receipts", Manual: "Manuals", Invoice: "Invoices", "Maintenance Invoice": "Maintenance Invoices" };
@@ -64,10 +65,7 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
   if (!category) {
     return (
       <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Documents</Text>
-        </Pressable>
+        <BackButton onPress={onBack} className="mb-3" />
         <Text className="text-[17px] font-semibold text-stone-900 mb-3">{title}</Text>
         <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
           {groups.map(({ type, docs }, i) => {
@@ -121,10 +119,7 @@ export default function SystemDocsScreen({ title, documents, onBack, onEdit, onD
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={() => setCategory(null)} className="flex-row items-center gap-1 mb-3">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">{title}</Text>
-      </Pressable>
+      <BackButton onPress={() => setCategory(null)} className="mb-3" />
       <Text className="text-[17px] font-semibold text-stone-900 mb-3">
         {CATEGORY_LABEL[category] || category}
       </Text>

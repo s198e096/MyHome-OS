@@ -1,8 +1,9 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronRight } from "lucide-react-native";
 import { systemName, systemIcon } from "../lib/constants.js";
 import { missingSystemInfo, isSystemEmpty } from "../lib/system-info.js";
+import BackButton from "../components/BackButton.js";
 
 export default function IncompleteSystemsScreen({ systems, onSelect, onBack }) {
   const insets = useSafeAreaInsets();
@@ -12,10 +13,7 @@ export default function IncompleteSystemsScreen({ systems, onSelect, onBack }) {
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Home</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Complete your systems</Text>
       <Text className="text-[12.5px] text-stone-500 mb-3">

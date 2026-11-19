@@ -2,10 +2,11 @@ import { useState, createElement } from "react";
 import { View, Text, Pressable, Image, Modal, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronLeft, ChevronRight, Pencil, Shield, ShieldCheck, Clock, FileText, Image as ImageIcon, X, AlertTriangle } from "lucide-react-native";
+import { ChevronRight, Pencil, Shield, ShieldCheck, Clock, FileText, Image as ImageIcon, X, AlertTriangle } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, STATUS_COLOR, STATUS_BG, systemName, systemIcon } from "../lib/constants.js";
 import { TODAY, money, estimatedReplacementYear, replacementPlan, formatMonths, systemStatus } from "../lib/forecast.js";
 import LedgerRow from "../components/LedgerRow.js";
+import BackButton from "../components/BackButton.js";
 
 const MONO_FONT = Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" });
 
@@ -53,10 +54,7 @@ export default function SystemDetail({ sys, tasks, documents, warranties, proble
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center justify-between mb-3">
-        <Pressable onPress={onBack} className="flex-row items-center gap-1">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Systems</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
         <Pressable onPress={onEdit} className="flex-row items-center gap-1">
           <Pencil size={14} color={PRIMARY} />
           <Text className="text-[13px] font-semibold" style={{ color: PRIMARY }}>Edit</Text>

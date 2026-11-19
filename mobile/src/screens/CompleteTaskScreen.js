@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronDown } from "lucide-react-native";
+import { ChevronDown } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, systemName } from "../lib/constants.js";
 import { TODAY, money } from "../lib/forecast.js";
 import { checkExpense } from "../lib/expense-check.js";
 import SelectModal from "../components/SelectModal.js";
 import FieldWarning from "../components/FieldWarning.js";
 import { DateField } from "../components/ItemFields.js";
+import BackButton from "../components/BackButton.js";
 import PhotoPicker from "../components/PhotoPicker.js";
 import CurrencyInput from "../components/CurrencyInput.js";
 
@@ -128,10 +129,7 @@ export default function CompleteTaskScreen({ task, sys, onBack, onComplete }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Tasks</Text>
-        </Pressable>
+        <BackButton onPress={onBack} className="mb-3" />
 
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Complete task</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4" numberOfLines={1}>

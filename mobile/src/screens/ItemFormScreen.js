@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import DeleteSystemModal from "../components/DeleteSystemModal.js";
+import BackButton from "../components/BackButton.js";
 import { TODAY } from "../lib/forecast.js";
 import { checkExpense } from "../lib/expense-check.js";
 import { checkLifeYears } from "../lib/life-check.js";
@@ -123,14 +123,6 @@ export default function ItemFormScreen({
     doc: isEdit ? "Edit document" : "Add document",
     furniture: isEdit ? "Edit furniture" : "Add furniture",
   };
-  const backLabels = {
-    task: "Tasks",
-    expense: "Costs",
-    doc: "Docs",
-    system: isEdit ? systemName(item) : "Systems",
-    furniture: "Furniture",
-  };
-
   async function handleSubmit() {
     // Household bills (electricity, water) belong to the whole home, not a system.
     const finalSystemId = kind === "expense" && isBillCategory(category) ? null : systemId || null;
@@ -267,10 +259,7 @@ export default function ItemFormScreen({
     const options = Object.entries(CATEGORY_META).filter(([key]) => key !== "hvac");
     return (
       <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Systems</Text>
-        </Pressable>
+        <BackButton onPress={onBack} className="mb-3" />
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">What type of system is this?</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">We&apos;ll tailor the next page to what you&apos;re adding.</Text>
         <View className="flex-row flex-wrap gap-2 mb-6">
@@ -311,13 +300,10 @@ export default function ItemFormScreen({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Pressable
+      <BackButton
         onPress={() => (kind === "system" && !isEdit ? setCategoryChosen(false) : onBack())}
-        className="flex-row items-center gap-1 mb-3"
-      >
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">{kind === "system" && !isEdit ? "Change type" : backLabels[kind]}</Text>
-      </Pressable>
+        className="mb-3"
+      />
 
       {!!hint && (
         <View className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: "#EAF1F8" }}>

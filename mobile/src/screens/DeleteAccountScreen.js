@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, TriangleAlert, X } from "lucide-react-native";
+import { TriangleAlert, X } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, PLANS } from "../lib/constants.js";
+import BackButton from "../components/BackButton.js";
 
 // The word the user has to type. Compared ignoring case and surrounding
 // spaces, so "Delete" (the phone capitalizes the first letter) counts.
@@ -79,10 +80,7 @@ export default function DeleteAccountScreen({ email, plan, counts, onBack, onDel
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={onBack} disabled={deleting} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Account</Text>
-        </Pressable>
+        <BackButton onPress={onBack} disabled={deleting} className="mb-3" />
 
         <View className="flex-row items-center gap-2 mb-1">
           <TriangleAlert size={20} color={STATUS_COLOR.red} />
