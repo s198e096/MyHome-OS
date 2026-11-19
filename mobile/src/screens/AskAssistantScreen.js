@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, TextInput, Pressable, ActivityIndicator, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Send, Sparkles, Menu, SquarePen, Trash2, X } from "lucide-react-native";
+import { Send, Sparkles, Menu, SquarePen, Trash2, X } from "lucide-react-native";
 import { PRIMARY, ACCENT_YELLOW, STATUS_COLOR, FREE_AI_CHAT_LIMIT } from "../lib/constants.js";
 import { askAssistant } from "../lib/db.js";
 import { useChat } from "../lib/chat-context.js";
 import { useAppData } from "../lib/app-data-context.js";
 import ChatMessageText from "../components/ChatMessageText.js";
+import BackButton from "../components/BackButton.js";
 
 const EXAMPLE_QUESTIONS = [
   "When should I replace my HVAC filter?",
@@ -212,10 +213,7 @@ export default function AskAssistantScreen({ onBack, onUpgrade, initialInput, na
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <View className="flex-1 bg-[#F5F8F0]" style={{ paddingTop: insets.top + 20 }}>
         <View className="flex-row items-center justify-between px-4 mb-3">
-          <Pressable onPress={onBack} className="flex-row items-center gap-1">
-            <ChevronLeft size={16} color="#78716c" />
-            <Text className="text-[13px] text-stone-500">Home</Text>
-          </Pressable>
+          <BackButton onPress={onBack} />
           <View className="flex-row items-center gap-1.5">
             <Sparkles size={14} color={PRIMARY} />
             <Text className="text-[13px] font-semibold" style={{ color: PRIMARY }}>Ask Anything</Text>

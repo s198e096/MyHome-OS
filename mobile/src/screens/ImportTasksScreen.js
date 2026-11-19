@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Check } from "lucide-react-native";
+import { Check } from "lucide-react-native";
 import { PRIMARY, COMMON_SYSTEM_TASKS, recurrenceLabel, systemShortName, systemIcon } from "../lib/constants.js";
 import { TODAY } from "../lib/forecast.js";
 import { DateField } from "../components/ItemFields.js";
+import BackButton from "../components/BackButton.js";
 
 // Two steps: pick a system, then pick which of its common maintenance
 // tasks to add (already-present ones are left out) and a start date —
@@ -33,10 +34,7 @@ export default function ImportTasksScreen({ systems, tasks, onBack, onImport }) 
   if (!sys) {
     return (
       <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Tasks</Text>
-        </Pressable>
+        <BackButton onPress={onBack} className="mb-3" />
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Import tasks</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">Pick a system to see its common maintenance tasks.</Text>
         <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
@@ -79,10 +77,7 @@ export default function ImportTasksScreen({ systems, tasks, onBack, onImport }) 
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={() => setSys(null)} className="flex-row items-center gap-1 mb-3">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Choose a different system</Text>
-      </Pressable>
+      <BackButton onPress={() => setSys(null)} className="mb-3" />
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">{systemShortName(sys)}</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">
         {suggestions.length > 0

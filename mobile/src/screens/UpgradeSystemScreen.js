@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronRight } from "lucide-react-native";
 import { CATEGORY_META, systemShortName, systemIcon } from "../lib/constants.js";
+import BackButton from "../components/BackButton.js";
 
 // Reached from Home's "Upgrade a system" action. First asks whether this
 // upgrade replaces a system already tracked here — if so, which one, so it
@@ -16,10 +17,7 @@ export default function UpgradeSystemScreen({ systems, onBack, onPickNew, onPick
   if (choosingReplacement) {
     return (
       <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={() => setChoosingReplacement(false)} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Back</Text>
-        </Pressable>
+        <BackButton onPress={() => setChoosingReplacement(false)} className="mb-3" />
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Which system is this replacing?</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">It&apos;ll be archived once you save the new one.</Text>
         <View className="rounded-xl bg-white px-3 mb-6" style={{ borderWidth: 1, borderColor: "#E0E8D3" }}>
@@ -56,10 +54,7 @@ export default function UpgradeSystemScreen({ systems, onBack, onPickNew, onPick
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Home</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Upgrade a system</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">Is this replacing a system you already track here?</Text>
 

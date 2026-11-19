@@ -1,8 +1,9 @@
 import { useState, createElement } from "react";
 import { KeyboardAvoidingView, Platform, View, Text, TextInput, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronRight } from "lucide-react-native";
 import { PRIMARY, CATEGORY_META, systemShortName, systemIcon } from "../lib/constants.js";
+import BackButton from "../components/BackButton.js";
 
 const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
 
@@ -28,10 +29,7 @@ export default function ReportProblemScreen({ systems, onBack, onSubmit }) {
   if (!selected) {
     return (
       <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Home</Text>
-        </Pressable>
+        <BackButton onPress={onBack} className="mb-3" />
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Report a problem</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">Which system is it?</Text>
 
@@ -74,10 +72,7 @@ export default function ReportProblemScreen({ systems, onBack, onSubmit }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => setSelected(null)} className="flex-row items-center gap-1 mb-3">
-          <ChevronLeft size={16} color="#78716c" />
-          <Text className="text-[13px] text-stone-500">Change system</Text>
-        </Pressable>
+        <BackButton onPress={() => setSelected(null)} className="mb-3" />
         <Text className="text-[17px] font-semibold text-stone-900 mb-4">Report a problem</Text>
 
         <View className="flex-row items-center gap-3 rounded-xl bg-white p-3 mb-4" style={fieldStyle}>

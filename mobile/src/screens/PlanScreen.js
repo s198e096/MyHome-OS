@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ScrollView, View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Check } from "lucide-react-native";
+import { Check } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, ACCENT_YELLOW, PLANS } from "../lib/constants.js";
+import BackButton from "../components/BackButton.js";
 
 // What to tell the user when checkout / billing can't open. While developing
 // (Expo Go) the real cause is shown underneath, since the generic line alone
@@ -48,10 +49,7 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Account</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
 
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Choose your plan</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">Switch or cancel anytime.</Text>

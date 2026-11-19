@@ -1,9 +1,10 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, X } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { systemName, systemShortName } from "../lib/constants.js";
 import { CURRENT_YEAR, money, yearOf } from "../lib/forecast.js";
 import { fmtDate, fmtMonthDay } from "../lib/reports/format.js";
+import BackButton from "../components/BackButton.js";
 import LedgerRow from "../components/LedgerRow.js";
 
 // "Oct 5" for this year's expenses, "Oct 5, 2025" for older ones (dates can be
@@ -35,10 +36,7 @@ export default function ExpenseLogScreen({ expenses, systemById, filterSystemId,
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
-        <ChevronLeft size={16} color="#78716c" />
-        <Text className="text-[13px] text-stone-500">Costs</Text>
-      </Pressable>
+      <BackButton onPress={onBack} className="mb-3" />
       <Text className="text-[17px] font-semibold text-stone-900 mb-3">Expense log</Text>
 
       {hasFilter && (
