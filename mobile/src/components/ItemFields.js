@@ -497,7 +497,7 @@ export default function ItemFields({
                 </Pressable>
               )}
               {!!photoUrl && <AiFillNote limitHit={fillLimitHit} onUpgrade={() => router.push("/account/plan")} />}
-              {scanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</Text>}
+              {!!scanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{scanError}</Text>}
               {sysManualUrl && (
                 <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.green }}>
                   {isManualsLibUrl(sysManualUrl)
@@ -648,7 +648,7 @@ export default function ItemFields({
               {(receiptPhotoUrls.length > 0 || warrantyPhotoUrls.length > 0) && (
                 <AiFillNote limitHit={fillLimitHit} onUpgrade={() => router.push("/account/plan")} />
               )}
-              {warrantyScanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{warrantyScanError}</Text>}
+              {!!warrantyScanError && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{warrantyScanError}</Text>}
               {warrantyEstimate && (
                 <View className="rounded-lg px-3 py-2.5 mb-2" style={{ backgroundColor: "#EAF1F8" }}>
                   <Text className="text-[12px] mb-2" style={{ color: "#3B5169" }}>

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, STATUS_BG, ROOMS, CATEGORY_META, isBillCategory, systemName, defaultExpectedLifeYears } from "../lib/constants.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
+import DeleteSystemModal from "../components/DeleteSystemModal.js";
 import { TODAY } from "../lib/forecast.js";
 import { checkExpense } from "../lib/expense-check.js";
 import { checkLifeYears } from "../lib/life-check.js";
@@ -18,6 +19,9 @@ export default function ItemFormScreen({
   onAddDocument, onUpdateDocument, onDeleteDocument,
   onAddSystem, onUpdateSystem, onDeleteSystem, onAttachManual,
   warranties: existingWarranties, onAddWarranty, onDeleteWarranty,
+  // The edited system's documents (manuals, receipts, warranty papers...).
+  // When there are any, deleting the system asks what to do with them.
+  linkedDocuments = [],
   onAddFurniture, onUpdateFurniture, onDeleteFurniture,
 }) {
   const isEdit = !!item;
@@ -82,6 +86,10 @@ export default function ItemFormScreen({
 
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // The dialog shows the documents as they were when it opened - deleting
+  // detaches them from the system, so the live list empties mid-delete.
+  const [deleteSystemOpen, setDeleteSystemOpen] = useState(false);
+  const [deleteSystemDocs, setDeleteSystemDocs] = useState([]);
   const insets = useSafeAreaInsets();
 
   // Warns (as the amount is typed) when an expense looks unusually high for its
@@ -212,6 +220,13 @@ export default function ItemFormScreen({
   }
 
   function handleDelete() {
+    // A system with documents doesn't use the tap-twice confirm: it opens a
+    // dialog asking whether those documents go too or stay in Docs.
+    if (kind === "system" && linkedDocuments.length > 0) {
+      setDeleteSystemDocs(linkedDocuments);
+      setDeleteSystemOpen(true);
+      return;
+    }
     if (!confirmingDelete) {
       setConfirmingDelete(true);
       return;
@@ -300,7 +315,7 @@ export default function ItemFormScreen({
         <Text className="text-[13px] text-stone-500">{kind === "system" && !isEdit ? "Change type" : backLabels[kind]}</Text>
       </Pressable>
 
-      {hint && (
+      {!!hint && (
         <View className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: "#EAF1F8" }}>
           <Text className="text-[12px]" style={{ color: "#3B5169" }}>{hint}</Text>
         </View>
@@ -342,7 +357,7 @@ export default function ItemFormScreen({
         onChangeSystemType={() => setCategoryChosen(false)}
       />
 
-      {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+      {!!error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 
       <Pressable
         onPress={handleSubmit}
@@ -368,6 +383,19 @@ export default function ItemFormScreen({
             {confirmingDelete ? "Tap again to delete" : `Delete ${KIND_NOUNS[kind]}`}
           </Text>
         </Pressable>
+      )}
+
+      {kind === "system" && isEdit && (
+        <DeleteSystemModal
+          visible={deleteSystemOpen}
+          name={systemName(item)}
+          documents={deleteSystemDocs}
+          onClose={() => setDeleteSystemOpen(false)}
+          onChoose={async (deleteDocuments) => {
+            await onDeleteSystem(item.id, { deleteDocuments });
+            onBack();
+          }}
+        />
       )}
 
       <View style={{ height: 24 }} />
