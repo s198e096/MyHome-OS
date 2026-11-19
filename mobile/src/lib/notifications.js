@@ -16,11 +16,11 @@ const CHANNEL_ID = "task-reminders";
 const DUE_HOUR = 9;
 const NOTIFICATION_TYPE = "task-due";
 
-let setupDone = false;
+let channelReady = false;
 
-async function ensureSetup() {
-  if (setupDone) return;
-  setupDone = true;
+async function ensureChannel() {
+  if (channelReady) return;
+  channelReady = true;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: "Task reminders",
@@ -28,6 +28,13 @@ async function ensureSetup() {
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
+}
+
+// Shows the OS notification-permission prompt. Called once, deliberately,
+// right after onboarding finishes (see permissions.js) — never as a side
+// effect of syncing, so it doesn't surprise the user mid-task.
+export async function requestNotificationPermission() {
+  await ensureChannel();
   await Notifications.requestPermissionsAsync();
 }
 
@@ -52,7 +59,7 @@ async function cancelOurs() {
 // stale notification can survive a task being edited, completed, or
 // deleted, and it needs no server-side state.
 export async function syncTaskNotifications(tasks) {
-  await ensureSetup();
+  await ensureChannel();
   await cancelOurs();
   // Permission denied: nothing can be scheduled. Any reminders left over from
   // when it was allowed were just cleared above, so none fire unexpectedly.
