@@ -24,10 +24,10 @@ export default function EditTask() {
       systems={systems}
       onBack={() => router.back()}
       onUpdateTask={updateTask}
-      onDeleteTask={async (delId) => {
-        await deleteTask(delId);
-        router.back();
-      }}
+      // The form already steps back as soon as Delete is confirmed, so this
+      // must not navigate as well - a second back would skip past the Tasks
+      // list and land on Home.
+      onDeleteTask={deleteTask}
     />
   );
 }

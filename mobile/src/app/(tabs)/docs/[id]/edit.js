@@ -24,10 +24,9 @@ export default function EditDocument() {
       systems={systems}
       onBack={() => router.back()}
       onUpdateDocument={updateDocument}
-      onDeleteDocument={async (delId) => {
-        await deleteDocument(delId);
-        router.back();
-      }}
+      // The form already steps back as soon as Delete is confirmed, so this
+      // must not navigate as well (a second back skips the documents list).
+      onDeleteDocument={deleteDocument}
     />
   );
 }
