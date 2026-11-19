@@ -221,9 +221,13 @@ export default function AskAssistantScreen({ onBack, onUpgrade, initialInput, na
             <Text className="text-[13px] font-semibold" style={{ color: PRIMARY }}>Ask Anything</Text>
           </View>
           <View className="flex-row items-center gap-3" style={{ width: 60, justifyContent: "flex-end" }}>
-            <Pressable onPress={handleNewConversation} hitSlop={8}>
-              <SquarePen size={18} color="#78716c" />
-            </Pressable>
+            {/* Pointless on a chat that's already new/empty — only shown once
+                there's an actual conversation to start fresh from. */}
+            {messages.length > 0 && (
+              <Pressable onPress={handleNewConversation} hitSlop={8}>
+                <SquarePen size={18} color="#78716c" />
+              </Pressable>
+            )}
             <Pressable onPress={() => setDrawerOpen(true)} hitSlop={8}>
               <Menu size={18} color="#78716c" />
             </Pressable>
