@@ -29,10 +29,9 @@ export default function EditExpense() {
         onBack={() => router.back()}
         onUpdateExpense={updateExpense}
         onAddDocument={addDocument}
-        onDeleteExpense={async (delId) => {
-          await deleteExpense(delId);
-          router.back();
-        }}
+        // The form already steps back as soon as Delete is confirmed, so this
+        // must not navigate as well (a second back skips the expense log).
+        onDeleteExpense={deleteExpense}
       />
     </CostsGate>
   );

@@ -24,10 +24,9 @@ export default function EditFurniture() {
       systems={[]}
       onBack={() => router.back()}
       onUpdateFurniture={updateFurniture}
-      onDeleteFurniture={async (delId) => {
-        await deleteFurniture(delId);
-        router.back();
-      }}
+      // The form already steps back as soon as Delete is confirmed, so this
+      // must not navigate as well (a second back skips the furniture list).
+      onDeleteFurniture={deleteFurniture}
     />
   );
 }
