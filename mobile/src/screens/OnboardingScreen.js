@@ -277,7 +277,7 @@ function systemHasDetails(s) {
 // Every exit from SystemDetailsStep (Save or Skip) returns here, rather than
 // auto-advancing through a fixed queue, so the user can work through them in
 // any order and stop whenever they're satisfied.
-function SystemsOverviewStep({ systems, onSelect, onFinish }) {
+function SystemsOverviewStep({ systems, onSelect, onFinish, onBack }) {
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
@@ -285,6 +285,11 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
+      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
+        <ChevronLeft size={16} color="#78716c" />
+        <Text className="text-[13px] text-stone-500">Back</Text>
+      </Pressable>
+
       <Text className="text-[17px] font-semibold text-stone-900 mb-1">Your systems</Text>
       <Text className="text-[12.5px] text-stone-500 mb-4">
         Tap a completed system to review it, or a not-started one to fill it in. Finish whenever you&apos;re ready — you can always add more later.
@@ -1137,7 +1142,7 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
               <Text className="text-[13.5px] font-semibold text-white">Yes, skip it</Text>
             </Pressable>
             <Pressable onPress={() => setConfirmingSkip(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
-              <Text className="text-[13.5px] font-semibold text-stone-700">Keep going</Text>
+              <Text className="text-[13.5px] font-semibold text-stone-700">No, let&apos;s add it</Text>
             </Pressable>
           </View>
         </View>
@@ -2194,6 +2199,11 @@ export default function OnboardingScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        <Pressable onPress={() => setStep("welcome")} className="flex-row items-center gap-1 mb-3 active:opacity-60">
+          <ChevronLeft size={16} color="#78716c" />
+          <Text className="text-[13px] text-stone-500">Back</Text>
+        </Pressable>
+
         <Text className="text-[17px] font-semibold text-stone-900 mb-1">Add your property</Text>
         <Text className="text-[12.5px] text-stone-500 mb-4">
           We&apos;ll look up its details on the next step, once you&apos;ve confirmed the address.
@@ -2365,7 +2375,14 @@ export default function OnboardingScreen() {
   }
 
   if (step === "systems-overview") {
-    return <SystemsOverviewStep systems={systems} onSelect={openSystemDetails} onFinish={finishOnboarding} />;
+    return (
+      <SystemsOverviewStep
+        systems={systems}
+        onSelect={openSystemDetails}
+        onFinish={finishOnboarding}
+        onBack={() => setStep("appliances-ask")}
+      />
+    );
   }
 
   if (step === "fill-details") {
@@ -2374,7 +2391,14 @@ export default function OnboardingScreen() {
     // during normal use, but if it somehow did, just show the overview
     // again instead of getting stuck on a missing system.
     if (!currentSystem) {
-      return <SystemsOverviewStep systems={systems} onSelect={openSystemDetails} onFinish={finishOnboarding} />;
+      return (
+        <SystemsOverviewStep
+          systems={systems}
+          onSelect={openSystemDetails}
+          onFinish={finishOnboarding}
+          onBack={() => setStep("appliances-ask")}
+        />
+      );
     }
     return (
       <SystemDetailsStep
