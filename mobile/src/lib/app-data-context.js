@@ -433,7 +433,14 @@ export function AppDataProvider({ children }) {
     setDocuments((ds) => [...ds, created]);
   }
 
-  async function deleteSystem(id) {
+  // Deleting a system keeps its documents unless `deleteDocuments` is set: by
+  // default they're detached and show up under "General" in Docs. With
+  // `deleteDocuments` the manuals, receipts, warranty papers and so on go with
+  // it, along with any uploaded files. The system is removed first, so if that
+  // fails nothing has been touched; if a document then fails to delete it is
+  // simply left under General. Returns how many documents couldn't be deleted.
+  async function deleteSystem(id, { deleteDocuments = false } = {}) {
+    const linkedDocuments = deleteDocuments ? documents.filter((d) => d.systemId === id) : [];
     await db.systems.remove(id);
     setSystems((ss) => ss.filter((s) => s.id !== id));
     // The database nulls system_id on linked rows (on delete set null); mirror that locally.
@@ -444,6 +451,18 @@ export function AppDataProvider({ children }) {
     // Warranties require a system (no "general" warranty), so the database
     // cascade-deletes them — mirror that locally instead of unlinking.
     setWarranties((ws) => ws.filter((w) => w.systemId !== id));
+
+    let failedDocuments = 0;
+    for (const doc of linkedDocuments) {
+      try {
+        await db.documents.remove(doc.id);
+        setDocuments((ds) => ds.filter((d) => d.id !== doc.id));
+        await removeStoredPhoto(doc.photoUrl);
+      } catch {
+        failedDocuments += 1;
+      }
+    }
+    return { failedDocuments };
   }
 
   async function saveProfile(next) {
