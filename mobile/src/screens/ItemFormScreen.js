@@ -14,6 +14,8 @@ const TODAY_KEY = TODAY.toISOString().slice(0, 10);
 
 export default function ItemFormScreen({
   kind, item, hint, systems, replacesSystem, onBack,
+  // Optional: where to go once a delete is confirmed (default: onBack).
+  onDeleted,
   onAddTask, onUpdateTask, onDeleteTask,
   onAddExpense, onUpdateExpense, onDeleteExpense,
   onAddDocument, onUpdateDocument, onDeleteDocument,
@@ -236,7 +238,9 @@ export default function ItemFormScreen({
     else if (kind === "doc") onDeleteDocument(item.id);
     else if (kind === "furniture") onDeleteFurniture(item.id);
     else if (kind === "system") onDeleteSystem(item.id);
-    onBack();
+    // A route can say where to go after a delete; otherwise it's just one step back.
+    if (onDeleted) onDeleted();
+    else onBack();
   }
 
   // A task switched to Daily should start showing today, not wait for its old
