@@ -36,7 +36,16 @@
       "expo-asset",
       "@react-native-community/datetimepicker",
       "expo-sharing",
-      ["expo-notifications", {}]
+      [
+        "expo-notifications",
+        {}
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This lets us tailor tips and reminders to your home and measure how well they're working."
+        }
+      ]
     ],
     "extra": {
       "router": {},

@@ -27,6 +27,7 @@ import { checkLifeYears } from "../lib/life-check.js";
 import { buildFeatureSummary } from "../lib/propertyFeatures.js";
 import { useAppData } from "../lib/app-data-context.js";
 import { useSession } from "../lib/auth-context.js";
+import { requestOnboardingPermissions } from "../lib/permissions.js";
 import OnboardingTransition from "../components/OnboardingTransition.js";
 import ItemFields, { initWarrantyRow } from "../components/ItemFields.js";
 import PhotoPicker from "../components/PhotoPicker.js";
@@ -2117,6 +2118,7 @@ export default function OnboardingScreen() {
   }
 
   async function finishOnboarding() {
+    await requestOnboardingPermissions();
     await saveProfile({ onboardingCompleted: true });
   }
 
