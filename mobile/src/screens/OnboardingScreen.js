@@ -119,7 +119,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
         keyboardShouldPersistTaps="handled"
       >
         {onBack && (
-          <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+          <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
             <ChevronLeft size={16} color="#78716c" />
             <Text className="text-[13px] text-stone-500">{backLabel}</Text>
           </Pressable>
@@ -150,7 +150,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
                         {!!sys.brand && <Text className="text-[11px] text-stone-400">{meta.label}</Text>}
                       </View>
                     </View>
-                    <Pressable onPress={() => deleteSystem(sys.id)} hitSlop={8}>
+                    <Pressable className="active:opacity-60" onPress={() => deleteSystem(sys.id)} hitSlop={8}>
                       <X size={16} color="#B8B4A8" />
                     </Pressable>
                   </View>
@@ -173,7 +173,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
                     <Pressable
                       key={key}
                       onPress={() => setCategory(key)}
-                      className="items-center rounded-lg py-2.5"
+                      className="items-center rounded-lg py-2.5 active:opacity-60"
                       style={{
                         minWidth: 84,
                         flexGrow: 1,
@@ -215,7 +215,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
               <View className="flex-row items-center rounded-lg" style={fieldStyle}>
                 <Pressable
                   onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="items-center justify-center"
+                  className="items-center justify-center active:opacity-60"
                   style={{ width: 32, height: 36 }}
                   hitSlop={6}
                 >
@@ -224,7 +224,7 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
                 <Text className="text-[13.5px] font-semibold text-center" style={{ width: 22 }}>{quantity}</Text>
                 <Pressable
                   onPress={() => setQuantity((q) => Math.min(20, q + 1))}
-                  className="items-center justify-center"
+                  className="items-center justify-center active:opacity-60"
                   style={{ width: 32, height: 36 }}
                   hitSlop={6}
                 >
@@ -239,8 +239,8 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
           <Pressable
             onPress={handleAdd}
             disabled={adding}
-            className="w-full py-2.5 rounded-lg items-center flex-row justify-center gap-1.5 mt-3"
-            style={{ backgroundColor: ACCENT_YELLOW, opacity: adding ? 0.6 : 1 }}
+            className="w-full py-2.5 rounded-lg items-center flex-row justify-center gap-1.5 mt-3 active:opacity-60"
+            style={{ backgroundColor: ACCENT_YELLOW, opacity: adding ? 0.6 : undefined }}
           >
             <Plus size={15} color={PRIMARY} />
             <Text className="text-[13.5px] font-semibold" style={{ color: PRIMARY }}>
@@ -252,8 +252,8 @@ function QuickAddStep({ title, subtitle, categories, fixedCategory, doneLabel, o
         <Pressable
           onPress={handleDone}
           disabled={finishing}
-          className="w-full py-2.5 rounded-lg items-center"
-          style={{ backgroundColor: PRIMARY, opacity: finishing ? 0.6 : 1 }}
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
+          style={{ backgroundColor: PRIMARY, opacity: finishing ? 0.6 : undefined }}
         >
           <Text className="text-[13.5px] font-semibold text-white">{finishing ? "Saving..." : doneLabel}</Text>
         </Pressable>
@@ -303,7 +303,7 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
               <Pressable
                 key={sys.id}
                 onPress={() => onSelect(sys)}
-                className="flex-row items-center justify-between py-2.5"
+                className="flex-row items-center justify-between py-2.5 active:opacity-60"
                 style={{ borderBottomWidth: i < systems.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
               >
                 <View className="flex-row items-center gap-2 flex-1">
@@ -329,7 +329,7 @@ function SystemsOverviewStep({ systems, onSelect, onFinish }) {
         </View>
       )}
 
-      <Pressable onPress={onFinish} className="w-full py-2.5 rounded-lg items-center" style={{ backgroundColor: PRIMARY }}>
+      <Pressable onPress={onFinish} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={{ backgroundColor: PRIMARY }}>
         <Text className="text-[13.5px] font-semibold text-white">Finish setup</Text>
       </Pressable>
     </ScrollView>
@@ -573,7 +573,7 @@ function SystemDetailsStep({ system, onDone }) {
   }
 
   const backToList = (
-    <Pressable onPress={onDone} className="flex-row items-center gap-1 mb-1">
+    <Pressable onPress={onDone} className="flex-row items-center gap-1 mb-1 active:opacity-60">
       <ChevronLeft size={16} color="#78716c" />
       <Text className="text-[13px] text-stone-500">Back to list</Text>
     </Pressable>
@@ -618,14 +618,14 @@ function SystemDetailsStep({ system, onDone }) {
           <Pressable
             onPress={handlePhotoContinue}
             disabled={scanning}
-            className="w-full py-2.5 rounded-lg items-center mb-2"
-            style={{ backgroundColor: PRIMARY, opacity: scanning ? 0.6 : 1 }}
+            className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
+            style={{ backgroundColor: PRIMARY, opacity: scanning ? 0.6 : undefined }}
           >
             <Text className="text-[13.5px] font-semibold text-white">
               {scanning ? "Reading label..." : "Continue"}
             </Text>
           </Pressable>
-          <Pressable onPress={handlePhotoContinue} disabled={scanning} className="py-2.5 items-center">
+          <Pressable onPress={handlePhotoContinue} disabled={scanning} className="py-2.5 items-center active:opacity-60">
             <Text className="text-[13px] font-semibold text-stone-500">Skip, I don&apos;t have a picture</Text>
           </Pressable>
         </ScrollView>
@@ -675,7 +675,7 @@ function SystemDetailsStep({ system, onDone }) {
             <Pressable
               onPress={() => setSubStep("photo")}
               disabled={scanningWarranty}
-              className="flex-row items-center justify-center gap-1 px-4 py-2.5 rounded-lg"
+              className="flex-row items-center justify-center gap-1 px-4 py-2.5 rounded-lg active:opacity-60"
               style={{ borderWidth: 1, borderColor: "#D8D5CB" }}
             >
               <ChevronLeft size={16} color="#78716c" />
@@ -684,8 +684,8 @@ function SystemDetailsStep({ system, onDone }) {
             <Pressable
               onPress={handleDocumentsContinue}
               disabled={scanningWarranty}
-              className="flex-1 py-2.5 rounded-lg items-center"
-              style={{ backgroundColor: PRIMARY, opacity: scanningWarranty ? 0.6 : 1 }}
+              className="flex-1 py-2.5 rounded-lg items-center active:opacity-60"
+              style={{ backgroundColor: PRIMARY, opacity: scanningWarranty ? 0.6 : undefined }}
             >
               <Text className="text-[13.5px] font-semibold text-white">
                 {scanningWarranty ? "Reading documents..." : "Continue"}
@@ -693,7 +693,7 @@ function SystemDetailsStep({ system, onDone }) {
             </Pressable>
           </View>
 
-          <Pressable onPress={handleDocumentsContinue} disabled={scanningWarranty} className="py-2.5 items-center">
+          <Pressable onPress={handleDocumentsContinue} disabled={scanningWarranty} className="py-2.5 items-center active:opacity-60">
             <Text className="text-[13px] font-semibold text-stone-500">Skip, I don&apos;t have any</Text>
           </Pressable>
         </ScrollView>
@@ -731,10 +731,10 @@ function SystemDetailsStep({ system, onDone }) {
               No warranty info found on your documents, but this product typically carries about a {formatDuration(warrantyEstimate.durationMonths)} warranty — estimated to expire {formatMonthYear(warrantyEstimate.expirationDate)}.
             </Text>
             <View className="flex-row gap-2">
-              <Pressable onPress={acceptWarrantyEstimate} className="flex-1 py-1.5 rounded-lg items-center" style={{ backgroundColor: PRIMARY }}>
+              <Pressable onPress={acceptWarrantyEstimate} className="flex-1 py-1.5 rounded-lg items-center active:opacity-60" style={{ backgroundColor: PRIMARY }}>
                 <Text className="text-[12px] font-semibold text-white">Use this date</Text>
               </Pressable>
-              <Pressable onPress={() => setWarrantyEstimate(null)} className="flex-1 py-1.5 rounded-lg items-center" style={fieldStyle}>
+              <Pressable onPress={() => setWarrantyEstimate(null)} className="flex-1 py-1.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
                 <Text className="text-[12px] font-semibold text-stone-700">Dismiss</Text>
               </Pressable>
             </View>
@@ -771,7 +771,7 @@ function SystemDetailsStep({ system, onDone }) {
           <Pressable
             onPress={() => setSubStep("receipt")}
             disabled={saving}
-            className="flex-row items-center justify-center gap-1 px-4 py-2.5 rounded-lg"
+            className="flex-row items-center justify-center gap-1 px-4 py-2.5 rounded-lg active:opacity-60"
             style={{ borderWidth: 1, borderColor: "#D8D5CB" }}
           >
             <ChevronLeft size={16} color="#78716c" />
@@ -780,8 +780,8 @@ function SystemDetailsStep({ system, onDone }) {
           <Pressable
             onPress={handleSaveNext}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-lg items-center"
-            style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+            className="flex-1 py-2.5 rounded-lg items-center active:opacity-60"
+            style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : undefined }}
           >
             <Text className="text-[13.5px] font-semibold text-white">
               {saving ? "Saving..." : lifeCheck && lifeCheck.level !== "blocked" ? "Save anyway" : "Save"}
@@ -789,7 +789,7 @@ function SystemDetailsStep({ system, onDone }) {
           </Pressable>
         </View>
 
-        <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center">
+        <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center active:opacity-60">
           <Text className="text-[13.5px] font-semibold text-stone-500">Skip for now</Text>
         </Pressable>
       </ScrollView>
@@ -1097,14 +1097,14 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
     >
       <View className="flex-row items-center justify-between mb-3">
         {onBackPress ? (
-          <Pressable onPress={onBackPress} className="flex-row items-center gap-1">
+          <Pressable onPress={onBackPress} className="flex-row items-center gap-1 active:opacity-60">
             <ChevronLeft size={16} color="#78716c" />
             <Text className="text-[13px] text-stone-500">Back</Text>
           </Pressable>
         ) : (
           <View />
         )}
-        <Pressable onPress={() => setConfirmingSkip(true)} hitSlop={8}>
+        <Pressable className="active:opacity-60" onPress={() => setConfirmingSkip(true)} hitSlop={8}>
           <Text className="text-[13px] font-semibold text-stone-400">Skip</Text>
         </Pressable>
       </View>
@@ -1116,7 +1116,7 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
 
       {confirmingSkip && (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} className="items-center justify-center px-6">
-          <Pressable
+          <Pressable className="active:opacity-60"
             onPress={() => setConfirmingSkip(false)}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }}
           />
@@ -1125,10 +1125,10 @@ function OnboardingGuideScreen({ title, skipSubject, onBackPress, onSkip, childr
             <Text className="text-[12.5px] text-stone-500 mb-4">
               You sure you want to skip {skipSubject}? You can always add it later from the Systems tab.
             </Text>
-            <Pressable onPress={onSkip} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+            <Pressable onPress={onSkip} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
               <Text className="text-[13.5px] font-semibold text-white">Yes, skip it</Text>
             </Pressable>
-            <Pressable onPress={() => setConfirmingSkip(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+            <Pressable onPress={() => setConfirmingSkip(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
               <Text className="text-[13.5px] font-semibold text-stone-700">Keep going</Text>
             </Pressable>
           </View>
@@ -1151,7 +1151,7 @@ function TypePickerList({ types, suggestedKey, onSelect, saving, Icon }) {
             key={key}
             onPress={() => onSelect(key)}
             disabled={saving}
-            className="flex-row items-center justify-between py-2.5 px-2.5 mb-1 rounded-lg"
+            className="flex-row items-center justify-between py-2.5 px-2.5 mb-1 rounded-lg active:opacity-60"
             style={{
               backgroundColor: suggested ? ACCENT_YELLOW : "white",
               borderWidth: suggested ? 1.5 : 0,
@@ -1242,10 +1242,10 @@ function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
     return (
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have an HVAC system?</Text>
-        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1258,14 +1258,14 @@ function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your HVAC system type?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
-          className="w-full py-2.5 rounded-lg items-center mb-2"
+          className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
           style={{ backgroundColor: PRIMARY }}
         >
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
         <Pressable
           onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
-          className="w-full py-2.5 rounded-lg items-center"
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
           style={fieldStyle}
         >
           <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
@@ -1280,10 +1280,10 @@ function HvacOnboardingStep({ hasExisting, onBack, onDone }) {
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
         <HvacGuideIllustration guideKey={guideNode} />
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
-        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1354,10 +1354,10 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
     return (
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have a water heater?</Text>
-        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1370,14 +1370,14 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your water heater type?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
-          className="w-full py-2.5 rounded-lg items-center mb-2"
+          className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
           style={{ backgroundColor: PRIMARY }}
         >
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
         <Pressable
           onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
-          className="w-full py-2.5 rounded-lg items-center"
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
           style={fieldStyle}
         >
           <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
@@ -1392,10 +1392,10 @@ function WaterHeaterOnboardingStep({ hasExisting, onBack, onDone }) {
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
         <WaterHeaterGuideIllustration guideKey={guideNode} />
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
-        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1441,12 +1441,12 @@ function GarageOnboardingStep({ hasExisting, onBack, onDone }) {
       <Pressable
         onPress={handleYes}
         disabled={saving}
-        className="w-full py-2.5 rounded-lg items-center mb-2"
-        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+        className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
+        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : undefined }}
       >
         <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Yes"}</Text>
       </Pressable>
-      <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+      <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
         <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
       </Pressable>
       {error && <Text className="text-[12px] text-center mt-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
@@ -1466,7 +1466,7 @@ function YesNoPrompt({ title, question, yesLabel = "Yes", noLabel = "No, skip th
       contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">Back</Text>
       </Pressable>
@@ -1474,10 +1474,10 @@ function YesNoPrompt({ title, question, yesLabel = "Yes", noLabel = "No, skip th
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text className="text-[17px] font-semibold text-stone-900 mb-4 text-center">{title}</Text>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{question}</Text>
-        <Pressable onPress={onYes} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={onYes} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">{yesLabel}</Text>
         </Pressable>
-        <Pressable onPress={onNo} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={onNo} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">{noLabel}</Text>
         </Pressable>
       </View>
@@ -1564,7 +1564,7 @@ function ApplianceChecklistStep({ onBack, onDone }) {
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3">
+      <Pressable onPress={onBack} className="flex-row items-center gap-1 mb-3 active:opacity-60">
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">Back</Text>
       </Pressable>
@@ -1584,7 +1584,7 @@ function ApplianceChecklistStep({ onBack, onDone }) {
               className="flex-row items-center justify-between py-2.5"
               style={{ borderBottomWidth: i < COMMON_APPLIANCES.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
             >
-              <Pressable onPress={() => toggle(name)} className="flex-row items-center gap-2 flex-1 py-1" hitSlop={4}>
+              <Pressable onPress={() => toggle(name)} className="flex-row items-center gap-2 flex-1 py-1 active:opacity-60" hitSlop={4}>
                 <View
                   className="items-center justify-center rounded"
                   style={{ width: 20, height: 20, backgroundColor: isChecked ? PRIMARY : "white", borderWidth: isChecked ? 0 : 1, borderColor: "#D8D5CB" }}
@@ -1596,11 +1596,11 @@ function ApplianceChecklistStep({ onBack, onDone }) {
 
               {isChecked && (
                 <View className="flex-row items-center rounded-lg" style={fieldStyle}>
-                  <Pressable onPress={() => adjustQuantity(name, -1)} className="items-center justify-center" style={{ width: 28, height: 30 }} hitSlop={6}>
+                  <Pressable onPress={() => adjustQuantity(name, -1)} className="items-center justify-center active:opacity-60" style={{ width: 28, height: 30 }} hitSlop={6}>
                     <Minus size={13} color={PRIMARY} />
                   </Pressable>
                   <Text className="text-[13px] font-semibold text-center" style={{ width: 18 }}>{qty}</Text>
-                  <Pressable onPress={() => adjustQuantity(name, 1)} className="items-center justify-center" style={{ width: 28, height: 30 }} hitSlop={6}>
+                  <Pressable onPress={() => adjustQuantity(name, 1)} className="items-center justify-center active:opacity-60" style={{ width: 28, height: 30 }} hitSlop={6}>
                     <Plus size={13} color={PRIMARY} />
                   </Pressable>
                 </View>
@@ -1613,8 +1613,8 @@ function ApplianceChecklistStep({ onBack, onDone }) {
       <Pressable
         onPress={handleContinue}
         disabled={saving}
-        className="w-full py-2.5 rounded-lg items-center"
-        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+        className="w-full py-2.5 rounded-lg items-center active:opacity-60"
+        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : undefined }}
       >
         <Text className="text-[13.5px] font-semibold text-white">
           {saving ? "Saving..." : totalCount > 0 ? `Add ${totalCount} and continue` : "Continue"}
@@ -1679,10 +1679,10 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
     return (
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have a backup power generator?</Text>
-        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1695,14 +1695,14 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know your generator type?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
-          className="w-full py-2.5 rounded-lg items-center mb-2"
+          className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
           style={{ backgroundColor: PRIMARY }}
         >
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
         <Pressable
           onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
-          className="w-full py-2.5 rounded-lg items-center"
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
           style={fieldStyle}
         >
           <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
@@ -1717,10 +1717,10 @@ function GeneratorOnboardingStep({ onBack, onDone }) {
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
         <GeneratorGuideIllustration guideKey={guideNode} />
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
-        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1791,10 +1791,10 @@ function SolarOnboardingStep({ onBack, onDone }) {
     return (
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have solar panels?</Text>
-        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have any</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1807,14 +1807,14 @@ function SolarOnboardingStep({ onBack, onDone }) {
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know how they&apos;re installed?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
-          className="w-full py-2.5 rounded-lg items-center mb-2"
+          className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
           style={{ backgroundColor: PRIMARY }}
         >
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
         <Pressable
           onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
-          className="w-full py-2.5 rounded-lg items-center"
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
           style={fieldStyle}
         >
           <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
@@ -1829,10 +1829,10 @@ function SolarOnboardingStep({ onBack, onDone }) {
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
         <SolarGuideIllustration guideKey={guideNode} />
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
-        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1903,10 +1903,10 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
     return (
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={onBack} onSkip={onDone}>
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you have an EV charger?</Text>
-        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => setSubStep("know")} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No, I don&apos;t have one</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -1919,14 +1919,14 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you know if it&apos;s Level 1 or Level 2?</Text>
         <Pressable
           onPress={() => { setSuggestedType(null); setSubStep("pick"); }}
-          className="w-full py-2.5 rounded-lg items-center mb-2"
+          className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
           style={{ backgroundColor: PRIMARY }}
         >
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
         <Pressable
           onPress={() => { setGuideNode("start"); setGuideHistory([]); setSubStep("guide"); }}
-          className="w-full py-2.5 rounded-lg items-center"
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
           style={fieldStyle}
         >
           <Text className="text-[13.5px] font-semibold text-stone-700">Guide me</Text>
@@ -1941,10 +1941,10 @@ function EvChargerOnboardingStep({ onBack, onDone }) {
       <OnboardingGuideScreen {...guideScreenProps} onBackPress={backGuide} onSkip={onDone}>
         <EvChargerGuideIllustration guideKey={guideNode} />
         <Text className="text-[13.5px] text-stone-700 mb-4 text-center">{node.text}</Text>
-        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2" style={{ backgroundColor: PRIMARY }}>
+        <Pressable onPress={() => answerGuide(true)} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
           <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
         </Pressable>
-        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center" style={fieldStyle}>
+        <Pressable onPress={() => answerGuide(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
           <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
         </Pressable>
       </OnboardingGuideScreen>
@@ -2144,7 +2144,7 @@ export default function OnboardingScreen() {
 
           <Pressable
             onPress={() => setStep("transition")}
-            className="w-full py-4 rounded-full items-center"
+            className="w-full py-4 rounded-full items-center active:opacity-60"
             style={{ backgroundColor: PRIMARY }}
           >
             <Text className="text-[15px] font-semibold text-white">Get started</Text>
@@ -2154,7 +2154,7 @@ export default function OnboardingScreen() {
               earlier in the stack to go "back" to — signing out is the only
               way out if the user landed here by mistake (e.g. the wrong
               account). */}
-          <Pressable onPress={signOut} className="mt-4 py-2" hitSlop={8}>
+          <Pressable onPress={signOut} className="mt-4 py-2 active:opacity-60" hitSlop={8}>
             <Text className="text-[13px] font-semibold" style={{ color: "#3B5169" }}>Sign out</Text>
           </Pressable>
         </View>
@@ -2215,7 +2215,7 @@ export default function OnboardingScreen() {
               <Pressable
                 key={s.id}
                 onPress={() => selectSuggestion(s)}
-                className="flex-row items-center gap-2 px-3 py-2.5"
+                className="flex-row items-center gap-2 px-3 py-2.5 active:opacity-60"
                 style={{ borderBottomWidth: i < suggestions.length - 1 ? 1 : 0, borderBottomColor: "#E7EEDB" }}
               >
                 <MapPin size={14} color="#78716c" />
@@ -2232,8 +2232,8 @@ export default function OnboardingScreen() {
         <Pressable
           onPress={handleFindDetails}
           disabled={!canFindDetails}
-          className="w-full py-2.5 rounded-lg items-center"
-          style={{ backgroundColor: PRIMARY, opacity: canFindDetails ? 1 : 0.5 }}
+          className="w-full py-2.5 rounded-lg items-center active:opacity-60"
+          style={{ backgroundColor: PRIMARY, opacity: canFindDetails ? undefined : 0.5 }}
         >
           <Text className="text-[13.5px] font-semibold text-white">Find property details</Text>
         </Pressable>
@@ -2382,7 +2382,7 @@ export default function OnboardingScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Pressable onPress={() => setStep("property")} className="flex-row items-center gap-1 mb-3">
+      <Pressable onPress={() => setStep("property")} className="flex-row items-center gap-1 mb-3 active:opacity-60">
         <ChevronLeft size={16} color="#78716c" />
         <Text className="text-[13px] text-stone-500">Back</Text>
       </Pressable>
@@ -2452,8 +2452,8 @@ export default function OnboardingScreen() {
       <Pressable
         onPress={handleSave}
         disabled={saving}
-        className="w-full py-2.5 rounded-lg items-center"
-        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : 1 }}
+        className="w-full py-2.5 rounded-lg items-center active:opacity-60"
+        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : undefined }}
       >
         <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Continue"}</Text>
       </Pressable>
