@@ -18,6 +18,7 @@ import {
 } from "../lib/constants.js";
 import { autocompleteAddress } from "../lib/mapbox.js";
 import { fetchPropertyDetails, scanSystemLabel, scanWarrantyDocs } from "../lib/db.js";
+import { money } from "../lib/forecast.js";
 import { useAiFill } from "../lib/ai-fill.js";
 import AiFillNote from "../components/AiFillNote.js";
 import { manufactureDateToInstalled } from "../lib/manufacture-date.js";
@@ -1984,6 +1985,10 @@ export default function OnboardingScreen() {
   const [yearBuilt, setYearBuilt] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [marketValue, setMarketValue] = useState("");
+  // True only when RentCast itself returned a value — distinct from the
+  // field just having text in it, so a value the user types in by hand
+  // (because RentCast found nothing) doesn't get locked or mislabeled.
+  const [marketValueFromRentCast, setMarketValueFromRentCast] = useState(false);
   const [extraDetails, setExtraDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
@@ -2070,10 +2075,12 @@ export default function OnboardingScreen() {
     if (fetchError) {
       setError("Couldn't look up that address. You can still continue and fill in details manually.");
       setExtraDetails({});
+      setMarketValueFromRentCast(false);
     } else {
       if (details.bedrooms != null) setBedrooms(String(details.bedrooms));
       if (details.yearBuilt != null) setYearBuilt(String(details.yearBuilt));
       if (details.purchasePrice != null) setPurchasePrice(String(details.purchasePrice));
+      setMarketValueFromRentCast(details.marketValue != null);
       if (details.marketValue != null) setMarketValue(String(Math.round(details.marketValue)));
       setExtraDetails(details);
     }
@@ -2094,7 +2101,7 @@ export default function OnboardingScreen() {
         yearBuilt: int(yearBuilt),
         purchasePrice: num(purchasePrice),
         propertyValue: num(marketValue),
-        propertyValueSource: marketValue.trim() ? "RentCast" : null,
+        propertyValueSource: marketValueFromRentCast ? "RentCast" : marketValue.trim() ? "Manual" : null,
         bathrooms: extraDetails?.bathrooms ?? null,
         squareFootage: extraDetails?.squareFootage ?? null,
         lotSize: extraDetails?.lotSize ?? null,
@@ -2445,14 +2452,23 @@ export default function OnboardingScreen() {
       />
 
       <Text className="text-[11px] text-stone-500 mb-1">Current market value ($)</Text>
-      <TextInput
-        value={marketValue}
-        onChangeText={setMarketValue}
-        placeholder="e.g. 425000"
-        inputMode="decimal"
-        className="w-full mb-4 px-3 py-2 rounded-lg text-[13.5px]"
-        style={fieldStyle}
-      />
+      {marketValueFromRentCast ? (
+        <>
+          <View className="w-full mb-1 px-3 py-2 rounded-lg" style={{ backgroundColor: "#F2F0EA", borderWidth: 1, borderColor: "#E0E8D3" }}>
+            <Text className="text-[13.5px] text-stone-500">{marketValue ? money(Number(marketValue)) : "—"}</Text>
+          </View>
+          <Text className="text-[11px] text-stone-400 mb-4">Pulled from RentCast — can&apos;t be edited manually.</Text>
+        </>
+      ) : (
+        <TextInput
+          value={marketValue}
+          onChangeText={setMarketValue}
+          placeholder="e.g. 425000"
+          inputMode="decimal"
+          className="w-full mb-4 px-3 py-2 rounded-lg text-[13.5px]"
+          style={fieldStyle}
+        />
+      )}
 
       {error && <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
 
