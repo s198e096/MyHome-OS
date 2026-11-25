@@ -1,6 +1,6 @@
 import {
   Home, Wind, Droplet, Droplets, Zap, Wrench, AppWindow, PaintBucket, DoorOpen, Warehouse, Grid2x2, Trees, Toilet, Faucet, PlugZap, Sun, EvCharger,
-  Refrigerator, WashingMachine, Microwave, Flame, Snowflake, Trash2, Fan, UtensilsCrossed,
+  Refrigerator, WashingMachine, Microwave, Flame, Snowflake, Trash2, Fan, UtensilsCrossed, CloudRain,
 } from "lucide-react-native";
 
 export const PRIMARY = "#16240F";
@@ -54,6 +54,7 @@ export const CATEGORY_META = {
   windows: { label: "Windows", icon: AppWindow },
   exterior: { label: "Exterior / Paint", icon: PaintBucket },
   garage_door: { label: "Garage Door", icon: Warehouse },
+  gutters: { label: "Gutters & Downspouts", icon: CloudRain },
   balcony: { label: "Balcony", icon: DoorOpen },
   deck: { label: "Deck", icon: Grid2x2 },
   garden: { label: "Garden / Backyard", icon: Trees },
@@ -106,6 +107,7 @@ export const DEFAULT_LIFE_YEARS = {
   windows: 14, // Double-Pane: 8-20 years
   exterior: 9, // Paint (exterior): 7-10 years
   garage_door: 23, // Garage Doors: 20-25 years
+  gutters: 30, // Aluminum Gutters, Downspouts, Soffit and Fascia (most common material): 20-40+ years
   balcony: 20, // not in the NACHI table — using Deck's "Structural Wood" as an analog
   deck: 20, // Structural Wood: 10-30 years
   garden: 20, // not in the NACHI table — using Wood Fencing as a proxy
@@ -198,11 +200,16 @@ export const COMMON_SYSTEM_TASKS = {
     { title: "Test temperature & pressure relief valve", recurrence: "annually" },
     { title: "Inspect anode rod", recurrence: "annually" },
   ],
-  roof: [
-    { title: "Inspect roof for damage", recurrence: "annually" },
-    { title: "Clean gutters", recurrence: "semiannually" },
-  ],
+  // "Clean gutters" used to live here too, back when gutters had no system
+  // of their own to belong to — now that they do (see "gutters" below),
+  // it'd otherwise be suggested twice for a house with both.
+  roof: [{ title: "Inspect roof for damage", recurrence: "annually" }],
   garage_door: [{ title: "Lubricate rollers, bearings, hinges as specified by manufacturer", recurrence: "annually" }],
+  gutters: [
+    { title: "Clean gutters", recurrence: "semiannually" },
+    { title: "Inspect for leaks", recurrence: "annually" },
+    { title: "Inspect downspouts for blockages", recurrence: "annually" },
+  ],
   plumbing: [
     { title: "Inspect for leaks", recurrence: "semiannually" },
     { title: "Check water pressure", recurrence: "annually" },
@@ -245,7 +252,7 @@ export function recurrenceLabel(key) {
 // Which categories each onboarding step offers, and in which order they're
 // walked through after the property step.
 export const ONBOARDING_SYSTEM_CATEGORIES = ["hvac_indoor", "hvac_outdoor", "water_heater", "plumbing", "electrical"];
-export const ONBOARDING_STRUCTURE_CATEGORIES = ["roof", "windows", "exterior", "balcony", "deck", "garden"];
+export const ONBOARDING_STRUCTURE_CATEGORIES = ["roof", "windows", "exterior", "balcony", "deck", "garden", "gutters"];
 export const ONBOARDING_FIXTURE_CATEGORIES = ["toilet", "faucet", "sink"];
 
 export const FILTER_OPTIONS = [

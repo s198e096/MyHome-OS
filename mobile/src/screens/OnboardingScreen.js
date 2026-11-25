@@ -1453,6 +1453,69 @@ function GarageOnboardingStep({ hasExisting, onBack, onDone }) {
   );
 }
 
+// Framed around general exterior upkeep rather than a single system — "yes"
+// to maintaining the exterior doesn't by itself add anything (there's no
+// one system that represents "the exterior") — it leads to suggesting the
+// one maintenance item most homeowners who said yes actually have: gutters
+// and downspouts, added as a single combined system since they're serviced
+// together.
+function GuttersOnboardingStep({ hasExisting, onBack, onDone }) {
+  const { addSystem } = useAppData();
+  const [subStep, setSubStep] = useState("ask");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleAddGutters() {
+    if (hasExisting) return onDone();
+    setSaving(true);
+    setError("");
+    try {
+      await addSystem({ category: "gutters", brand: null, model: null, location: "" });
+      onDone();
+    } catch {
+      setError("Couldn't save. Try again.");
+      setSaving(false);
+    }
+  }
+
+  if (subStep === "ask") {
+    return (
+      <OnboardingGuideScreen title="House exterior" skipSubject="house exterior upkeep" onBackPress={onBack} onSkip={onDone}>
+        <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Do you maintain the exterior of your house?</Text>
+        <Pressable
+          onPress={() => setSubStep("suggest")}
+          className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          <Text className="text-[13.5px] font-semibold text-white">Yes</Text>
+        </Pressable>
+        <Pressable onPress={onDone} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
+          <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+        </Pressable>
+      </OnboardingGuideScreen>
+    );
+  }
+
+  // subStep === "suggest"
+  return (
+    <OnboardingGuideScreen title="House exterior" skipSubject="gutters & downspouts" onBackPress={() => setSubStep("ask")} onSkip={onDone}>
+      <Text className="text-[13.5px] text-stone-700 mb-4 text-center">Add gutters & downspouts as a system?</Text>
+      <Pressable
+        onPress={handleAddGutters}
+        disabled={saving}
+        className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60"
+        style={{ backgroundColor: PRIMARY, opacity: saving ? 0.6 : undefined }}
+      >
+        <Text className="text-[13.5px] font-semibold text-white">{saving ? "Saving..." : "Yes"}</Text>
+      </Pressable>
+      <Pressable onPress={onDone} disabled={saving} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
+        <Text className="text-[13.5px] font-semibold text-stone-700">No</Text>
+      </Pressable>
+      {error && <Text className="text-[12px] text-center mt-2" style={{ color: STATUS_COLOR.red }}>{error}</Text>}
+    </OnboardingGuideScreen>
+  );
+}
+
 // A plain yes/no gate for an optional add-on step where there's no
 // meaningful "type" to guide the user toward (unlike HVAC, water heaters,
 // generators, solar, or EV chargers) — so no guided walkthrough, just one
@@ -2271,6 +2334,17 @@ export default function OnboardingScreen() {
       <GarageOnboardingStep
         hasExisting={hasExistingGarageDoor}
         onBack={() => setStep("water-heater")}
+        onDone={() => setStep("gutters")}
+      />
+    );
+  }
+
+  if (step === "gutters") {
+    const hasExistingGutters = systems.some((s) => s.category === "gutters");
+    return (
+      <GuttersOnboardingStep
+        hasExisting={hasExistingGutters}
+        onBack={() => setStep("garage")}
         onDone={() => setStep("plumbing-fixtures-ask")}
       />
     );
@@ -2281,7 +2355,7 @@ export default function OnboardingScreen() {
       <YesNoPrompt
         title="Add plumbing fixtures?"
         question="Would you like to add toilets, faucets, or sinks?"
-        onBack={() => setStep("garage")}
+        onBack={() => setStep("gutters")}
         onYes={() => setStep("plumbing-fixtures-add")}
         onNo={() => setStep("generator")}
       />
