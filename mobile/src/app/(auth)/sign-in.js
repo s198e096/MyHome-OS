@@ -5,7 +5,7 @@ import * as Linking from "expo-linking";
 import { PRIMARY, STATUS_COLOR } from "../../lib/constants.js";
 import { supabase } from "../../lib/supabase.js";
 import { checkSignupAvailability } from "../../lib/db.js";
-import { COUNTRY_CODES, findCountry } from "../../lib/country-codes.js";
+import { COUNTRY_CODES, findCountry, isValidPhoneNumber } from "../../lib/country-codes.js";
 import SelectModal from "../../components/SelectModal.js";
 import PasswordField from "../../components/PasswordField.js";
 
@@ -39,8 +39,12 @@ export default function SignIn() {
   // regardless of how the user formatted it — that consistency is what lets
   // the duplicate-phone check (and any future lookup) compare numbers
   // reliably instead of guessing at formatting.
+  function phoneDigits() {
+    return phone.trim().replace(/\D/g, "");
+  }
+
   function fullPhoneNumber() {
-    const digits = phone.trim().replace(/\D/g, "");
+    const digits = phoneDigits();
     if (!digits) return "";
     return `${findCountry(countryIso2).dial}${digits}`;
   }
@@ -66,6 +70,7 @@ export default function SignIn() {
       if (!firstName.trim()) return setError("Enter your first name.");
       if (!lastName.trim()) return setError("Enter your last name.");
       if (!phone.trim()) return setError("Enter your phone number.");
+      if (!isValidPhoneNumber(phoneDigits(), countryIso2)) return setError("Enter a valid phone number.");
       if (password !== confirmPassword) return setError("Passwords don't match.");
     }
 

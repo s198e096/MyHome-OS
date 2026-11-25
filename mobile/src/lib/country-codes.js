@@ -148,3 +148,17 @@ export const COUNTRY_CODES = COUNTRIES.map((c) => ({ ...c, flag: flagEmoji(c.iso
 export function findCountry(iso2) {
   return COUNTRY_CODES.find((c) => c.iso2 === iso2) || COUNTRY_CODES[0];
 }
+
+// A lightweight sanity check on the national number the user typed (digits
+// only, dial code already stripped) — not a guarantee the number is
+// actually reachable, just enough to catch the common mistakes (too few or
+// too many digits) without a full phone-number metadata library. Every "+1"
+// country (US, Canada, and several Caribbean nations) shares one real
+// numbering plan, so those get its exact rule — 10 digits, with neither the
+// area code nor the exchange code allowed to start with 0 or 1; everywhere
+// else just gets a plausible length check.
+export function isValidPhoneNumber(digits, iso2) {
+  if (!digits) return false;
+  if (findCountry(iso2).dial === "+1") return /^[2-9]\d{2}[2-9]\d{6}$/.test(digits);
+  return digits.length >= 4 && digits.length <= 14;
+}
