@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text } from "react-native";
 import { useAppData } from "../../../../lib/app-data-context.js";
 import ItemFormScreen from "../../../../screens/ItemFormScreen.js";
-import CostsGate from "../../../../components/CostsGate.js";
 
 export default function EditExpense() {
   const { id } = useLocalSearchParams();
@@ -12,27 +11,23 @@ export default function EditExpense() {
 
   if (!expense) {
     return (
-      <CostsGate>
-        <View className="flex-1 bg-[#F5F8F0] items-center justify-center">
-          <Text className="text-stone-400 text-[13px]">Expense not found.</Text>
-        </View>
-      </CostsGate>
+      <View className="flex-1 bg-[#F5F8F0] items-center justify-center">
+        <Text className="text-stone-400 text-[13px]">Expense not found.</Text>
+      </View>
     );
   }
 
   return (
-    <CostsGate>
-      <ItemFormScreen
-        kind="expense"
-        item={expense}
-        systems={systems}
-        onBack={() => router.back()}
-        onUpdateExpense={updateExpense}
-        onAddDocument={addDocument}
-        // The form already steps back as soon as Delete is confirmed, so this
-        // must not navigate as well (a second back skips the expense log).
-        onDeleteExpense={deleteExpense}
-      />
-    </CostsGate>
+    <ItemFormScreen
+      kind="expense"
+      item={expense}
+      systems={systems}
+      onBack={() => router.back()}
+      onUpdateExpense={updateExpense}
+      onAddDocument={addDocument}
+      // The form already steps back as soon as Delete is confirmed, so this
+      // must not navigate as well (a second back skips the expense log).
+      onDeleteExpense={deleteExpense}
+    />
   );
 }
