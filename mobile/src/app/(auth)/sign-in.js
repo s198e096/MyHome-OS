@@ -1,42 +1,18 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Home, Eye, EyeOff, ChevronDown } from "lucide-react-native";
+import { Home, ChevronDown } from "lucide-react-native";
 import * as Linking from "expo-linking";
 import { PRIMARY, STATUS_COLOR } from "../../lib/constants.js";
 import { supabase } from "../../lib/supabase.js";
 import { checkSignupAvailability } from "../../lib/db.js";
 import { COUNTRY_CODES, findCountry } from "../../lib/country-codes.js";
 import SelectModal from "../../components/SelectModal.js";
-
-const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
+import PasswordField from "../../components/PasswordField.js";
 
 // Sends confirmation/reset emails back into this app via its own URL scheme
 // instead of Supabase's default Site URL (the old, unmaintained web app) —
 // auth-context.js picks this back up and turns it into a real session.
 const AUTH_REDIRECT_URL = Linking.createURL("/");
-
-// A password TextInput with a show/hide toggle — its own independent
-// visibility state, so toggling the password field never also reveals
-// confirm-password.
-function PasswordField({ value, onChangeText, placeholder, textContentType, className }) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <View className={className} style={[{ flexDirection: "row", alignItems: "center" }, fieldStyle]}>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        secureTextEntry={!visible}
-        autoCapitalize="none"
-        textContentType={textContentType}
-        className="flex-1 px-3 py-2.5 text-[13.5px]"
-      />
-      <Pressable onPress={() => setVisible((v) => !v)} hitSlop={8} style={{ paddingHorizontal: 10 }}>
-        {visible ? <EyeOff size={17} color="#78716c" /> : <Eye size={17} color="#78716c" />}
-      </Pressable>
-    </View>
-  );
-}
 
 export default function SignIn() {
   const [mode, setMode] = useState("signin"); // 'signin' | 'signup' | 'forgot'

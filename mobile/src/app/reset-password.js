@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { PRIMARY, STATUS_COLOR } from "../lib/constants.js";
 import { supabase } from "../lib/supabase.js";
 import { checkPasswordReuse } from "../lib/db.js";
 import { useSession } from "../lib/auth-context.js";
+import PasswordField from "../components/PasswordField.js";
 
 export default function ResetPassword() {
   const { clearPasswordRecovery } = useSession();
@@ -47,25 +48,19 @@ export default function ResetPassword() {
           <Text className="text-[17px] font-semibold text-stone-900 mb-1">Set a new password</Text>
           <Text className="text-[12.5px] text-stone-400 mb-4">MyHouse OS</Text>
 
-          <TextInput
+          <PasswordField
             value={password}
             onChangeText={setPassword}
             placeholder="New password"
-            secureTextEntry
-            autoCapitalize="none"
             textContentType="newPassword"
-            className="w-full mb-2 px-3 py-2.5 rounded-lg text-[13.5px]"
-            style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+            className="w-full mb-2 rounded-lg"
           />
-          <TextInput
+          <PasswordField
             value={confirm}
             onChangeText={setConfirm}
             placeholder="Confirm new password"
-            secureTextEntry
-            autoCapitalize="none"
             textContentType="newPassword"
-            className="w-full mb-3 px-3 py-2.5 rounded-lg text-[13.5px]"
-            style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
+            className="w-full mb-3 rounded-lg"
           />
 
           {error ? <Text className="text-[12px] mb-2" style={{ color: STATUS_COLOR.red }}>{error}</Text> : null}
