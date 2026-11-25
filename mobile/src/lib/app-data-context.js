@@ -38,7 +38,7 @@ export function useAppData() {
 const NO_AI_USAGE = { chatUsed: 0, chatResetsAt: null, fillUsed: 0 };
 
 export function AppDataProvider({ children }) {
-  const { session } = useSession();
+  const { session, signOut } = useSession();
   const [dataLoaded, setDataLoaded] = useState(false);
   const [systems, setSystems] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -72,43 +72,55 @@ export function AppDataProvider({ children }) {
 
     let cancelled = false;
     (async () => {
-      const fallbackName = session.user.email?.split("@")[0] || "New user";
-      // Set via `options.data` on supabase.auth.signUp — travels with the
-      // user object regardless of email-confirmation status, unlike a
-      // profiles-table write (which needs a session the user doesn't have yet).
-      const meta = session.user.user_metadata || {};
-      const signupMeta = { firstName: meta.first_name, lastName: meta.last_name, phone: meta.phone };
-      const [all, profileRow, checksResult, purchasesResult, usageResult] = await Promise.all([
-        loadAllData(),
-        loadProfile(session.user.id, fallbackName, signupMeta),
-        loadEnergyChecks().catch((err) => {
-          console.error("Failed to load energy checks:", err);
-          return [];
-        }),
-        // Tolerates the purchases table not existing yet, so the app still
-        // loads before that migration has been run.
-        loadReportPurchases().catch(() => []),
-        // Same tolerance for the AI-usage table (migration 0031).
-        loadAiUsage().catch(() => NO_AI_USAGE),
-      ]);
-      if (cancelled) return;
-      setReportPurchases(purchasesResult);
-      setAiUsage(usageResult);
-      setSystems(all.systems);
-      setTasks(all.tasks);
-      setExpenses(all.expenses);
-      setDocuments(all.documents);
-      setWarranties(all.warranties);
-      setSystemProblems(all.systemProblems);
-      setFurniture(all.furniture);
-      setEnergyChecks(checksResult);
-      setProfile({ ...profileRow, email: session.user.email });
-      setDataLoaded(true);
+      try {
+        const fallbackName = session.user.email?.split("@")[0] || "New user";
+        // Set via `options.data` on supabase.auth.signUp — travels with the
+        // user object regardless of email-confirmation status, unlike a
+        // profiles-table write (which needs a session the user doesn't have yet).
+        const meta = session.user.user_metadata || {};
+        const signupMeta = { firstName: meta.first_name, lastName: meta.last_name, phone: meta.phone };
+        const [all, profileRow, checksResult, purchasesResult, usageResult] = await Promise.all([
+          loadAllData(),
+          loadProfile(session.user.id, fallbackName, signupMeta),
+          loadEnergyChecks().catch((err) => {
+            console.error("Failed to load energy checks:", err);
+            return [];
+          }),
+          // Tolerates the purchases table not existing yet, so the app still
+          // loads before that migration has been run.
+          loadReportPurchases().catch(() => []),
+          // Same tolerance for the AI-usage table (migration 0031).
+          loadAiUsage().catch(() => NO_AI_USAGE),
+        ]);
+        if (cancelled) return;
+        setReportPurchases(purchasesResult);
+        setAiUsage(usageResult);
+        setSystems(all.systems);
+        setTasks(all.tasks);
+        setExpenses(all.expenses);
+        setDocuments(all.documents);
+        setWarranties(all.warranties);
+        setSystemProblems(all.systemProblems);
+        setFurniture(all.furniture);
+        setEnergyChecks(checksResult);
+        setProfile({ ...profileRow, email: session.user.email });
+        setDataLoaded(true);
+      } catch (err) {
+        if (cancelled) return;
+        // The session's own validity is checked at sign-in time
+        // (auth-context.js), but a user deleted mid-session (e.g. from
+        // another device, or the dashboard) would only surface here, as
+        // every query for their now-nonexistent row fails. Rather than
+        // leaving the app stuck on a blank screen forever (dataLoaded never
+        // becomes true), fall back to signed-out instead.
+        console.error("Failed to load account data:", err);
+        await signOut();
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, signOut]);
 
   // Keeps on-device reminders in sync with the open-tasks list, once data
   // has actually loaded (otherwise the initial empty array would wipe out
