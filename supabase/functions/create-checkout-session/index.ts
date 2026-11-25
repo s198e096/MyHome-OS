@@ -113,12 +113,18 @@ Deno.serve(async (req) => {
       await adminClient.from("profiles").update({ stripe_customer_id: customerId }).eq("user_id", user.id);
     }
 
+    // Stripe requires success_url/cancel_url to be real http(s) URLs — it
+    // rejects the app's own custom scheme (what `origin` actually is here,
+    // e.g. myhomeos:///) outright. Send the browser to our own landing page
+    // instead, which immediately bounces it back into the app via `origin`.
+    const redirectBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/checkout-redirect`;
+    const appUrlParam = `appUrl=${encodeURIComponent(origin)}`;
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: plan.mode,
       line_items: [{ price: plan.price, quantity: 1 }],
-      success_url: `${origin}/?${reportType ? "report" : "billing"}=success`,
-      cancel_url: `${origin}/?${reportType ? "report" : "billing"}=cancel`,
+      success_url: `${redirectBase}?status=success&${appUrlParam}`,
+      cancel_url: `${redirectBase}?status=cancel&${appUrlParam}`,
       client_reference_id: user.id,
       // A report purchase carries `report_type` and deliberately NO `plan`, so
       // the webhook can never mistake it for a plan change.
@@ -132,6 +138,9 @@ Deno.serve(async (req) => {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {
+    // Logged so the real failure (e.g. a Stripe API error) is visible in
+    // the function's logs even when the client can't show it.
+    console.error(err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

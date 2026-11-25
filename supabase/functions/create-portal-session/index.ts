@@ -60,15 +60,20 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!);
+    // Stripe requires return_url to be a real http(s) URL — it rejects the
+    // app's own custom scheme (what `origin` actually is here, e.g.
+    // myhomeos:///) outright. Send the browser to our own landing page
+    // instead, which immediately bounces it back into the app via `origin`.
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
-      return_url: origin,
+      return_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/checkout-redirect?status=success&appUrl=${encodeURIComponent(origin)}`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error(err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
