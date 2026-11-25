@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import * as Linking from "expo-linking";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import { supabase } from "./supabase.js";
@@ -32,7 +32,25 @@ export function SessionProvider({ children }) {
   const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(async ({ data }) => {
+      // getSession() only reads the token cached on-device — it doesn't
+      // confirm the user it belongs to still exists server-side (the
+      // account could've been deleted from the dashboard, or from another
+      // device, while this one still has a cached session). getUser()
+      // actually asks the server, so a since-deleted account's stale
+      // session gets signed out locally here instead of the app getting
+      // stuck loading data for a user that's gone — every query for it
+      // would fail (e.g. a foreign-key violation on insert), and nothing
+      // downstream treats that as "fall back to sign-in".
+      if (data.session) {
+        const { error } = await supabase.auth.getUser();
+        if (error) {
+          await supabase.auth.signOut({ scope: "local" });
+          return;
+        }
+      }
+      setSession(data.session);
+    });
     const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
       if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
@@ -59,9 +77,16 @@ export function SessionProvider({ children }) {
     };
   }, []);
 
-  function signOut() {
-    supabase.auth.signOut();
-  }
+  // Stable identity (useCallback) so app-data-context.js's data-loading
+  // effect can depend on it without re-running every render.
+  const signOut = useCallback(() => {
+    // "local" only clears this device's session, rather than also asking
+    // the server to revoke it — there's no "sign out everywhere" feature
+    // here, and a server round-trip would be pointless (or fail outright)
+    // for a session whose user no longer exists, the exact case this is
+    // also called for above.
+    return supabase.auth.signOut({ scope: "local" });
+  }, []);
 
   return (
     <AuthContext.Provider
