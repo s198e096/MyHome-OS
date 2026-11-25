@@ -503,6 +503,18 @@ export async function createPortalSession() {
   return data.url;
 }
 
+// Switches a paid account to Free. A recurring subscription is scheduled to
+// cancel at the end of the current billing period (`immediate: false`, with
+// `cancelAt` the Unix timestamp it takes effect) — `profiles.plan` itself
+// doesn't change until then, via the Stripe webhook. A one-time Lifetime
+// purchase has nothing to cancel, so it switches over right away
+// (`immediate: true`).
+export async function cancelSubscription() {
+  const { data, error } = await supabase.functions.invoke("cancel-subscription", {});
+  if (error) throw await describeFunctionError(error);
+  return data;
+}
+
 export async function loadEnergyChecks() {
   const { data, error } = await supabase.from("energy_checks").select("*").order("created_at", { ascending: true });
   if (error) throw error;

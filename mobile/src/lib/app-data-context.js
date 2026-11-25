@@ -11,6 +11,7 @@ import {
   resolvePendingPropertyValue as resolvePendingPropertyValueRow,
   createCheckoutSession,
   createPortalSession,
+  cancelSubscription,
   createReportCheckoutSession,
   loadReportPurchases,
   loadAiUsage,
@@ -478,13 +479,21 @@ export function AppDataProvider({ children }) {
     setProfile((p) => ({ ...p, ...updated }));
   }
 
+  // Only ever called with a paid plan id — switching to Free goes through
+  // cancelPlan instead, which the caller gates behind its own confirmation.
   async function selectPlan(planId) {
-    if (planId === "free") return createPortalSession();
     return createCheckoutSession(planId);
   }
 
   async function manageBilling() {
     return createPortalSession();
+  }
+
+  // Switches a paid account to Free — see cancelSubscription for exactly
+  // when `plan` itself changes. The caller shows its own confirmation
+  // before calling this, since it's a billing-affecting action.
+  async function cancelPlan() {
+    return cancelSubscription();
   }
 
   // Plans change in Stripe's browser page, not in the app, and the webhook
@@ -576,6 +585,7 @@ export function AppDataProvider({ children }) {
     resolvePropertyValuePrompt,
     selectPlan,
     manageBilling,
+    cancelPlan,
     reportPurchases,
     activeReportPurchase,
     buyReport,

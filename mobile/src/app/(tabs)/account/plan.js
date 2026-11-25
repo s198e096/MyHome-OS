@@ -5,7 +5,7 @@ import PlanScreen from "../../../screens/PlanScreen.js";
 
 export default function Plan() {
   const router = useRouter();
-  const { profile, selectPlan, manageBilling, refreshPlan } = useAppData();
+  const { profile, selectPlan, manageBilling, cancelPlan, refreshPlan } = useAppData();
 
   return (
     <PlanScreen
@@ -21,6 +21,14 @@ export default function Plan() {
         const url = await manageBilling();
         if (url) await WebBrowser.openBrowserAsync(url);
         await refreshPlan().catch(() => {});
+      }}
+      onCancelPlan={async () => {
+        const result = await cancelPlan();
+        // Only a true immediate switch (no subscription to begin with)
+        // changes `plan` right away — a scheduled cancellation doesn't
+        // take effect until the webhook fires at period end.
+        if (result?.immediate) await refreshPlan().catch(() => {});
+        return result;
       }}
     />
   );

@@ -1,30 +1,51 @@
 import { useState } from "react";
-import { ScrollView, View, Text, Pressable } from "react-native";
+import { ScrollView, View, Text, Pressable, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Check } from "lucide-react-native";
 import { PRIMARY, STATUS_COLOR, ACCENT_YELLOW, PLANS } from "../lib/constants.js";
 import BackButton from "../components/BackButton.js";
 
-// What to tell the user when checkout / billing can't open. While developing
-// (Expo Go) the real cause is shown underneath, since the generic line alone
-// hides whether it's the session, the network or the Stripe setup.
+const fieldStyle = { borderWidth: 1, borderColor: "#E0E8D3" };
+
+function formatCancelDate(unixSeconds) {
+  return new Date(unixSeconds * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+// What to tell the user when checkout / billing can't open. The real cause
+// is always shown underneath (not just while developing), since the generic
+// line alone hides whether it's the session, the network or the Stripe
+// setup — same as the report-checkout flow in account/index.js.
 function billingErrorText(err) {
   const base =
     err?.status === 401 ? "Your session expired. Sign out and back in, then try again."
     : err?.network ? "Couldn't reach the server. Check your connection and try again."
     : "Something went wrong. Try again.";
   const detail = err?.detail || err?.message;
-  return __DEV__ && detail ? `${base}
+  return detail ? `${base}
 [${err?.status ?? "no status"}] ${String(detail).slice(0, 300)}` : base;
 }
 
-export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManageBilling }) {
+export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManageBilling, onCancelPlan }) {
   const [loadingPlanId, setLoadingPlanId] = useState(null);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const insets = useSafeAreaInsets();
 
-  async function handleSelect(planId) {
+  function handleSelect(planId) {
     setError("");
+    setInfo("");
+    // Switching to Free cancels a real subscription (or, for a Lifetime
+    // purchase, drops paid features right away) — always confirm first,
+    // rather than treating it like picking any other plan.
+    if (planId === "free") {
+      setConfirmingCancel(true);
+      return;
+    }
+    runSelect(planId);
+  }
+
+  async function runSelect(planId) {
     setLoadingPlanId(planId);
     try {
       await onSelectPlan(planId);
@@ -35,8 +56,26 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
     }
   }
 
+  async function handleConfirmCancel() {
+    setConfirmingCancel(false);
+    setLoadingPlanId("free");
+    try {
+      const result = await onCancelPlan();
+      setInfo(
+        result?.immediate
+          ? "You're now on the Free plan."
+          : `Your plan will switch to Free on ${formatCancelDate(result.cancelAt)} — you'll keep your current plan's features until then.`
+      );
+    } catch (err) {
+      setError(billingErrorText(err));
+    } finally {
+      setLoadingPlanId(null);
+    }
+  }
+
   async function handleManageBilling() {
     setError("");
+    setInfo("");
     setLoadingPlanId("manage");
     try {
       await onManageBilling();
@@ -102,7 +141,7 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
                 }
               >
                 <Text className="text-[13px] font-semibold" style={{ color: isCurrent ? "#9C978C" : "white" }}>
-                  {isCurrent ? "Current plan" : isLoading ? "Redirecting..." : "Choose plan"}
+                  {isCurrent ? "Current plan" : isLoading ? (plan.id === "free" ? "Canceling..." : "Redirecting...") : "Choose plan"}
                 </Text>
               </Pressable>
             </View>
@@ -115,6 +154,11 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
           {error}
         </Text>
       )}
+      {info && (
+        <Text className="text-[12px] text-center mt-3" style={{ color: STATUS_COLOR.green }}>
+          {info}
+        </Text>
+      )}
 
       {currentPlan !== "free" && (
         <Pressable onPress={handleManageBilling} disabled={loadingPlanId !== null} className="w-full mt-4 items-center">
@@ -125,6 +169,25 @@ export default function PlanScreen({ currentPlan, onBack, onSelectPlan, onManage
       )}
 
       <View style={{ height: 24 }} />
+
+      <Modal transparent animationType="fade" visible={confirmingCancel} onRequestClose={() => setConfirmingCancel(false)}>
+        <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <View className="w-full rounded-xl bg-white p-4" style={fieldStyle}>
+            <Text className="text-[15px] font-semibold text-stone-900 mb-1.5">Cancel your plan?</Text>
+            <Text className="text-[12.5px] text-stone-500 mb-4 leading-relaxed">
+              {currentPlan === "lifetime"
+                ? "This switches you to the Free plan right away. Your Lifetime purchase isn't refunded."
+                : "This cancels your recurring payment and switches you to the Free plan. You'll keep your current plan's features until the end of this billing period, then move to Free automatically."}
+            </Text>
+            <Pressable onPress={handleConfirmCancel} className="w-full py-2.5 rounded-lg items-center mb-2 active:opacity-60" style={{ backgroundColor: PRIMARY }}>
+              <Text className="text-[13.5px] font-semibold text-white">Yes, cancel my plan</Text>
+            </Pressable>
+            <Pressable onPress={() => setConfirmingCancel(false)} className="w-full py-2.5 rounded-lg items-center active:opacity-60" style={fieldStyle}>
+              <Text className="text-[13.5px] font-semibold text-stone-700">No, keep my plan</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
