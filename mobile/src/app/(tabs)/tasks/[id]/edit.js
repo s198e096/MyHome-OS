@@ -18,10 +18,11 @@ export default function EditTask() {
     );
   }
 
-  // After a delete, land on the Tasks list. A plain "back" does that when the
-  // list is underneath this page, but a page opened straight from Home has
-  // nothing under it in the Tasks tab, so "back" would drop to Home instead -
-  // in that case swap this page for the list.
+  // A plain "back" lands on the Tasks list when it's underneath this page,
+  // but this page is also opened straight from Home's overdue/upcoming
+  // list, which has nothing under it in the Tasks tab - there, "back" drops
+  // to Home instead and leaves this screen as the Tasks tab's last-shown
+  // page, stuck there until it's explicitly swapped out.
   function goToTaskList() {
     if (navigation.getState().routes.length > 1) router.back();
     else router.replace("/tasks");
@@ -32,11 +33,8 @@ export default function EditTask() {
       kind="task"
       item={task}
       systems={systems}
-      onBack={() => router.back()}
+      onBack={goToTaskList}
       onUpdateTask={updateTask}
-      // Navigation after a delete is the form's onDeleted (below): this just
-      // deletes, so there's exactly one move - not an extra "back" that would
-      // skip past the Tasks list.
       onDeleteTask={deleteTask}
       onDeleted={goToTaskList}
     />
