@@ -203,19 +203,28 @@ export default function CostsScreen({
 }) {
   const insets = useSafeAreaInsets();
   const years = expenseYears(expenses);
-  const [selectedYear, setSelectedYear] = useState(years.includes(CURRENT_YEAR) ? CURRENT_YEAR : years[0]);
+  // null until the user explicitly picks a year - `effectiveYear` below
+  // fills in the default for as long as that's true. Deriving it at render
+  // time (rather than initializing this state from `years` once and
+  // leaving it there) matters because this screen stays mounted across tab
+  // switches: if it first mounted before any expenses existed, a one-time
+  // initializer would be stuck on "no years" forever, reading every count
+  // here (including the expense log's, below) as zero even once expenses
+  // are added.
+  const [selectedYear, setSelectedYear] = useState(null);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
   const [next12moExplainOpen, setNext12moExplainOpen] = useState(false);
   const [reserveExplainOpen, setReserveExplainOpen] = useState(false);
 
-  const isAllYears = selectedYear === ALL_YEARS;
+  const effectiveYear = selectedYear ?? (years.includes(CURRENT_YEAR) ? CURRENT_YEAR : years[0]);
+  const isAllYears = effectiveYear === ALL_YEARS;
 
   const labelFor = (key) => (key === "general" ? "General" : systemShortName(systemById(key)));
-  const expenseRows = selectedYear != null ? expensesBySystemForYear(expenses, selectedYear) : [];
-  const timeRows = selectedYear != null ? timeSpentBySystemForYear(expenses, selectedYear) : [];
+  const expenseRows = effectiveYear != null ? expensesBySystemForYear(expenses, effectiveYear) : [];
+  const timeRows = effectiveYear != null ? timeSpentBySystemForYear(expenses, effectiveYear) : [];
   // The log filters by a numeric year; an empty one means every year.
-  const onSlicePress = (systemKey) => onViewLog({ systemId: systemKey, year: isAllYears ? "" : selectedYear });
-  const yearFilteredExpenses = isAllYears ? expenses : expenses.filter((e) => yearOf(e.date) === selectedYear);
+  const onSlicePress = (systemKey) => onViewLog({ systemId: systemKey, year: isAllYears ? "" : effectiveYear });
+  const yearFilteredExpenses = isAllYears ? expenses : expenses.filter((e) => yearOf(e.date) === effectiveYear);
 
   return (
     <ScrollView className="flex-1 bg-[#F5F8F0] px-4" style={{ paddingTop: insets.top + 20 }} showsVerticalScrollIndicator={false}>
@@ -275,21 +284,21 @@ export default function CostsScreen({
         />
       )}
 
-      {selectedYear != null ? (
+      {effectiveYear != null ? (
         <>
           <Pressable
             onPress={() => setYearDropdownOpen(true)}
             className="flex-row items-center justify-between px-3 py-2 rounded-lg mb-3 self-start"
             style={{ borderWidth: 1, borderColor: "#E0E8D3", backgroundColor: "white", minWidth: 100 }}
           >
-            <Text className="text-[13.5px] font-semibold text-stone-800 mr-2">{isAllYears ? "All years" : selectedYear}</Text>
+            <Text className="text-[13.5px] font-semibold text-stone-800 mr-2">{isAllYears ? "All years" : effectiveYear}</Text>
             <ChevronDown size={14} color="#78716c" />
           </Pressable>
           <SelectModal
             visible={yearDropdownOpen}
             title="Choose a year"
             options={[{ value: ALL_YEARS, label: "All years" }, ...years.map((y) => ({ value: y, label: String(y) }))]}
-            selectedValue={selectedYear}
+            selectedValue={effectiveYear}
             onSelect={(value) => {
               setSelectedYear(value);
               setYearDropdownOpen(false);
@@ -324,7 +333,7 @@ export default function CostsScreen({
       )}
 
       <Pressable
-        onPress={() => onViewLog(selectedYear != null && !isAllYears ? { year: selectedYear } : null)}
+        onPress={() => onViewLog(effectiveYear != null && !isAllYears ? { year: effectiveYear } : null)}
         className="rounded-xl bg-white p-3 mb-6 flex-row items-center justify-between"
         style={{ borderWidth: 1, borderColor: "#E0E8D3" }}
       >
@@ -332,7 +341,7 @@ export default function CostsScreen({
           <Text className="text-[13.5px] font-semibold text-stone-900">Expense log</Text>
           <Text className="text-[11.5px] text-stone-400">
             {yearFilteredExpenses.length} entr{yearFilteredExpenses.length === 1 ? "y" : "ies"}
-            {isAllYears || selectedYear == null ? "" : ` in ${selectedYear}`}
+            {isAllYears || effectiveYear == null ? "" : ` in ${effectiveYear}`}
           </Text>
         </View>
         <ChevronRight size={16} color="#B8B4A8" />
