@@ -279,6 +279,7 @@ export const PLANS = [
       "10 AI questions per day",
       "10 AI auto-fills in total",
       "Tasks, reminders & documents",
+      "Costs: spending & 12-month forecast",
     ],
   },
   {
@@ -290,7 +291,6 @@ export const PLANS = [
       "Unlimited appliances/systems",
       "Unlimited AI questions",
       "Unlimited AI auto-fill",
-      "Costs: spending & 12-month forecast",
     ],
   },
   {
