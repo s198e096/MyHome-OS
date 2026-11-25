@@ -57,13 +57,18 @@ export function advanceDueDate(dateStr, recurrence, steps = 1) {
 }
 
 // The due date of the repeat that follows completing a task. Normally one
-// period after the task's own due date. A daily task is the exception: if it
-// was completed late, "one day after the old due date" would already be in the
-// past and the new one would show up overdue, so it lands the day after it was
-// completed instead. (`completedOn` is a "YYYY-MM-DD" string.)
+// period after the task's own due date. But when a task sat overdue through
+// several of its own periods (e.g. a quarterly task last done 9 months ago),
+// one period after the *old* due date would still be in the past - showing
+// up overdue immediately, and needing another real completion (logged as
+// its own, separately-dated "did this" record) just to catch up to today.
+// Doing the task once in real life should clear every missed instance of it
+// at once and produce exactly one completion record, so in that case the
+// next occurrence is instead one period after when it was actually
+// completed. (`completedOn` is a "YYYY-MM-DD" string.)
 export function nextDueAfterCompletion(dueDate, recurrence, completedOn) {
   const next = advanceDueDate(dueDate, recurrence);
-  if (next && recurrence === "daily" && completedOn && next <= completedOn) return advanceDueDate(completedOn, "daily");
+  if (next && completedOn && next <= completedOn) return advanceDueDate(completedOn, recurrence);
   return next;
 }
 
