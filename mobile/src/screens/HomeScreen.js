@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
@@ -21,18 +21,21 @@ const HOME_ACTIONS = [
   { value: "problem", label: "Report a problem in a system" },
   { value: "expense", label: "Report an expense" },
   { value: "upgrade", label: "Upgrade a system" },
+  { value: "request-service", label: "Request service (coming soon)" },
 ];
 
 function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedValue, onOpenAccount, onOpenAssistant, onNavigate, tutorial }) {
   const greeting = overdueCount > 0 ? "Your home needs\nsome attention" : "Your home is in\ngreat shape";
   const insets = useSafeAreaInsets();
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [requestServiceOpen, setRequestServiceOpen] = useState(false);
 
   function handleAction(value) {
     setActionsOpen(false);
     if (value === "problem") onNavigate("/report-problem");
     else if (value === "expense") onNavigate("/costs/new");
     else if (value === "upgrade") onNavigate("/systems/upgrade");
+    else if (value === "request-service") setRequestServiceOpen(true);
     else onOpenAssistant();
   }
 
@@ -79,12 +82,37 @@ function HomeHero({ todoCount, overdueCount, systemsCount, profile, estimatedVal
         <SelectModal
           visible={actionsOpen}
           title="Actions"
-          // Expenses live in the Costs section, which is a paid-plan feature.
-          options={profile.plan === "free" ? HOME_ACTIONS.filter((a) => a.value !== "expense") : HOME_ACTIONS}
+          options={HOME_ACTIONS}
           selectedValue={null}
           onSelect={handleAction}
           onClose={() => setActionsOpen(false)}
         />
+        <Modal transparent visible={requestServiceOpen} animationType="fade" onRequestClose={() => setRequestServiceOpen(false)}>
+          <Pressable
+            onPress={() => setRequestServiceOpen(false)}
+            style={{ flex: 1, backgroundColor: "rgba(22,36,15,0.35)", alignItems: "center", justifyContent: "center", padding: 28 }}
+          >
+            <Pressable
+              onPress={() => {}}
+              className="bg-white rounded-2xl p-4 w-full"
+              style={{ maxWidth: 340, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
+            >
+              <Text className="text-[15px] font-semibold text-stone-900 mb-2">Request service — coming soon</Text>
+              <Text className="text-[12.5px] text-stone-600 mb-4 leading-relaxed">
+                Soon you&apos;ll be able to request service right from the app: for a specific task or system, or by
+                snapping a photo of something broken — or just something you&apos;d like worked on — to get bids from
+                nearby handymen, technicians, and contractors.
+              </Text>
+              <Pressable
+                onPress={() => setRequestServiceOpen(false)}
+                className="w-full py-2.5 rounded-lg items-center"
+                style={{ backgroundColor: PRIMARY }}
+              >
+                <Text className="text-[13px] font-semibold text-white">Got it</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
         {!!tutorial && (
           <TutorialTip
             step={tutorial.step}
