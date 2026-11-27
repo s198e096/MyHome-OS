@@ -436,12 +436,17 @@ export async function loadAiUsage() {
   };
 }
 
+// `actionsPerformed` lists which tools (if any) the assistant actually used
+// this turn (e.g. ["add_system"]) — the caller refreshes systems/tasks from
+// the server when it's non-empty, since those tools write to the database
+// directly here, bypassing the usual add/update functions that keep local
+// state in sync.
 export async function askAssistant(messages) {
   const { data, error } = await supabase.functions.invoke("ask-assistant", {
     body: { messages },
   });
   if (error) throw await describeFunctionError(error);
-  return data.reply;
+  return { reply: data.reply, actionsPerformed: data.actionsPerformed || [] };
 }
 
 export async function createCheckoutSession(planId) {
@@ -537,6 +542,15 @@ export async function updateEnergyCheckStatus(id, status) {
     .single();
   if (error) throw error;
   return rowToEnergyCheck(data);
+}
+
+// Re-fetches just systems and tasks — used after the AI assistant adds one
+// of either directly in the database (see askAssistant's actionsPerformed),
+// which bypasses addSystem/addTask and so never updates local state on its
+// own the way those do.
+export async function loadSystemsAndTasks() {
+  const [systems, tasks] = await Promise.all([loadTable("systems", rowToSystem), loadTable("tasks", rowToTask)]);
+  return { systems, tasks };
 }
 
 export async function loadAllData() {

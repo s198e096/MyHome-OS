@@ -6,6 +6,7 @@ import { syncTaskNotifications, clearTaskNotifications } from "./notifications.j
 import {
   db,
   loadAllData,
+  loadSystemsAndTasks,
   loadProfile,
   saveProfile as saveProfileRow,
   resolvePendingPropertyValue as resolvePendingPropertyValueRow,
@@ -543,6 +544,13 @@ export function AppDataProvider({ children }) {
     return list;
   }
 
+  // See loadSystemsAndTasks's own comment for why this exists.
+  async function refreshSystemsAndTasks() {
+    const { systems: nextSystems, tasks: nextTasks } = await loadSystemsAndTasks();
+    setSystems(nextSystems);
+    setTasks(nextTasks);
+  }
+
   const value = {
     dataLoaded,
     systems,
@@ -602,6 +610,7 @@ export function AppDataProvider({ children }) {
     activeReportPurchase,
     buyReport,
     refreshReportPurchases,
+    refreshSystemsAndTasks,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
