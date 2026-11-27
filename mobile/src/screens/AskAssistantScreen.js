@@ -124,7 +124,7 @@ function ConversationDrawer({ visible, conversations, activeId, onSelect, onNew,
 
 export default function AskAssistantScreen({ onBack, onUpgrade, initialInput, name, autoSend, startNew }) {
   const insets = useSafeAreaInsets();
-  const { isFreePlan, aiUsage, refreshAiUsage } = useAppData();
+  const { isFreePlan, aiUsage, refreshAiUsage, refreshSystemsAndTasks } = useAppData();
   // Set when the server says the free allowance is gone, in case that is newer
   // than the usage the app last loaded (e.g. questions asked on another device).
   const [serverLimitResetsAt, setServerLimitResetsAt] = useState(undefined);
@@ -189,9 +189,13 @@ export default function AskAssistantScreen({ onBack, onUpgrade, initialInput, na
     setSending(true);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     try {
-      const reply = await askAssistant(next);
+      const { reply, actionsPerformed } = await askAssistant(next);
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
       if (isFreePlan) refreshAiUsage().catch(() => {});
+      // The assistant added a system/task directly in the database — pull
+      // the fresh rows into local state so the Systems/Tasks tabs show it
+      // without the user having to reload the app.
+      if (actionsPerformed.length > 0) refreshSystemsAndTasks().catch(() => {});
     } catch (err) {
       if (err?.limitReached) {
         // Not an error as such: take the unanswered question back out of the
