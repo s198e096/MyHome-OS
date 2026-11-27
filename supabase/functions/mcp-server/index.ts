@@ -249,6 +249,12 @@ Deno.serve(async (req) => {
     // token, a single "Bearer <token>", or a doubled-up prefix.
     const rawAuthHeader = req.headers.get("Authorization") || "";
     const presentedToken = rawAuthHeader.replace(/^\s*(bearer\s+)+/i, "").trim();
+    // TEMPORARY diagnostic — never logs the actual token, just whether one
+    // arrived at all and roughly what shape it was in. Remove once the
+    // claude.ai connector is confirmed working end-to-end.
+    console.log(
+      `tools/call auth debug: header present=${rawAuthHeader.length > 0}, header length=${rawAuthHeader.length}, presented token length=${presentedToken.length}, expected length=${accessToken.length}, match=${presentedToken === accessToken}, all header keys=${JSON.stringify([...req.headers.keys()])}`
+    );
     if (presentedToken !== accessToken) {
       return json({ error: "Unauthorized" }, 401);
     }
