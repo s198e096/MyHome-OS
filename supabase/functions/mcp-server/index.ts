@@ -203,15 +203,6 @@ Deno.serve(async (req) => {
   if (!accessToken || !userId) {
     return json({ error: "MCP_ACCESS_TOKEN / MCP_USER_ID is not configured on this function" }, 500);
   }
-  // Strips any number of leading "Bearer " prefixes (case-insensitive)
-  // before comparing, so this works whether the caller's UI sends the raw
-  // token, a single "Bearer <token>", or — if it auto-prefixes a value
-  // that already had "Bearer" typed into it — a doubled-up prefix.
-  const rawAuthHeader = req.headers.get("Authorization") || "";
-  const presentedToken = rawAuthHeader.replace(/^\s*(bearer\s+)+/i, "").trim();
-  if (presentedToken !== accessToken) {
-    return json({ error: "Unauthorized" }, 401);
-  }
 
   // deno-lint-ignore no-explicit-any
   let message: any;
@@ -233,6 +224,13 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 202, headers: CORS_HEADERS });
   }
 
+  // initialize/tools/list are left open (no auth check) deliberately —
+  // claude.ai's "Connect" button appears to validate the server with a
+  // bare handshake before ever attaching the configured Authorization
+  // header, which only gets sent once a tool is actually invoked. Neither
+  // method exposes anything sensitive (just this server's name/version and
+  // the tools' schemas), so gating only tools/call — the one that actually
+  // reads/writes this account's data — below is enough.
   if (method === "initialize") {
     return json(jsonRpcResult(id, {
       protocolVersion: PROTOCOL_VERSION,
@@ -246,6 +244,15 @@ Deno.serve(async (req) => {
   }
 
   if (method === "tools/call") {
+    // Strips any number of leading "Bearer " prefixes (case-insensitive)
+    // before comparing, so this works whether the caller sends the raw
+    // token, a single "Bearer <token>", or a doubled-up prefix.
+    const rawAuthHeader = req.headers.get("Authorization") || "";
+    const presentedToken = rawAuthHeader.replace(/^\s*(bearer\s+)+/i, "").trim();
+    if (presentedToken !== accessToken) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const toolName = params?.name;
     const args = params?.arguments || {};
     if (!TOOLS.some((t) => t.name === toolName)) {
