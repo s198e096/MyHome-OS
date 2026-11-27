@@ -203,8 +203,13 @@ Deno.serve(async (req) => {
   if (!accessToken || !userId) {
     return json({ error: "MCP_ACCESS_TOKEN / MCP_USER_ID is not configured on this function" }, 500);
   }
-  const authHeader = req.headers.get("Authorization") || "";
-  if (authHeader !== `Bearer ${accessToken}`) {
+  // Strips any number of leading "Bearer " prefixes (case-insensitive)
+  // before comparing, so this works whether the caller's UI sends the raw
+  // token, a single "Bearer <token>", or — if it auto-prefixes a value
+  // that already had "Bearer" typed into it — a doubled-up prefix.
+  const rawAuthHeader = req.headers.get("Authorization") || "";
+  const presentedToken = rawAuthHeader.replace(/^\s*(bearer\s+)+/i, "").trim();
+  if (presentedToken !== accessToken) {
     return json({ error: "Unauthorized" }, 401);
   }
 
