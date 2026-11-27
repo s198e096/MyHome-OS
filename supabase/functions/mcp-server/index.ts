@@ -30,6 +30,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
 const PROTOCOL_VERSION = "2025-06-18";
