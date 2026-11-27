@@ -191,6 +191,11 @@ function json(body: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
+  // We don't push server-initiated messages, so there's no SSE stream to
+  // open here — but respond 200 rather than 405, since a plain reachability
+  // check (as opposed to an MCP-aware client) may treat a non-2xx here as
+  // "server not running" rather than "SSE unsupported, use POST instead".
+  if (req.method === "GET") return new Response(null, { status: 200, headers: CORS_HEADERS });
   if (req.method !== "POST") return new Response(null, { status: 405, headers: CORS_HEADERS });
 
   const accessToken = Deno.env.get("MCP_ACCESS_TOKEN");
