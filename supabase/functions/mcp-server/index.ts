@@ -244,17 +244,12 @@ Deno.serve(async (req) => {
   }
 
   if (method === "tools/call") {
-    // Strips any number of leading "Bearer " prefixes (case-insensitive)
-    // before comparing, so this works whether the caller sends the raw
-    // token, a single "Bearer <token>", or a doubled-up prefix.
+    // Strips any number of leading "Bearer" prefixes (case-insensitive,
+    // whitespace after it optional) before comparing, so this works
+    // whichever way the caller formats it: the raw token, "Bearer <token>",
+    // "Bearer<token>" with no separating space, or a doubled-up prefix.
     const rawAuthHeader = req.headers.get("Authorization") || "";
-    const presentedToken = rawAuthHeader.replace(/^\s*(bearer\s+)+/i, "").trim();
-    // TEMPORARY diagnostic — never logs the actual token, just whether one
-    // arrived at all and roughly what shape it was in. Remove once the
-    // claude.ai connector is confirmed working end-to-end.
-    console.log(
-      `tools/call auth debug: header present=${rawAuthHeader.length > 0}, header length=${rawAuthHeader.length}, presented token length=${presentedToken.length}, expected length=${accessToken.length}, match=${presentedToken === accessToken}, all header keys=${JSON.stringify([...req.headers.keys()])}`
-    );
+    const presentedToken = rawAuthHeader.replace(/^\s*(bearer\s*)+/i, "").trim();
     if (presentedToken !== accessToken) {
       return json({ error: "Unauthorized" }, 401);
     }
